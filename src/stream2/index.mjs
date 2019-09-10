@@ -50,7 +50,41 @@ export class Stream2 {
 		if(source instanceof Promise) {
 			return this.fromPromise(source, project);
 		}
+		else if(source instanceof WebSocket) {
+			return this.fromWebSocket(ws, project);
+		}
 		throw new TypeError("Unsupported source type");
+	}
+
+	static fromWebSocket(socket, project) {
+		return new Stream2(null, (e, controller) => {
+			const connection = { id: GLOBAL_CONNECTIONS_ID_COUNTER ++ };
+			function onsocketmessagehandler({ data: raw }) {
+				const { data, event, connection: { id } } = JSON.parse(raw);
+				if(event === "data" && id === connection.id) {
+					e( data );
+				}
+			}
+			function onsocketopendhandler() {
+				socket.send(JSON.stringify({ request: "subscribe", stream, connection }));
+				controller.tocommand( ({ request }) => {
+					socket.send( JSON.stringify({ request, connection }) );
+				} );
+			}
+			if(socket.readyState === WebSocket.OPEN) {
+				onsocketopendhandler();
+			}
+			else {
+				socket.addEventListener("open", onsocketopendhandler);
+				controller.todisconnect( () => {
+					socket.removeEventListener("open", onsocketopendhandler);
+				} );
+			}
+			socket.addEventListener("message", onsocketmessagehandler);
+			controller.todisconnect( () => {
+				socket.removeEventListener("message", onsocketmessagehandler);
+			} );
+		} );
 	}
 
 	static fromPromise(source, project = STATIC_PROJECTS.STRAIGHT) {
@@ -252,12 +286,54 @@ export class Stream2 {
 			}));
 		});
 	}
-	
+
 	/**
-	 * @param {WebSocket} socket - WebSocket connection
+	 * @param {Stream} endpoint - Stream endpoint connection
 	 * @param {String} stream - Stream name from server
 	 */
-	static fromEndPoint( socket, stream ) {
+	static endpoint( ws ) {
+		return new Stream2(null, (e, controller) => {
+			const connection = { id: GLOBAL_CONNECTIONS_ID_COUNTER ++ };
+			function onsocketmessagehandler({ data: raw }) {
+				const { data, event, connection: { id } } = JSON.parse(raw);
+				if(event === "data" && id === connection.id) {
+					e( data );
+				}
+			}
+			function onsocketopendhandler() {
+				socket.send(JSON.stringify({ request: "subscribe", stream, connection }));
+				controller.tocommand( ({ request }) => {
+					socket.send( JSON.stringify({ request, connection }) );
+				} );
+			}
+			if(socket.readyState === WebSocket.OPEN) {
+				onsocketopendhandler();
+			}
+			else {
+				socket.addEventListener("open", onsocketopendhandler);
+				controller.todisconnect( () => {
+					socket.removeEventListener("open", onsocketopendhandler);
+				} );
+			}
+			socket.addEventListener("message", onsocketmessagehandler);
+			controller.todisconnect( () => {
+				socket.removeEventListener("message", onsocketmessagehandler);
+			} );
+		} );
+	}
+
+	/**
+	 * Кеширует линию потока, чтобы новые стримы не создавались
+	 */
+	endpoint() {
+		return new EndPoint( this );
+	}
+	
+	/**
+	 * @param {Stream} endpoint - Stream endpoint connection
+	 * @param {String} stream - Stream name from server
+	 */
+	static fromEndPoint( endpoint, stream ) {
 		return new Stream2(null, (e, controller) => {
 			const connection = { id: GLOBAL_CONNECTIONS_ID_COUNTER ++ };
 			function onsocketmessagehandler({ data: raw }) {
@@ -367,6 +443,26 @@ export class Connectable extends Stream2 {
 	
 	_activate( subscriber ) {
 		this._activations.push( subscriber );
+	}
+
+}
+
+export class EndPoint extends Stream2 {
+
+	createEmitter( subscriber ) {
+		if(!this.emitter) {
+			this.emitter = (data, record = { ttmp: getTTMP() }) => {
+				this.subscribers.map( subscriber => subscriber(data, record) );
+			};
+		}
+		return this.emitter;
+	}
+
+	_activate() {
+		if(!this._activated) {
+			super._activate();
+			this._activated = true;
+		}
 	}
 
 }

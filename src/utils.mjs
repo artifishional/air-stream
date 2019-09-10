@@ -45,19 +45,19 @@ export const streamEqual = (done, source, data = [], options = {}) => {
   expect.hasAssertions();
 
   options = { ...defaultOptions, ...options };
-  const start = Date.now();
+    const start = Date.now();
 
   const lastMsgTime = data.reduce((acc, msg) => !msg.t ? 0 : msg.t > acc ? msg.t : acc, 0);
   jest.setTimeout(options.timeout || (lastMsgTime + options.delta + 1));
-  const doneTimer = setTimeout(() => {
-    expect(data.some((assert) => !assert.pass)).toBeFalsy();
-    done();
+    const doneTimer = setTimeout(() => {
+      expect(data.some((assert) => !assert.pass)).toBeFalsy();
+      done();
   }, options.timeout || lastMsgTime + options.delta);
 
   return source.on(msg => {
-    data.map((assert) => {
-      if (!assert.pass) {
-        const now = Date.now() - start;
+      data.map((assert) => {
+        if (!assert.pass) {
+          const now = Date.now() - start;
         if (assert.t) {
           assert.pass = deepEqual(assert.data, msg) && Math.abs(assert.t - now) < options.delta;
         } else {
@@ -69,10 +69,9 @@ export const streamEqual = (done, source, data = [], options = {}) => {
 };
 
 const DEFAULT_OPTIONS = {
-  delta: 100, // ms
-  timeout: null
+	delta: 100, // ms
+	timeout: null
 };
-
 
 export const streamEqualStrict = (done, source, data = [], options = {}) => {
   const counterCallback = jest.fn();
