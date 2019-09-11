@@ -1,4 +1,4 @@
-import "./polyfills"
+import "./polyfills/index.mjs"
 
 export {
   default as Observable,
@@ -13,4 +13,4 @@ export { default as stream } from './stream/index.mjs';
 
 export { default as socket } from './socket/index.mjs';
 
-export * from "./stream2";
+export * from "./stream2/index.mjs";

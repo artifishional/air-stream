@@ -1,4 +1,4 @@
-import "./node-perf-hooks"
+import "./node-perf-hooks.js"
 
 let cache = -1;
 

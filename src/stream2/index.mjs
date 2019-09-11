@@ -1,5 +1,5 @@
-import Observable, {keyA} from 'air-stream/src/observable/index';
-import getTTMP from "./get-ttmp"
+import Observable, {keyA} from '../observable/index.mjs'
+import getTTMP from "./get-ttmp.mjs"
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
 let GLOBAL_CONNECTIONS_ID_COUNTER = 1;
