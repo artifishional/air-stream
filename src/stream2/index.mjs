@@ -3,6 +3,7 @@ import getTTMP from "./get-ttmp.mjs"
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
 let GLOBAL_CONNECTIONS_ID_COUNTER = 1;
+let GLOBAL_REQUEST_ID_COUNTER = 1;
 const STATIC_PROJECTS = {
 	STRAIGHT: data => data,
 	AIO: (...args) => args,
@@ -252,39 +253,42 @@ export class Stream2 {
 			}));
 		});
 	}
+
+	/**
+	 * Кеширует линию потока, чтобы новые стримы не создавались
+	 */
+	endpoint() {
+		return new EndPoint( null, (e, controller) => {
+			controller.to(this.on(e));
+		} );
+	}
 	
 	/**
-	 * @param {WebSocket} socket - WebSocket connection
-	 * @param {String} stream - Stream name from server
+	 * @param {RemouteService} remoteservicecontroller - Remoute service controller connection
+	 * @param {Object} stream - Stream name from server
 	 */
-	static fromEndPoint( socket, stream ) {
+	static fromRemouteService( remoteservicecontroller, stream ) {
 		return new Stream2(null, (e, controller) => {
 			const connection = { id: GLOBAL_CONNECTIONS_ID_COUNTER ++ };
-			function onsocketmessagehandler({ data: raw }) {
-				const { data, event, connection: { id } } = JSON.parse(raw);
-				if(event === "data" && id === connection.id) {
-					e( data );
+			let hook = remoteservicecontroller.on( ({ event, data, connection: { id } }, record) => {
+				if(event === "remote-service-ready") {
+					hook({
+						type: "subscribe",
+						stream,
+						connection,
+					});
 				}
-			}
-			function onsocketopendhandler() {
-				socket.send(JSON.stringify({ request: "subscribe", stream, connection }));
-				controller.tocommand( ({ request }) => {
-					socket.send( JSON.stringify({ request, connection }) );
-				} );
-			}
-			if(socket.readyState === WebSocket.OPEN) {
-				onsocketopendhandler();
-			}
-			else {
-				socket.addEventListener("open", onsocketopendhandler);
-				controller.todisconnect( () => {
-					socket.removeEventListener("open", onsocketopendhandler);
-				} );
-			}
-			socket.addEventListener("message", onsocketmessagehandler);
-			controller.todisconnect( () => {
-				socket.removeEventListener("message", onsocketmessagehandler);
+				else if(event === "reinitial-state" && connection.id === id ) {
+					e(data, { ...record, grid: 0 });
+				}
+				else if(event === "data" && connection.id === id ) {
+					e(data, { ...record, grid: -1 });
+				}
+				else if(event === "result" && connection.id === id ) {
+					e(data, { ...record, grid: -1 });
+				}
 			} );
+			controller.to(hook);
 		} );
 	}
 	
@@ -309,14 +313,55 @@ export class Stream2 {
 }
 
 export const stream2 = (...args) => new Stream2(...args);
-stream2.merge = Stream2.merge;
-stream2.fromevent = Stream2.fromevent;
-stream2.ups = Stream2.ups;
-stream2.combine = Stream2.combine;
-stream2.from = Stream2.from;
-stream2.fromPromise = Stream2.fromPromise;
-stream2.sync = Stream2.sync;
-stream2.fromEndPoint = Stream2.fromEndPoint;
+//static props recalc to stream2
+Object.getOwnPropertyNames(Stream2)
+	.filter(prop => typeof Stream2[prop] === "function")
+	.map( prop => stream2[prop] = Stream2[prop] );
+
+export class RemouteService extends Stream2 {
+
+	/**
+	 * @param {host, port} websocketconnection settings
+	 */
+	static fromWebSocketConnection ({host, port}) {
+		let websocketconnection = null;
+		let remouteserviceconnectionstatus = "pending";
+		return new RemouteService(null, (e, controller) => {
+			if(!websocketconnection) {
+				websocketconnection = new WebSocket(`ws://${host}:${port}`);
+			}
+			if(remouteserviceconnectionstatus === "ready") {
+				e( { event: "remoute-service-ready", connection: { id: -1 }, data: null } );
+			}
+			function onsocketmessagehandler({ data: raw }) {
+				const msg = JSON.parse(raw);
+				if(msg.event === "remoute-service-ready") {
+					remouteserviceconnectionstatus = "ready";
+					e( msg );
+				}
+			}
+			function onsocketopendhandler() {
+				controller.tocommand( ({ request }) => {
+					websocketconnection.send( JSON.stringify({ request, connection }) );
+				} );
+			}
+			if(websocketconnection.readyState === WebSocket.OPEN) {
+				onsocketopendhandler();
+			}
+			else {
+				websocketconnection.addEventListener("open", onsocketopendhandler);
+				controller.todisconnect( () => {
+					socket.removeEventListener("open", onsocketopendhandler);
+				} );
+			}
+			websocketconnection.addEventListener("message", onsocketmessagehandler);
+			controller.todisconnect( () => {
+				websocketconnection.removeEventListener("message", onsocketmessagehandler);
+			} );
+		} );
+	}
+
+}
 
 export class Controller {
 	
@@ -371,6 +416,26 @@ export class Connectable extends Stream2 {
 
 }
 
+export class EndPoint extends Stream2 {
+
+	createEmitter( subscriber ) {
+		if(!this.emitter) {
+			this.emitter = (data, record = { ttmp: getTTMP() }) => {
+				this.subscribers.map( subscriber => subscriber(data, record) );
+			};
+		}
+		return this.emitter;
+	}
+
+	_activate() {
+		if(!this._activated) {
+			super._activate();
+			this._activated = true;
+		}
+	}
+
+}
+
 export class Reducer extends Stream2 {
 
 	/**
@@ -379,10 +444,12 @@ export class Reducer extends Stream2 {
 	 * @param state {Object|Stream2} Initial state (from static or stream)
 	 */
 	constructor(sourcestreams, project = (_, data) => data, state = EMPTY_OBJECT) {
+		const type = state instanceof Stream2 ? 1/*"slave"*/ : 0/*"internal"*/;
 		super(sourcestreams, (e, controller) => {
+			let srvRequesterHook = null;
 			if(state !== EMPTY_OBJECT) {
-				if(state instanceof Stream2) {
-					controller.to(state.on( e ));
+				if(type === 1) {
+					controller.to(srvRequesterHook = state.on( e ));
 				}
 				else {
 					e( state, { ttmp: getTTMP() } );
@@ -391,7 +458,12 @@ export class Reducer extends Stream2 {
 			if(sourcestreams) {
 				controller.todisconnect(sourcestreams.on( (data, record ) => {
 					state = project(state, data);
+					const grid = type === 1 ? GLOBAL_REQUEST_ID_COUNTER ++ : -1;
+					record = { ...record, grid, confirmed: !type };
 					e( state, record );
+					if(type === 1) {
+						srvRequesterHook({ grid, data, record });
+					}
 				} ));
 			}
 			if(!sourcestreams && !state) {
