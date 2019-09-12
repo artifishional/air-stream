@@ -309,7 +309,39 @@ export class Stream2 {
 			controller.todisconnect( () => clearInterval(sid) );
 		} );
 	}
-	
+
+	static x(sourcestreams, project = states => states, actionHandler) {
+		return new Stream2(Object.values(sourcestreams), (e, controller) => {
+			const sourcestreamsstate =
+				Object.keys(sourcestreams).reduce((acc, key) => ({...acc, key: EMPTY_OBJECT}), {});
+			let _state;
+			let _privateState;
+			const connectors = Object.fromEntries(Object.entries(sourcestreams)
+				.map(([key, stream]) => [key, stream.on((data, record) => {
+					sourcestreamsstate[key] = data;
+					if (!Object.values(sourcestreamsstate).includes(EMPTY_OBJECT)) {
+						const [state, action, privateState] = project(sourcestreamsstate, key, data.action);
+						_state = state;
+						_privateState = privateState;
+						action && e([state, action], record);
+					}
+				})]));
+			if (actionHandler) {
+				controller.to(({action, ...data}) => {
+					Object.entries(actionHandler(action, data, _state)).forEach(([index, data]) => {
+						if (index === 'controller') {
+							_state = data;
+							e(_state);
+						} else {
+							connectors[index](data);
+						}
+					});
+				});
+			} else {
+				controller.to(...connectors);
+			}
+		});
+	}
 }
 
 export const stream2 = (...args) => new Stream2(...args);
