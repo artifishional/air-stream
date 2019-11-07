@@ -3,6 +3,7 @@ export {
   combine,
   merge,
   sync,
+  fromPromise,
   keyF,
   keyA,
   rid

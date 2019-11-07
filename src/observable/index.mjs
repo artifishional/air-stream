@@ -124,6 +124,12 @@ export default class Observable {
     return new Observable(emt => obs.on(emt));
   }
 
+  static fromPromise(source) {
+    return new Observable((e) => {
+      source.then( e );
+    });
+  }
+
   static sync (streams, equal, poject = Observable.project) {
     return Observable
       .combine(streams)
@@ -599,5 +605,6 @@ const keys = Observable.keys = [keyF, keyA];
 export const merge = Observable.merge;
 export const sync = Observable.sync;
 export const combine = Observable.combine;
+export const fromPromise = Observable.fromPromise;
 export const rid = () => __rid++;
 let __rid = 1;
