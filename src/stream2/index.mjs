@@ -1,6 +1,6 @@
 import Observable, {keyA} from '../observable/index.mjs'
 import getTTMP from "./get-ttmp.mjs"
-
+import {CONNECT, EMPTY} from "./signals";
 
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
@@ -12,6 +12,7 @@ const STATIC_PROJECTS = {
 	STRAIGHT: data => data,
 	AIO: (...args) => args,
 };
+const USER_EVENT = {};
 
 const KEY_SIGNALS = new Set(Observable.keys);
 
@@ -21,18 +22,18 @@ export class Stream2 {
 		return KEY_SIGNALS.has(data);
 	}
 	
-	constructor(sourcestreams, project, ctx = null) {
+	constructor(project, ctx = null) {
 		this.subscribers = [];
 		/*<@debug>*/
 		this._label = "";
 		/*</@debug>*/
 		this.project = project;
 		this.ctx = ctx;
-		this.sourcestreams = sourcestreams;
 	}
 	
 	static fromevent(target, event) {
 		return new Stream2( [], (e, controller) => {
+			e(CONNECT, USER_EVENT);
 			target.addEventListener( event, e );
 			controller.todisconnect( () => target.removeEventListener( event, e ));
 		});
@@ -122,8 +123,86 @@ export class Stream2 {
 			owner.detach( stream );
 		} );
 	 */
-	static with(streams, handler, sync = true) {
-
+	static with(streams, handlerProject, sync = true) {
+		
+		class Handler {
+			
+			constructor( owner, ctr, emt, handler, streams = [] ) {
+				this.streams = new Map();
+				this.handler = handler;
+				this.owner = owner;
+				this.emt = emt;
+				this.neighbourStreamsBySource = new Map();
+				this.ctr = ctr;
+				streams.map( stream => this.attach(stream, handler) );
+			}
+			
+			handleEvent(e, rec, stream) {
+				const { neighbours: { state, index, streams } } = this.streams.get(stream);
+				
+				/*<@debug>*/
+				if(!state[index]) throw `
+					${this.owner._label}: Attempt to rewrite existing state in neighbours queue
+				`;
+				/*</@debug>*/
+				
+				state[index] = [e, rec];
+				if(state.every(Boolean)) {
+					const res = streams.reduce( (acc, stream, i) => {
+						if(state[i][0] !== EMPTY) {
+							const { handler } = this.streams.get( stream );
+							const res = handler( state[i][0], stream, state[i][1] );
+							return res !== undefined ? res : acc;
+						}
+						return acc;
+					}, undefined );
+					if(res !== undefined) {
+						this.emt( res, rec );
+					}
+					else {
+						this.emt( EMPTY, rec );
+					}
+					state.fill(null);
+				}
+			}
+			
+			attach( stream, handler = this.handler ) {
+				const streamRelatedData = {
+					handler,
+					stream,
+					sources: [],
+					neighbours: [],
+				};
+				this.streams.set(stream, streamRelatedData);
+				stream.connect( (hook, sources) => {
+					streamRelatedData.sources = sources;
+					let neighbourStreams = this.neighbourStreamsBySource.get(sources);
+					if(neighbourStreams) {
+						this.neighbourStreamsBySource.set(source, neighbourStreams = []);
+					}
+					neighbourStreams.push(streamRelatedData);
+					this.ctr.to( hook );
+					return (e, rec) => {
+						this.handleEvent(e, rec, stream);
+					}
+				} );
+				this.streams.push( stream );
+				return this;
+			}
+			
+			detach( stream ) {
+				//unsubscribe
+				//clear neighbour queue cell
+				//clear neighbour state queue cell
+				this.streams.delete(stream);
+				return this;
+			}
+			
+		}
+		
+		return new Stream2((emt, ctr) => {
+			const target = new Handler( handlerProject );
+		});
 	}
 
 	store() {
@@ -131,9 +210,10 @@ export class Stream2 {
 	}
 	
 	map(project) {
-		return new Stream2(null, (e, ctr) => {
-			this.connect( (hook) => {
-				ctr.to(hook);
+		return new Stream2((connector, controller) => {
+			this.connect( (evtStreamsSRC, hook) => {
+				controller.to(hook);
+				const e = connector( evtStreamsSRC );
 				return (data, record) => {
 					if(isKeySignal(data)) {
 						return e(data, record);
@@ -144,7 +224,38 @@ export class Stream2 {
 		});
 	}
 	
-	connect( connector ) {
+	filter(project) {
+		return new Stream2((connector, controller) => {
+			this.connect( (evtStreamsSRC, hook) => {
+				controller.to(hook);
+				const e = connector( evtStreamsSRC );
+				return (data, record) => {
+					if (isKeySignal(data)) {
+						return e(data, record);
+					}
+					const res = project(data);
+					res && e(data, record);
+				}
+			} );
+		});
+	}
+	
+	/*<@debug>*/
+	log() {
+		return new Stream2( (connector, controller) => {
+			this.connect((evtStreamsSRC, hook) => {
+				controller.to( hook );
+				const e = connector( evtStreamsSRC );
+				return (data, record) => {
+					console.log(data);
+					e(data, record);
+				}
+			});
+		});
+	}
+	/*</@debug>*/
+	
+	connect( connector = () => () => {} ) {
 		const controller = this.createController();
 		const hook = (action = "disconnect", data = null) => {
 			/*<@debug>*/
@@ -153,67 +264,15 @@ export class Stream2 {
 			}
 			/*</@debug>*/
 			if(action === "disconnect") {
-				const removed = this.subscribers.indexOf(subscriber);
-				/*<@debug>*/
-				if(removed < 0) throw `
-					${this._label}: Attempt to delete an subscriber out of the container
-				`;
-				/*</@debug>*/
-				this.subscribers.splice(removed, 1);
-				this._deactivate( subscriber, controller );
+				this._deactivate( connector, controller );
 			}
 			else {
 				controller.send(action, data);
 			}
 		};
-		const subscriber = connector(hook);
-		this.subscribers.push(subscriber);
-		this._activate( subscriber, controller );
-	}
-	
-	on( subscriber ) {
-		console.warn("This method deprecated now, pls use .connect() instead");
-		this.subscribers.push(subscriber);
-		const controller = this._activate( subscriber );
-		return (action = "disconnect", data = null) => {
-			if(action === "disconnect") {
-				const removed = this.subscribers.indexOf(subscriber);
-				/*<@debug>*/
-				if(removed < 0) throw `
-					${this._label}: Attempt to delete an subscriber out of the container
-				`;
-				/*</@debug>*/
-				this.subscribers.splice(removed, 1);
-				this._deactivate( subscriber, controller );
-			}
-			else {
-				controller.send(action, data);
-			}
-		}
-	}
-
-	at(subscriber) {
-		return this.on( (data, record) => {
-			if(isKeySignal(data)) {
-				return ;
-			}
-			subscriber( data, record );
-		} );
-	}
-	
-	filter(project) {
-		return new Stream2(null, (e, controller) => {
-			this.connect( hook => {
-				controller.to(hook);
-				return (data, record) => {
-					if(isKeySignal(data)) {
-						return e(data, record);
-					}
-					const res = project(data);
-					res && e(data, record);
-				}
-			} );
-		});
+		//const subscriber = connector(hook);
+		//this.subscribers.push(subscriber);
+		this._activate( controller, connector, hook );
 	}
 	
 	distinct(equal) {
@@ -241,9 +300,12 @@ export class Stream2 {
 		});
 	}
 	
-	_activate( subscriber, controller = this.createController() ) {
-		const emitter = this.createEmitter( subscriber );
-		this.project.call(this.ctx, emitter, controller);
+	_activate( controller = this.createController(), connector, hook ) {
+		this.project.call(this.ctx, (evtStreamsSRC = [this]) => {
+			//when projectable stream connecting rdy
+			const connected = connector( evtStreamsSRC, hook );
+			return this.createEmitter( connected );
+		}, controller);
 		return controller;
 	}
 
@@ -252,6 +314,7 @@ export class Stream2 {
 	}
 	
 	createEmitter( subscriber ) {
+		this.subscribers.push(subscriber);
 		return (data, record = { ttmp: getTTMP() }) => {
 			/*<@debug>*/
 			if(!this.subscribers.includes(subscriber)) {
@@ -359,20 +422,6 @@ export class Stream2 {
 			} );
 		} );
 	}
-	
-	/*<@debug>*/
-	log() {
-		return new Stream2( this, (e, controller) => {
-			this.connect(hook => {
-				controller.to( hook );
-				return (data, record) => {
-					console.log(data);
-					e(data, record);
-				}
-			});
-		});
-	}
-	/*</@debug>*/
 
 	/**
 	 * Кеширует соединение линии потока, чтобы новые стримы не создавались
@@ -580,20 +629,39 @@ export class EndPoint extends Stream2 {
 export class Reducer extends Stream2 {
 
 	/**
-	 * @param sourcestreams {Stream2|null} Operational stream
+	 * @param sourcestream {Stream2|null} Operational stream
 	 * @param project {Function}
-	 * @param state {Object|Stream2} Initial state (from static or stream)
+	 * @param _state {Object|Stream2} Initial state (from static or stream)
 	 * @param init {Function} Initial state mapper
 	 */
-	constructor(sourcestreams, project = (_, data) => data, _state = EMPTY_OBJECT, init = null) {
+	constructor(sourcestream, project = (_, data) => data, _state = EMPTY_OBJECT, init = null) {
 		const cst = _state;
 		const type = _state instanceof Stream2 ? 1/*"slave"*/ : 0/*"internal"*/;
-		super(sourcestreams, (e, controller) => {
+		super((connector, controller) => {
+			
+			
+			function handler(sources) {
+			
+			}
+			
+			if(sourcestream) {
+				sourcestream.connect( (sources, hook) => {
+					
+					handler();
+				
+				} );
+			}
+			
+			debugger;
+			
+			const e = connector();
+			
+			
 			//initial state reused
 			let state = _state;
 			const sked = [];
 			const STMPSuncData = { current: -1 };
-			UPS.subscribe( stmp => {
+			/*UPS.subscribe( stmp => {
 				STMPSuncData.current = stmp;
 				const events = sked.filter( ([_, record]) => record.stmp === stmp );
 				if(events.length) {
@@ -606,7 +674,7 @@ export class Reducer extends Stream2 {
 						}
 					} );
 				}
-			} );
+			} );*/
 			let srvRequesterHook = null;
 
 			if(state !== EMPTY_OBJECT && state !== FROM_OWNER_STREAM) {
@@ -684,6 +752,7 @@ export class Reducer extends Stream2 {
 				/*</@debug>*/
 			}
 		});
+		this.connectors = [];
 		this._activated = null;
 		this._queue = [];
 		this.emitter = null;
@@ -695,14 +764,26 @@ export class Reducer extends Stream2 {
 	}
 	
 	createEmitter( subscriber ) {
+		this.subscribers.push(subscriber);
 		if(!this.emitter) {
-			this.emitter = (data, record = { ttmp: getTTMP() }) => {
+			this.emitter = (data, record = { ttmp: getTTMP() }, sources) => {
+				if(!this.__connection) {
+					this.__connection = sources;
+					this.subscribers.push(
+						...this.connectors.map( ([connector, hook]) => connector(hook, sources) )
+					);
+				}
 				this.queue.push( [ data, record ] );
 				if(this.queue.length > 1) {
 					this._normalizeQueue();
 				}
 				this.subscribers.map( subscriber => subscriber(data, record) );
 			};
+		}
+		if(this.__connection) {
+			if(this.queue.length) {
+				this.queue.map( evt => subscriber(...evt) );
+			}
 		}
 		return this.emitter;
 	}
@@ -714,9 +795,9 @@ export class Reducer extends Stream2 {
 		return this.__controller;
 	}
 	
-	_activate() {
+	_activate( controller, connector, hook ) {
 		if(!this._activated) {
-			this._activated = super._activate();
+			this._activated = super._activate(controller, connector, hook );
 		}
 		return this._activated;
 	}
@@ -743,7 +824,7 @@ export class Reducer extends Stream2 {
 			this.queue.splice( 0, this.queue.length - 1);
 		}
 	}
-	
+	/*
 	connect( connector ) {
 		super.connect( (hook) => {
 			const subscriber = connector(hook);
@@ -752,14 +833,7 @@ export class Reducer extends Stream2 {
 			});
 			return subscriber;
 		} );
-	}
-	
-	on( subscriber ) {
-		this.queue.map( ([data, record]) =>
-			subscriber => subscriber(data, record)
-		);
-		return super.on( subscriber );
-	}
+	}*/
 
 }
 
@@ -771,19 +845,7 @@ const UPS = new class {
 
 	constructor() {
 		this.subscribers = [];
-		//todo async set at UPS state value
-		//const factor = this.ups / 1000;
-		let globalCounter = 0;
-		const startttmp = getTTMP();
-		const sid = setInterval(() => {
-			const factor = this.ups / 1000;
-			const current = getTTMP();
-			const count = (current - startttmp) * factor - globalCounter|0;
-			for (let i = 0; i < count; i++) {
-				globalCounter++;
-				this.tick(globalCounter, startttmp + globalCounter * factor|0);
-			}
-		}, 500 / this.ups);
+		this.sid = -1;
 	}
 
 	set(ups) {
@@ -795,6 +857,21 @@ const UPS = new class {
 	}
 	
 	subscribe( subscriber ) {
+		if(this.sid === -1) {
+			//todo async set at UPS state value
+			//const factor = this.ups / 1000;
+			let globalCounter = 0;
+			const startttmp = getTTMP();
+			this.sid = setInterval(() => {
+				const factor = this.ups / 1000;
+				const current = getTTMP();
+				const count = (current - startttmp) * factor - globalCounter|0;
+				for (let i = 0; i < count; i++) {
+					globalCounter++;
+					this.tick(globalCounter, startttmp + globalCounter * factor|0);
+				}
+			}, 500 / this.ups);
+		}
 		this.subscribers.push( subscriber );
 	}
 

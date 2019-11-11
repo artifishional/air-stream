@@ -54,7 +54,7 @@ export const streamEqual = (done, source, data = [], options = {}) => {
     done();
   }, options.timeout || lastMsgTime + options.delta);
 
-  return source.on(msg => {
+  return source.connect(() => msg => {
     data.map((assert) => {
       if (!assert.pass) {
         const now = Date.now() - start;
@@ -96,7 +96,7 @@ export const streamEqualStrict = (done, source, data = [], options = {}) => {
     }, options.timeout || (lastMsgTime + options.delta));
   }
 
-  return source.on(msg => {
+  return source.connect(() => msg => {
     const assert = data.shift();
 
     if (data[0] && data[0].disconnect) {

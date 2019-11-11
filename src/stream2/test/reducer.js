@@ -4,15 +4,16 @@ import { streamEqualStrict } from '../../utils';
 describe('reducer', function () {
 
     test('clear reducer construct with initialized stream', (done) => {
-        const state = stream( [], function (e) {
-            setTimeout(() => e({ready: true}), 10);
+        const state = stream( function (connector) {
+            const e = connector();
+            e({ready: true});
         } );
         const reducer = new Reducer(null, null, state);
         streamEqualStrict(done, reducer, [
             {data: {ready: true}}
         ]);
     });
-
+/*
     test('simple1', (done) => {
         const source = stream(null, function (emt) {
             emt(0, { rid: 0 });
@@ -49,7 +50,7 @@ describe('reducer', function () {
         one();
         two();
 	    three();
-    });
+    });*/
     
     /*
    Подписка к редьюсеру, отписка

@@ -2,66 +2,142 @@ import { stream2 as stream } from '../index.mjs';
 import { streamEqual, streamEqualStrict } from '../../utils';
 
 describe('one stream', () => {
-  test('strict', (done) => {
+    
+    test('event stream connection source', () => {
+        const customEventSource = {};
+        const source = stream(function(connector) {
+            connector([ customEventSource ]);
+        });
+        source
+            // ...other
+            .filter( evt => evt )
+            .map( evt => evt )
+            // ...other
+            .connect( ( [ src ] ) => {
+                expect(src).toEqual( src );
+                return () => {};
+            } );
+    });
+  
+  test('simple', (done) => {
     const expected = [
-      { data: { a: 1 } },
       { data: 3 },
       { data: 4 },
       { data: 2 },
-      { data: 3.1 },
     ];
-
-    const source = stream([], function (e) {
-      e({ a: 1 });
-      e(3);
-      e(4);
-      e(2);
-      e(3.1);
+    const source = stream(function (connector) {
+        const e = connector();
+        e(3);
+        e(4);
+        e(2);
     });
-
     streamEqualStrict(done, source, expected);
   });
 
-  test('not strict', (done) => {
+  test('several connections', (done) => {
     const expected = [
       { data: 1 },
       { data: 2 },
       { data: 3 },
     ];
-
-    const source = stream([], function (e) {
-      e(1);
-      e(2);
-      e(3);
-      e(4);
-      e(5);
+    const source = stream(function (connector) {
+        const e = connector();
+        e(1);
+        e(2);
+        e(3);
     });
+    source.connect( () => {
+        const seq = expected.values();
+        return (evt) => expect(evt).toEqual(seq.next().value.data);
+    } );
     streamEqual(done, source, expected);
   });
 
   test('log', function (done) {
-    const source = new stream(null, function (emt) {
-      emt({count: 2, path: "a"});
-      emt({acc: 4, path: "c"});
-      emt({weight: 3, path: "b"});
-    });
-    source.log();
-    done();
+      const consoleLogOrigin = console.log;
+      console.log = (...args) => {
+          expect(args[0]).toEqual( "test console msg" );
+          consoleLogOrigin(...args);
+          done();
+      };
+      const source = stream(function (connector) {
+          const e = connector();
+          e("test console msg");
+      });
+      source.log().connect();
   });
 
-  // test('unsubscribe', (done) => {
-  //   const source = stream(null, function (emt) {
-  //     emt({type: "reinit", weight: 2, path: "a"});
-  //     emt({type: "reinit", weight: 3, path: "a"});
-  //     emt({type: "reinit", weight: 3, path: "b"});
-  //     emt({type: "reinit", weight: 4, path: "a"});
-  //     return done;
-  //   });
-  //   let a = source
-  //       .filter( ({path}) => path === "a" )
-  //       .map( ({weight, ...args}) => ({weight: weight + "77", ...args}) );
-  //   let obs = a.on( evt => {} );
-  //   obs();
-  //   expect(!source.obs.length).toEqual( 0 );
-  // });
+   test('immediate disconnecting', (done) => {
+    const source = stream(function (connector, controller) {
+      controller.todisconnect(() => done());
+      connector();
+    });
+    source
+        // ...other
+        .filter( evt => evt )
+        .map( evt => evt )
+        // ...other
+        .connect( (evtStreamsSRC, hook) => hook());
+  });
+    
+    test('disconnecting after first msg', (done) => {
+        const source = stream(function (connector, controller) {
+            controller.todisconnect(() => done());
+            const e = connector();
+            e(1);
+        });
+        source
+            // ...other
+            .filter( evt => evt )
+            .map( evt => evt )
+            // ...other
+            .connect( (_, hook) => () => {
+                hook();
+            });
+    });
+    
+    test('several disconnecting', (done) => {
+        function doneCounter(count, done) {
+            return () => !--count && done();
+        }
+        done = doneCounter(2, done);
+        const source = stream(function (connector, controller) {
+            controller.todisconnect(done);
+            const e = connector();
+            e(1);
+        });
+        source
+        // ...other
+            .filter( evt => evt )
+            .map( evt => evt )
+            // ...other
+            .connect( (_, hook) => () => {
+                hook();
+            });
+        source
+        // ...other
+            .filter( evt => evt )
+            .map( evt => evt )
+            // ...other
+            .connect( (_, hook) => () => {
+                hook();
+            });
+    });
+    
+    test('cb controller', () => {
+        const source = stream(function (connector, controller) {
+            controller.todisconnect();
+            controller.tocommand((req, data) => expect(data).toEqual(157));
+            connector();
+        });
+        source
+        // ...other
+            .filter( evt => evt )
+            .map( evt => evt )
+            // ...other
+            .connect( (_, hook) => {
+                hook("$", 157);
+            });
+    });
+  
 });
