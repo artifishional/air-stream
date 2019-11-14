@@ -22,12 +22,12 @@ export class Stream2 {
 		return KEY_SIGNALS.has(data);
 	}
 	
-	constructor(project, ctx = null) {
+	constructor(proJ, ctx = null) {
 		this.subscribers = [];
 		/*<@debug>*/
 		this._label = "";
 		/*</@debug>*/
-		this.project = project;
+		this.project = proJ;
 		this.ctx = ctx;
 	}
 	
@@ -90,14 +90,20 @@ export class Stream2 {
 
 	/**
 	 * @param {Promise} source - Input source
-	 * @param {Function} project - Mapper project function
+	 * @param {Function} proJ - Mapper project function
 	 * @returns {Stream2}
 	 */
-	static from(source, project) {
+	static from(source, proJ) {
 		if(source instanceof Promise) {
-			return this.fromPromise(source, project);
+			return this.fromPromise(source, proJ);
 		}
 		throw new TypeError("Unsupported source type");
+	}
+	
+	fromCbFunc( loader ) {
+		return new Stream2( (cNect) => {
+			loader( cNect() );
+		} ).store();
 	}
 
 	static fromPromise(source, project = STATIC_PROJECTS.STRAIGHT) {
@@ -123,21 +129,21 @@ export class Stream2 {
 			owner.detach( stream );
 		} );
 	 */
-	static with(streams, handlerProject, sync = true) {
+	static with(streams, hnProJ, sync = true) {
 		
 		class Handler {
 			
-			constructor( owner, ctr, emt, handler, streams = [] ) {
+			constructor( owner, ctr, emt, hnProJ, streams = [] ) {
 				this.streams = new Map();
-				this.handler = handler;
 				this.owner = owner;
 				this.emt = emt;
 				this.neighbourStreamsBySource = new Map();
 				this.ctr = ctr;
-				streams.map( stream => this.attach(stream, handler) );
+				this.hn = hnProJ( this );
+				streams.map( stream => this.attach(stream, this.hn) );
 			}
 			
-			handleEvent(e, rec, stream) {
+			hnEvent(e, rec, stream) {
 				const { neighbours: { state, index, streams } } = this.streams.get(stream);
 				
 				/*<@debug>*/
@@ -166,7 +172,7 @@ export class Stream2 {
 				}
 			}
 			
-			attach( stream, handler = this.handler ) {
+			attach( stream, handler = this.hn ) {
 				const streamRelatedData = {
 					handler,
 					stream,
@@ -183,7 +189,7 @@ export class Stream2 {
 					neighbourStreams.push(streamRelatedData);
 					this.ctr.to( hook );
 					return (e, rec) => {
-						this.handleEvent(e, rec, stream);
+						this.hnEvent(e, rec, stream);
 					}
 				} );
 				this.streams.push( stream );
@@ -200,8 +206,8 @@ export class Stream2 {
 			
 		}
 		
-		return new Stream2((emt, ctr) => {
-			const target = new Handler( handlerProject );
+		return new Stream2((connect, ctr) => {
+			const hn = new Handler( this, ctr, emt, hnProJ, streams );
 		});
 	}
 
@@ -633,6 +639,23 @@ export class Reducer extends Stream2 {
 	 * @param project {Function}
 	 * @param _state {Object|Stream2} Initial state (from static or stream)
 	 * @param init {Function} Initial state mapper
+	 */
+	/**
+	 * У редьюсера всегда есть начальное состояние, но
+	 * редьюсер может быть локальным и удаленным,
+	 * у удаленного редьюсера состояние не доступно синхронно (втч и ресурс)
+	 *
+	 * Это также означает и то, что общая реализация редьюсера
+	 * не предуматривает отдельного потока для связывания
+	 * удаленного и локального состояний
+	 *
+	 * RemoteReducer это отражение редьюсера общего вида для клиента
+	 * Переход от Reducer к RemoteReducer превращает тип канала в controller
+	 *
+	 * @param sourcestream
+	 * @param project
+	 * @param _state
+	 * @param init
 	 */
 	constructor(sourcestream, project = (_, data) => data, _state = EMPTY_OBJECT, init = null) {
 		const cst = _state;
