@@ -634,7 +634,6 @@ export class EndPoint extends Stream2 {
 
 Stream2.KEY_SIGNALS = KEY_SIGNALS;
 const isKeySignal = Stream2.isKeySignal;
-const MAX_MSG_LIVE_TIME_MS = 7000;
 
 const UPS = new class {
 

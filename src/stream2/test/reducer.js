@@ -1,57 +1,83 @@
-import { Reducer, stream2 as stream } from '../index';
+import { stream2 as stream } from '../index';
 import { streamEqualStrict } from '../../utils';
+import { LocalReducer } from '../reducer';
 
 describe('reducer', function () {
 
     test('clear reducer construct with initialized stream', (done) => {
-        const state = stream( function (connector) {
-            const e = connector();
-            e({ready: true});
+        const dataChStream = stream( (connect) => {
+            connect();
         } );
-        const reducer = new Reducer(null, null, state);
+        const reducer = new LocalReducer(
+          dataChStream,
+          ( acc, next ) => { },
+          { ready: true }
+        );
         streamEqualStrict(done, reducer, [
             {data: {ready: true}}
         ]);
     });
-/*
-    test('simple1', (done) => {
-        const source = stream(null, function (emt) {
-            emt(0, { rid: 0 });
-            emt(1, { rid: 1 });
-            emt(2, { rid: 2 });
-            emt(3, { rid: 3 });
-        } );
 
+    test('simple1', (done) => {
+        const dataChStream = stream((connect) => {
+            const e = connect();
+            e({kind: "add", vl: 1});
+            e({kind: "add", vl: 2});
+            e({kind: "del", vl: 3});
+        } );
         const assertions = [
-            {data: 0},
             {data: 0},
             {data: 1},
             {data: 3},
-            {data: 6},
+            {data: 0},
         ];
-
-        const reducer = new Reducer(source, (acc, next) => {
-            return acc + next;
+        const reducer = new LocalReducer(dataChStream, (acc, { kind, vl }) => {
+            if(kind === "add") {
+                return acc + vl;
+            }
+            else if(kind === "del") {
+                return acc - vl;
+            }
         }, 0);
-
         streamEqualStrict(done, reducer, assertions);
     });
 
     test('several subscriptions dissolved - source stream disconnect', (done) => {
-        const source = stream(null, function (e, controller) {
-	        controller.to( () => done() );
-            e(0);
+        const dataChStream = stream( (connect, control) => {
+            control.todisconnect( () => done() );
+            const e = connect();
+            e(1);
+            e(2);
         } );
-        const store = source
-          .reduceF( { count: 0 }, ( { count } ) =>  ({ count: count + 1 })  );
-        const one = store.on( () => {} );
-        const two = store.on( () => {} );
-	    const three = store.on( () => {} );
-        one();
-        two();
-	    three();
-    });*/
-    
+        const store = new LocalReducer(
+          dataChStream,
+          ( { count }, vl ) => ({ count: count + vl }),
+          { count: 0 }
+        );
+        store.connect( (_, hook) => {
+            return (solid) => {
+                if(count === 3) {
+                    debugger;
+                    hook();
+                }
+            }
+        } );
+        store.connect( (_, hook) => {
+            return ({ count }) => {
+                if(count === 1) {
+                    debugger;
+                    hook();
+                }
+            }
+        } );
+	      store.connect( (_, hook) => {
+            return ({ count }) => {
+                debugger;
+                hook();
+            }
+        } );
+    });
+
     /*
    Подписка к редьюсеру, отписка
    Повторная подписка - начальное состояние не должно сохраниться
