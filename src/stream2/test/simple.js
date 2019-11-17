@@ -1,5 +1,5 @@
 import { stream2 as stream } from '../index.mjs';
-import { streamEqual, streamEqualStrict } from '../../utils';
+import {WSpring} from "../well-spring";
 
 describe('one stream', () => {
     
@@ -18,51 +18,51 @@ describe('one stream', () => {
                 return () => {};
             } );
     });
-  
-  test('simple', (done) => {
-    const expected = [
-      { data: 3 },
-      { data: 4 },
-      { data: 2 },
-    ];
+    
+    test('simple', () => {
+        const expected = [
+            3, 4, 2
+        ];
+        const wsp = new WSpring();
+        const source = stream(function (connector) {
+            const e = connector();
+            e([wsp.rec(3), wsp.rec(4), wsp.rec(2)]);
+        });
+        const queue1 = expected.values();
+        source.get((e) => {
+            expect(e).toEqual(queue1.next().value)
+        });
+    });
+
+  test('several connections', () => {
+      const expected = [
+          1, 2, 3
+      ];
+      const wsp = new WSpring();
     const source = stream(function (connector) {
         const e = connector();
-        e(3);
-        e(4);
-        e(2);
+        e([wsp.rec(1), wsp.rec(2), wsp.rec(3)]);
     });
-    streamEqualStrict(done, source, expected);
+      const queue1 = expected.values();
+      source.get((e) => {
+          expect(e).toEqual(queue1.next().value)
+      });
+      const queue2 = expected.values();
+      source.get((e) => {
+          expect(e).toEqual(queue2.next().value)
+      });
   });
 
-  test('several connections', (done) => {
-    const expected = [
-      { data: 1 },
-      { data: 2 },
-      { data: 3 },
-    ];
-    const source = stream(function (connector) {
-        const e = connector();
-        e(1);
-        e(2);
-        e(3);
-    });
-    source.connect( () => {
-        const seq = expected.values();
-        return (evt) => expect(evt).toEqual(seq.next().value.data);
-    } );
-    streamEqual(done, source, expected);
-  });
-
-  test('log', function (done) {
+  test('log', function () {
       const consoleLogOrigin = console.log;
       console.log = (...args) => {
           expect(args[0]).toEqual( "test console msg" );
           consoleLogOrigin(...args);
-          done();
       };
+      const wsp = new WSpring();
       const source = stream(function (connector) {
           const e = connector();
-          e("test console msg");
+          e([wsp.rec("test console msg")]);
       });
       source.log().connect();
   });
@@ -81,10 +81,11 @@ describe('one stream', () => {
   });
     
     test('disconnecting after first msg', (done) => {
+        const wsp = new WSpring();
         const source = stream(function (connector, controller) {
             controller.todisconnect(() => done());
             const e = connector();
-            e(1);
+            e([wsp.rec(1)]);
         });
         source
             // ...other
@@ -101,10 +102,11 @@ describe('one stream', () => {
             return () => !--count && done();
         }
         done = doneCounter(2, done);
+        const wsp = new WSpring();
         const source = stream(function (connector, controller) {
             controller.todisconnect(done);
             const e = connector();
-            e(1);
+            e([wsp.rec(1)]);
         });
         source
         // ...other

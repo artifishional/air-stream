@@ -1,37 +1,39 @@
 import { stream2 as stream } from '../index';
 import { streamEqualStrict } from '../../utils';
 import { LocalReducer } from '../reducer';
+import {WSpring} from "../well-spring";
 
 describe('reducer', function () {
 
-    test('clear reducer construct with initialized stream', (done) => {
+    test('clear reducer construct with initialized stream', () => {
         const dataChStream = stream( (connect) => {
-            connect();
+            connect([]);
         } );
         const reducer = new LocalReducer(
           dataChStream,
           ( acc, next ) => { },
           { ready: true }
         );
-        streamEqualStrict(done, reducer, [
-            {data: {ready: true}}
-        ]);
+        const expected = [
+            { ready: true },
+        ];
+        const queue1 = expected.values();
+        reducer.get((e) => expect(e).toEqual(queue1.next().value));
     });
 
-    test('simple1', (done) => {
-        const dataChStream = stream((connect) => {
-            const e = connect();
-            e({kind: "add", vl: 1});
-            e({kind: "add", vl: 2});
-            e({kind: "del", vl: 3});
+    test('simple1', () => {
+        const wsp = new WSpring();
+        const dataCh = stream((connect) => {
+            connect([wsp])([
+                wsp.rec({kind: "add", vl: 1}),
+                wsp.rec({kind: "add", vl: 2}),
+                wsp.rec({kind: "del", vl: 3}),
+            ]);
         } );
-        const assertions = [
-            {data: 0},
-            {data: 1},
-            {data: 3},
-            {data: 0},
+        const expected = [
+            0, 1, 3, 0
         ];
-        const reducer = new LocalReducer(dataChStream, (acc, { kind, vl }) => {
+        const reducer = new LocalReducer(dataCh, (acc, { kind, vl }) => {
             if(kind === "add") {
                 return acc + vl;
             }
@@ -39,41 +41,49 @@ describe('reducer', function () {
                 return acc - vl;
             }
         }, 0);
-        streamEqualStrict(done, reducer, assertions);
+        const queue1 = expected.values();
+        reducer.get((e) => expect(e.vl).toEqual(queue1.next().value));
     });
 
     test('several subscriptions dissolved - source stream disconnect', (done) => {
-        const dataChStream = stream( (connect, control) => {
+        const wsp = new WSpring();
+        const dataCh = stream( (connect, control) => {
             control.todisconnect( () => done() );
-            const e = connect();
-            e(1);
-            e(2);
+            connect([wsp])([
+                wsp.rec(1),
+                wsp.rec(2)
+            ]);
         } );
         const store = new LocalReducer(
-          dataChStream,
+            dataCh,
           ( { count }, vl ) => ({ count: count + vl }),
           { count: 0 }
         );
         store.connect( (_, hook) => {
             return (solid) => {
-                if(count === 3) {
-                    debugger;
-                    hook();
-                }
+                solid.map( ({value: { count }}) => {
+                    if(count === 3) {
+                        hook();
+                    }
+                } );
             }
         } );
         store.connect( (_, hook) => {
-            return ({ count }) => {
-                if(count === 1) {
-                    debugger;
-                    hook();
-                }
+            return (solid) => {
+                solid.map( ({value: { count }}) => {
+                    if(count === 1) {
+                        hook();
+                    }
+                } );
             }
         } );
-	      store.connect( (_, hook) => {
-            return ({ count }) => {
-                debugger;
-                hook();
+        store.connect( (_, hook) => {
+            return (solid) => {
+                solid.map( ({value: { count }}) => {
+                    if(count === 0) {
+                        hook();
+                    }
+                } );
             }
         } );
     });

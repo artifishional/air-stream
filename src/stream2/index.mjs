@@ -1,6 +1,7 @@
 import Observable, {keyA} from '../observable/index.mjs'
 import getTTMP from "./get-ttmp.mjs"
 import {CONNECT, EMPTY} from "./signals";
+import {Record, WSpring} from "./well-spring";
 
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
@@ -23,12 +24,22 @@ export class Stream2 {
 	}
 	
 	constructor(proJ, ctx = null) {
-		this.subscribers = [];
+		//this.subscribers = [];
 		/*<@debug>*/
 		this._label = "";
 		/*</@debug>*/
 		this.project = proJ;
 		this.ctx = ctx;
+	}
+	
+	get(getter) {
+		return new Stream2((connect, control) => {
+			this.connect( (evtChWSpS, hook) => {
+				control.to(hook);
+				connect( evtChWSpS );
+				return solid => solid.map( rc => getter(rc.value, rc) )
+			});
+		});
 	}
 	
 	static fromevent(target, event) {
@@ -252,9 +263,9 @@ export class Stream2 {
 			this.connect((evtStreamsSRC, hook) => {
 				controller.to( hook );
 				const e = connector( evtStreamsSRC );
-				return (data, record) => {
-					console.log(data);
-					e(data, record);
+				return (solid) => {
+					solid.map(rec => console.log(rec.value));
+					e(solid);
 				}
 			});
 		});
@@ -276,8 +287,6 @@ export class Stream2 {
 				controller.send(action, data);
 			}
 		};
-		//const subscriber = connector(hook);
-		//this.subscribers.push(subscriber);
 		this._activate( controller, connector, hook );
 	}
 	
@@ -307,34 +316,36 @@ export class Stream2 {
 	}
 	
 	_activate( controller = this.createController(), connector, hook ) {
-		this.project.call(this.ctx, (evtStreamsSRC = [this]) => {
+		this.project.call(this.ctx, (evtChWSpS) => {
 			//when projectable stream connecting rdy
-			const connected = connector( evtStreamsSRC, hook );
-			return this.createEmitter( connected );
+			return this.createEmitter( connector( evtChWSpS, hook ), evtChWSpS);
 		}, controller);
 		return controller;
 	}
 
-	_deactivate( subscriber, controller ) {
+	_deactivate( connector, controller ) {
 		controller.send("disconnect", null);
 	}
 	
-	createEmitter( subscriber ) {
-		this.subscribers.push(subscriber);
-		return (data, record = { ttmp: getTTMP() }) => {
-			/*<@debug>*/
+	createEmitter( subscriber, evtChWSpS ) {
+		/*<@debug>*/
+		return (solid) => {
+			if(
+				!Array.isArray(evtChWSpS) ||
+				evtChWSpS.some( wsp => !(wsp instanceof WSpring) )
+			) {
+				throw new TypeError("Zero spring chanel produced some data?");
+			}
+			if(!Array.isArray(solid) || solid.some( rec => !(rec instanceof Record))) {
+				throw new TypeError("Solid array of WellSpring records expected");
+			}/*
 			if(!this.subscribers.includes(subscriber)) {
 				throw "More unused stream continues to emit data";
-			}
-			/*</@debug>*/
-			
-			//todo temporary cross ver support
-			/*if(isKeySignal(data)) {
-				return ;
 			}*/
-			
-			subscriber(data, record );
+			subscriber(solid);
 		};
+		/*</@debug>*/
+		return subscriber;
 	}
 	
 	createController(  ) {
@@ -584,7 +595,7 @@ export class Controller {
 	send( action, data ) {
 		/*<@debug>*/
 		if(this.disconnected) {
-			throw `${this.src._label}: This controller is already diconnected`;
+			throw `${this.src._label}: This controller is already disconnected`;
 		}
 		/*</@debug>*/
 		if(action !== "disconnect") {
