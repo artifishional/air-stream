@@ -1,7 +1,27 @@
 import {Stream2} from "./index";
 import getTTMP from "./get-ttmp";
+import {REQUEST} from "./signals";
+import {Record, WSpring} from "./well-spring";
+import {Request} from "./request";
+import {StorableIO} from "./storable-io";
 
-export class RemoteReducerView extends Stream2 {
+const STD_REMOTE_EVENT_DELAY = 3;
+
+export class RmtReducerRec extends Record {
+	
+	constructor(value, origin, rq) {
+		super(value, origin);
+		this.ttmp += STD_REMOTE_EVENT_DELAY;
+		this.request = rq;
+	}
+
+	static from( rec, rq ) {
+		return new RmtReducerRec(rec.value, rec, rq);
+	}
+
+}
+
+export class RemoteReducerView extends StorableIO {
 	
 	/**
 	 * У редьюсера всегда есть начальное состояние, но
@@ -15,148 +35,35 @@ export class RemoteReducerView extends Stream2 {
 	 * RemoteReducer это отражение редьюсера общего вида для клиента
 	 * Переход от Reducer к RemoteReducer превращает тип канала в controller
 	 *
-	 * @param eventCh {Stream2} Operational chanel
+	 * @param evtCh {Stream2} Operational chanel
 	 * @param proJ {Function}
-	 * @param remoteCh {Stream2} Remote state sync chanel
-	 * @param remoteChMapper Remote state sync chanel mapper function
+	 * @param evtChRmt {Stream2} Remote state sync chanel
+	 * @param evtChRmtMap Remote state sync chanel mapper function
 	 */
-	constructor(eventCh, proJ = (_, data) => data, remoteCh, remoteChMapper = null) {
+	constructor(evtCh, proJ = (_, data) => data, evtChRmt, evtChRmtMap = null) {
 		super( ( connect, control ) => {
-			remoteCh.connect( (remoteChWellspring, remoteChHook) => {
-				control.todisconnect( remoteChHook );
+			evtChRmt.connect( (_, evtChRmtHook) => {
+				const evtChRmtWSpS = [ new WSpring() ];
+				control.todisconnect( evtChRmtHook );
 				let state;
-				return (remoteChData, remoteChRec) => {
-					state = remoteChMapper ? remoteChMapper(remoteChData) : remoteChData;
-					eventCh.connect( (eventChWellspring, eventChHook) => {
-						control.todisconnect( eventChHook );
-						const feeder = connect( [...remoteChWellspring, ...eventChWellspring] );
-						feeder( state );
-						return (eventChData, eventChRec) => {
-							state = proJ( state, eventChData, eventChRec );
-							feeder( state, eventChRec );
+				return (evtChRmtSoliD, evtChRmtRec) => {
+					evtCh.connect( (evtChWSpS, evtChHook) => {
+						control.todisconnect( evtChHook );
+						const feeder = connect( [...evtChRmtWSpS, ...evtChWSpS] );
+						state = evtChRmtMap ? evtChRmtMap(evtChRmtSoliD) : evtChRmtSoliD;
+						feeder( [ evtChRmtWSpS[0].rec(state) ] );
+						return (evtChSoliD) => {
+							feeder(evtChSoliD.map( evtChRec => {
+								state = proJ( state, evtChRec.value, evtChRec );
+								const rQ = new Request(evtChRec);
+								const rec = RmtReducerRec.from( evtChRec, rQ );
+								evtChRmtHook(REQUEST, rQ);
+								return rec;
+							} ));
 						}
 					});
 				}
 			})
-		});
-		
-		
-		const cst = _state;
-		const type = _state instanceof Stream2 ? 1/*"slave"*/ : 0/*"internal"*/;
-		super((connector, controller) => {
-			
-			
-			function handler(sources) {
-			
-			}
-			
-			if(sourcestream) {
-				sourcestream.connect( (sources, hook) => {
-					
-					handler();
-					
-				} );
-			}
-			
-			debugger;
-			
-			const e = connector();
-			
-			
-			//initial state reused
-			let state = _state;
-			const sked = [];
-			const STMPSuncData = { current: -1 };
-			/*UPS.subscribe( stmp => {
-				STMPSuncData.current = stmp;
-				const events = sked.filter( ([_, record]) => record.stmp === stmp );
-				if(events.length) {
-					events.map( evt => {
-						sked.splice(sked.indexOf(evt), 1);
-						const newstate = project(state, evt[0]);
-						if(newstate !== undefined) {
-							state = newstate;
-							e( state, evt[1] );
-						}
-					} );
-				}
-			} );*/
-			let srvRequesterHook = null;
-			
-			if(state !== EMPTY_OBJECT && state !== FROM_OWNER_STREAM) {
-				if(type === 1) {
-					state.connect( hook => {
-						controller.tocommand( (request, data) => {
-							//todo need req cb
-							if(request === "request") {
-								hook(request, data);
-							}
-						} );
-						controller.todisconnect( srvRequesterHook = hook );
-						return (data) => {
-							e( state = init ? init(data) : data );
-						}
-					} );
-				}
-				else {
-					state = init ? init(state) : state;
-					e( state, { ttmp: getTTMP() } );
-				}
-			}
-			if(sourcestreams) {
-				sourcestreams.connect( hook => {
-					controller.to(hook);
-					return (data, { stmp, ...record } ) => {
-						if(state === FROM_OWNER_STREAM) {
-							state = init ? init(data[0]) : data[0];
-							return e( [ state, {} ], { ttmp: getTTMP() } );
-						}
-						const needConfirmation = type === 1 && record.slave;
-						if(stmp) {
-							const grid = type === 1 ? GLOBAL_REQUEST_ID_COUNTER ++ : -1;
-							record = { stmp: STMPSuncData.current + 4, ...record };
-							if(needConfirmation) {
-								record = { ...record, slave: false, grid, confirmed: !type };
-							}
-							else {
-								record = { ...record, grid, confirmed: !type };
-							}
-							sked.push([data, record]);
-							if(needConfirmation) {
-								srvRequesterHook("request", { grid, data, record });
-							}
-						}
-						else {
-							
-							//todo temporary solution
-							if(state instanceof Stream2) {
-								return;
-							}
-							
-							const newstate = project(state, data);
-							if(newstate !== undefined) {
-								state = newstate;
-								const grid = type === 1 ? GLOBAL_REQUEST_ID_COUNTER ++ : -1;
-								if(needConfirmation) {
-									record = { ...record, slave: false, grid, confirmed: !type };
-								}
-								else {
-									record = { ...record, grid, confirmed: !type };
-								}
-								e( state, record );
-								if(needConfirmation) {
-									srvRequesterHook("request", { grid, data, record });
-								}
-							}
-						}
-					}
-				} );
-			}
-			if(!sourcestreams && !state) {
-				/*<@debug>*/
-				console.warn("This stream is always empty.");
-				/*</@debug>*/
-			}
 		});
 		this.connectors = [];
 		this._activated = null;

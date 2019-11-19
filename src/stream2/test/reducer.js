@@ -1,6 +1,6 @@
 import { stream2 as stream } from '../index';
 import { streamEqualStrict } from '../../utils';
-import { LocalReducer } from '../reducer';
+import { LocalReducer } from '../local-reducer';
 import {WSpring} from "../well-spring";
 
 describe('reducer', function () {
