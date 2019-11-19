@@ -1,7 +1,9 @@
 import {Stream2} from "./index";
 import getTTMP from "./get-ttmp";
 
-export class StorableIO extends Stream2 {
+const MAX_MSG_LIVE_TIME_MS = 7000;
+
+export class StorableAC extends Stream2 {
 	
 	constructor(proJ = (_, data) => data) {
 		super( proJ );

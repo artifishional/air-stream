@@ -3,7 +3,7 @@ import getTTMP from "./get-ttmp";
 import {REQUEST} from "./signals";
 import {Record, WSpring} from "./well-spring";
 import {Request} from "./request";
-import {StorableIO} from "./storable-io";
+import {StorableAC} from "./storable-ac";
 
 const STD_REMOTE_EVENT_DELAY = 3;
 
@@ -21,7 +21,7 @@ export class RmtReducerRec extends Record {
 
 }
 
-export class RemoteReducerView extends StorableIO {
+export class RemoteReducerView extends StorableAC {
 	
 	/**
 	 * У редьюсера всегда есть начальное состояние, но

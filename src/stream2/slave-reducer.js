@@ -1,3 +1,3 @@
-import {StorableIO} from "./storable-io";
+import {StorableAC} from "./storable-ac";
 
-export class SlaveReducer extends StorableIO { }
+export class SlaveReducer extends StorableAC { }
