@@ -3,6 +3,10 @@ import getTTMP from "./get-ttmp";
 
 const MAX_MSG_LIVE_TIME_MS = 7000;
 
+/**
+ * every RemoteReducer creates your
+ */
+
 export class StorableAC extends Stream2 {
 	
 	constructor(proJ = (_, data) => data) {

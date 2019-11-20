@@ -1,5 +1,7 @@
 export const proJ = 1; // project
+export const sttmp = 1; //synced timestamp
 export const rQ = 1; // request
+export const vnt = 1; // vent (emitter)
 export const evtCh = 1; // event channel
 export const evtChWSpS = 1; // event channel well-springs
 export const evtChRmtWSpS = 1; // event channel (remote) well-springs

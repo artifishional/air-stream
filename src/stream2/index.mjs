@@ -141,20 +141,43 @@ export class Stream2 {
 		} );
 	 */
 	static with(streams, hnProJ, sync = true) {
+
+		if(!sync) {
+			throw new Error("Async mode currently is not supported");
+		}
 		
 		class Handler {
 			
-			constructor( owner, ctr, emt, hnProJ, streams = [] ) {
+			constructor( owner, ctr, connect, hnProJ, streams = [] ) {
+
+				//Если режим sync то дожидаться подключения всех потоков
+
+
+
 				this.streams = new Map();
 				this.owner = owner;
-				this.emt = emt;
+				this.connect = connect;
+				this.vent = null;
 				this.neighbourStreamsBySource = new Map();
 				this.ctr = ctr;
 				this.hn = hnProJ( this );
-				streams.map( stream => this.attach(stream, this.hn) );
+				this.attach(streams, this.hn);
+				this.eventStore = [];
 			}
 			
-			hnEvent(e, rec, stream) {
+			onStreamEvent(stream, soliD) {
+
+				this.eventStore.push([ soliD, stream ]);
+
+				// not connected
+				if(!this.vent) {
+					return;
+				}
+
+				// if there are still streams with a similar source
+
+
+
 				const { neighbours: { state, index, streams } } = this.streams.get(stream);
 				
 				/*<@debug>*/
@@ -163,7 +186,7 @@ export class Stream2 {
 				`;
 				/*</@debug>*/
 				
-				state[index] = [e, rec];
+				state[index] = [evt, rec];
 				if(state.every(Boolean)) {
 					const res = streams.reduce( (acc, stream, i) => {
 						if(state[i][0] !== EMPTY) {
@@ -174,37 +197,55 @@ export class Stream2 {
 						return acc;
 					}, undefined );
 					if(res !== undefined) {
-						this.emt( res, rec );
+						this.vent( res, rec );
 					}
 					else {
-						this.emt( EMPTY, rec );
+						this.vent( EMPTY, rec );
 					}
 					state.fill(null);
 				}
 			}
-			
-			attach( stream, handler = this.hn ) {
-				const streamRelatedData = {
-					handler,
-					stream,
-					sources: [],
-					neighbours: [],
+
+			onStreamConnect(stream, eventChWSpS, eventChHook) {
+				const streamRelatedData = this.streams.get(stream);
+				streamRelatedData.eventChWSpS = eventChWSpS;
+				let neighbourStreams = this.neighbourStreamsBySource.get(eventChWSpS);
+				if (neighbourStreams) {
+					this.neighbourStreamsBySource.set(eventChWSpS, neighbourStreams = []);
+				}
+				neighbourStreams.push(streamRelatedData);
+				this.ctr.to(eventChHook);
+				if(!this.vent && [...this.streams.values()].every( ({eventChWSpS}) => eventChWSpS )) {
+					// all streams connected here
+					this.vent = this.connect( [ ...this.neighbourStreamsBySource.keys() ] );
+				}
+				return (soliD) => {
+					this.onStreamEvent(stream, soliD);
 				};
-				this.streams.set(stream, streamRelatedData);
-				stream.connect( (hook, sources) => {
-					streamRelatedData.sources = sources;
-					let neighbourStreams = this.neighbourStreamsBySource.get(sources);
-					if(neighbourStreams) {
-						this.neighbourStreamsBySource.set(source, neighbourStreams = []);
-					}
-					neighbourStreams.push(streamRelatedData);
-					this.ctr.to( hook );
-					return (e, rec) => {
-						this.hnEvent(e, rec, stream);
-					}
-				} );
-				this.streams.push( stream );
-				return this;
+			}
+			
+			attach( streams, handler = this.hn ) {
+
+				// primary streams initialization
+				streams
+					.forEach( stream => {
+						const conf = {
+							handler,
+							stream,
+							eventChWSpS: null,
+							neighbours: [],
+						};
+						this.streams.set(stream, conf);
+						return stream;
+					});
+				// then hooks realize
+				streams
+					.forEach( stream => {
+						stream.connect((eventChWSpS, eventChHook) =>
+							this.onStreamConnect(stream, eventChWSpS, eventChHook)
+						);
+						return this;
+					});
 			}
 			
 			detach( stream ) {
@@ -217,8 +258,8 @@ export class Stream2 {
 			
 		}
 		
-		return new Stream2((connect, ctr) => {
-			const hn = new Handler( this, ctr, emt, hnProJ, streams );
+		return new Stream2((connect, control) => {
+			const hn = new Handler( this, control, emt, hnProJ, streams );
 		});
 	}
 
