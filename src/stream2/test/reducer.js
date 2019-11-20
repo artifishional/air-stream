@@ -11,7 +11,7 @@ describe('reducer', function () {
         } );
         const reducer = new LocalReducer(
           dataChStream,
-          ( acc, next ) => { },
+          ( ) => { },
           { ready: true }
         );
         const expected = [
@@ -42,7 +42,7 @@ describe('reducer', function () {
             }
         }, 0);
         const queue1 = expected.values();
-        reducer.get((e) => expect(e.vl).toEqual(queue1.next().value));
+        reducer.get((e) => expect(e).toEqual(queue1.next().value));
     });
 
     test('several subscriptions dissolved - source stream disconnect', (done) => {

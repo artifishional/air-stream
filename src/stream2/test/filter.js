@@ -1,51 +1,77 @@
-import {series} from "../../utils.mjs"
-import { stream2 as stream } from "../../index.mjs"
+import { stream2 as stream } from "../../index.mjs";
+import {WSpring} from "../well-spring";
 
 describe('filter', function () {
-
-    test('simple', (done) => {
-
-        done = series(done, [
-            evt => expect(evt).toEqual( 1 ),
-            evt => expect(evt).toEqual( 5 ),
-        ]);
-
-        const source = new stream(null, function (emt) {
-            emt(1);
-            emt(2);
-            emt(3);
-            emt(4);
-            emt(5);
+    
+    test('simple', () => {
+        const expected = [
+            1, 3,
+        ];
+        const wsp = new WSpring();
+        const source = stream(function(connect) {
+            connect([wsp])([
+                wsp.rec(1), wsp.rec(2), wsp.rec(3)
+            ]);
         });
-
+        const queue1 = expected.values();
         source
-            .filter(x =>x % 2)
-            .filter(x =>x % 3)
-            .on( done );
-
+            .filter( evt => evt % 2 )
+            .get(e => expect(e).toEqual(queue1.next().value));
     });
-
-    // it('with reconnect', (done) => {
-    //
-    //     done = series(done, [
-    //         evt => expect(evt).to.deep.equal( Observable.keyF ),
-    //         evt => expect(evt).to.deep.equal( 5 ),
-    //     ]);
-    //
-    //     const source = new Observable(function (emt) {
-    //         emt.kf();
-    //         emt(1);
-    //         emt(2);
-    //         emt(3);
-    //         emt.kf();
-    //         emt(4);
-    //         emt(5);
-    //     });
-    //
-    //     source
-    //         .filter(x =>x % 2)
-    //         .on( done );
-    //
-    // });
-
+    
+    test('mix sources', () => {
+        const expected = [
+            1, 3, 5
+        ];
+        const wsp1 = new WSpring();
+        const wsp2 = new WSpring();
+        const source = stream(function(connect) {
+            const e = connect([wsp1, wsp2]);
+            e([wsp1.rec(1), wsp1.rec(2), wsp1.rec(3)]);
+            e([wsp2.rec(4), wsp2.rec(5)]);
+        });
+        const queue1 = expected.values();
+        source
+            .filter( evt => evt % 2 )
+            .get(e => expect(e).toEqual(queue1.next().value));
+    });
+    
+    test('cb', () => {
+        const source = stream(function(connect, control) {
+            control.tocommand( (request) => {
+                expect(request).toEqual("test");
+            } );
+            connect();
+        });
+        source
+            .filter( evt => evt * 10 )
+            .connect( (_, hook) => {
+                hook( "test" );
+            } );
+    });
+    
+    test('sync disconnect', (done) => {
+        const source = stream(function(connect, control) {
+            control.todisconnect( () => done() );
+            connect();
+        });
+        source
+            .filter( evt => evt * 10 )
+            .connect( (_, hook) => {
+                hook( );
+            } );
+    });
+    
+    test('async disconnect', (done) => {
+        const source = stream(function(connect, control) {
+            control.todisconnect( () => done() );
+            connect();
+        });
+        source
+            .filter( evt => evt * 10 )
+            .connect( (_, hook) => {
+                setTimeout(() => hook( ));
+            } );
+    });
+    
 });

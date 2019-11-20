@@ -39,7 +39,7 @@ export class Stream2 {
 				connect( evtChWSpS );
 				return solid => solid.map( rc => getter(rc.value, rc) )
 			});
-		});
+		}).connect();
 	}
 	
 	static fromevent(target, event) {
@@ -227,42 +227,31 @@ export class Stream2 {
 	}
 	
 	map(project) {
-		return new Stream2((connector, controller) => {
+		return new Stream2((connect, control) => {
 			this.connect( (evtStreamsSRC, hook) => {
-				controller.to(hook);
-				const e = connector( evtStreamsSRC );
-				return (data, record) => {
-					if(isKeySignal(data)) {
-						return e(data, record);
-					}
-					e(project(data), record);
-				}
+				control.to(hook);
+				const e = connect( evtStreamsSRC );
+				return soliD => e(soliD.map( rec => rec.map( project ) ));
 			});
 		});
 	}
 	
 	filter(project) {
-		return new Stream2((connector, controller) => {
+		return new Stream2((connect, control) => {
 			this.connect( (evtStreamsSRC, hook) => {
-				controller.to(hook);
-				const e = connector( evtStreamsSRC );
-				return (data, record) => {
-					if (isKeySignal(data)) {
-						return e(data, record);
-					}
-					const res = project(data);
-					res && e(data, record);
-				}
+				control.to(hook);
+				const e = connect( evtStreamsSRC );
+				return soliD => e(soliD.filter( rec => project(rec.value, rec) ));
 			} );
 		});
 	}
 	
 	/*<@debug>*/
 	log() {
-		return new Stream2( (connector, controller) => {
+		return new Stream2( (conect, control) => {
 			this.connect((evtStreamsSRC, hook) => {
-				controller.to( hook );
-				const e = connector( evtStreamsSRC );
+				control.to( hook );
+				const e = conect( evtStreamsSRC );
 				return (solid) => {
 					solid.map(rec => console.log(rec.value));
 					e(solid);
@@ -330,11 +319,11 @@ export class Stream2 {
 	createEmitter( subscriber, evtChWSpS ) {
 		/*<@debug>*/
 		return (solid) => {
-			if(
-				!Array.isArray(evtChWSpS) ||
-				evtChWSpS.some( wsp => !(wsp instanceof WSpring) )
-			) {
+			if(!Array.isArray(evtChWSpS)) {
 				throw new TypeError("Zero spring chanel produced some data?");
+			}
+			if(evtChWSpS.some( wsp => !(wsp instanceof WSpring) )) {
+				throw new TypeError("WSpring event sources only supported");
 			}
 			if(!Array.isArray(solid) || solid.some( rec => !(rec instanceof Record))) {
 				throw new TypeError("Solid array of WellSpring records expected");

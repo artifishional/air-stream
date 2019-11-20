@@ -1,7 +1,10 @@
 import "../../polyfills"
 
-//import './simple';
+import './simple';
 import "./reducer";
+import "./map";
+import "./filter";
+
 /*
 import '../../utils';
 import './constructor';
@@ -10,7 +13,7 @@ import './simple';
 import './combine';
 import "./complicated";
 import "./connect";
-import "./filter";
+
 import "./first";
 import "./map";
 import "./merge";
