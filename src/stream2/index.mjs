@@ -141,42 +141,97 @@ export class Stream2 {
 		} );
 	 */
 	static with(streams, hnProJ, sync = true) {
-
+		
+		/**
+		 * Как убедиться в том что данные получены полнотсью в момент коннекта стрима?
+		 *
+		 * Один из вариантов - отказаться от мультиплекс событий для одинаковых sttmp
+		 * тогда нужно уметь синхронизировать их внутри hn функции
+		 * для этого данной функции придеться учитывать природу источника событий потоков
+		 * либо явно указывать каким образом обрабатываютя синхронные события,
+		 * при условии что каждая rec будет переслана (даже для пустых сообщений)
+		 */
+		
 		if(!sync) {
 			throw new Error("Async mode currently is not supported");
 		}
 		
 		class Handler {
 			
-			constructor( owner, ctr, connect, hnProJ, streams = [] ) {
-
-				//Если режим sync то дожидаться подключения всех потоков
-
-
-
+			constructor( owner, connect, control, hnProJ, streams = [] ) {
 				this.streams = new Map();
 				this.owner = owner;
 				this.connect = connect;
 				this.vent = null;
 				this.neighbourStreamsBySource = new Map();
-				this.ctr = ctr;
+				this.control = control;
 				this.hn = hnProJ( this );
+				this.event5tore = new Map();
 				this.attach(streams, this.hn);
-				this.eventStore = [];
 			}
 			
 			onStreamEvent(stream, soliD) {
-
-				this.eventStore.push([ soliD, stream ]);
-
+				// grouping
+				// каждое сообщение (или группу если поддерживается несколько событий
+				// в рамках одного sttmp) из солид необходимо разместить в ячейке
+				// для исходного потока и для исходного sttmp
+				// так как после каждого события необходимо дождаться ответа от всех
+				// потоков, а также необходимо сохранять очередность использования данных
+				// в функции хендлера согласно очередности потоков в this.streams
+				soliD.forEach( ( rec ) => {
+					let exist = this.event5tore.get(rec.sttmp);
+					if(!exist) {
+						this.event5tore.set(rec.sttmp, exist = new Map());
+					}
+					let streamExist = exist.get( rec.owner );
+					const neighbours = this.neighbourStreamsBySource.get(rec.owner);
+					if(!streamExist) {
+						exist.set(
+							rec.owner,
+							streamExist = new Map(
+								neighbours
+									.map( ({ stream }) => [ stream,
+										null /* soliD from stream from cur sttmp */
+									] )
+							)
+						);
+					}
+					// если формирование массива исходных потоков происходит динамически
+					// (одновременно с получением данных из потоков)
+					else if(streamExist.size !== neighbours.length) {
+						exist.set(rec.owner, streamExist = new Map(
+							neighbours
+								.map( ({ stream }) => [ stream, streamExist.get(stream) || null ] )
+						));
+					}
+					streamExist.get(stream).push(rec);
+					debugger;
+				} );
+				
+				//Если режим sync то дожидаться подключения всех потоков
 				// not connected
 				if(!this.vent) {
 					return;
 				}
 
 				// if there are still streams with a similar source
+				const sortedSTTMP = [...this.event5tore.keys()].sort( (a, b) => a - b );
 
-
+				for(let i = 0; i < sortedSTTMP.length; i ++ ) {
+					
+					// здесь необходимо определить, какие сообщения были синхронизированы
+					// и готовы для дальнейшего распотранения
+					
+					const streams = this.event5tore.get( sortedSTTMP[i] );
+					
+					//TODO: need perf refactor
+					const soliDstacks = [ ...streams.values() ][0];
+					if(soliDstacks.size === ) {
+					
+					}
+					
+				}
+				
 
 				const { neighbours: { state, index, streams } } = this.streams.get(stream);
 				
@@ -207,14 +262,16 @@ export class Stream2 {
 			}
 
 			onStreamConnect(stream, eventChWSpS, eventChHook) {
+				this.control.to(eventChHook);
 				const streamRelatedData = this.streams.get(stream);
 				streamRelatedData.eventChWSpS = eventChWSpS;
-				let neighbourStreams = this.neighbourStreamsBySource.get(eventChWSpS);
-				if (neighbourStreams) {
-					this.neighbourStreamsBySource.set(eventChWSpS, neighbourStreams = []);
-				}
-				neighbourStreams.push(streamRelatedData);
-				this.ctr.to(eventChHook);
+				eventChWSpS.forEach( wsp => {
+					let neighbourStreams = this.neighbourStreamsBySource.get(wsp);
+					if (!neighbourStreams) {
+						this.neighbourStreamsBySource.set(wsp, neighbourStreams = []);
+					}
+					neighbourStreams.push(streamRelatedData);
+				} );
 				if(!this.vent && [...this.streams.values()].every( ({eventChWSpS}) => eventChWSpS )) {
 					// all streams connected here
 					this.vent = this.connect( [ ...this.neighbourStreamsBySource.keys() ] );
@@ -259,7 +316,7 @@ export class Stream2 {
 		}
 		
 		return new Stream2((connect, control) => {
-			const hn = new Handler( this, control, emt, hnProJ, streams );
+			const hn = new Handler( this, connect, control, hnProJ, streams );
 		});
 	}
 

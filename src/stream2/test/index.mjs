@@ -1,9 +1,11 @@
 import "../../polyfills"
-
+/*
 import './simple';
 import "./reducer";
 import "./map";
 import "./filter";
+*/
+import "./with";
 
 /*
 import '../../utils';

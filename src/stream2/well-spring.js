@@ -24,31 +24,22 @@ export class WSpring {
 	}
 	
 	rec(value, ttmp) {
-		return new OriginRecord( this, value, TTMP.get(ttmp) );
+		return new Record( this, value, TTMP.get(ttmp) );
 	}
 	
 }
 
 export class Record {
 	
-	constructor( value, origin = this ) {
-		this.value = value;
+	constructor( owner, value, sttmp, origin = this ) {
 		this.origin = origin;
-		this.sttmp = origin.sttmp;
+		this.value = value;
+		this.owner = owner;
+		this.sttmp = sttmp;
 	}
 	
 	map(fn) {
-		return new Record( fn(this.value), this.origin );
-	}
-
-}
-
-export class OriginRecord extends Record {
-	
-	constructor( owner, value, sttmp ) {
-		super(value);
-		this.owner = owner;
-		this.sttmp = sttmp;
+		return new Record( this.owner, fn(this.value), this.sttmp, this.origin );
 	}
 
 }
