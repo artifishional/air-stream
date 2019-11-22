@@ -17,6 +17,7 @@ export class StorableAC extends Stream2 {
 		this._queue = [];
 		this.emitter = null;
 		this.__controller = null;
+		this.type = StorableAC.TYPES.STORE;
 	}
 	
 	get queue() {
@@ -43,15 +44,15 @@ export class StorableAC extends Stream2 {
 		return this.__controller;
 	}
 	
-	_activate( controller, connector, hook ) {
-		this.subscribers.set(connector, null);
+	_activate( control, connect, hook ) {
+		this.subscribers.set(connect, null);
 		if(!this.connectionParams) {
 			if(!this._activated) {
-				this._activated = super._activate(controller, (evtChWSpS, hook) => {
+				this._activated = super._activate(control, (evtChWSpS, hook) => {
 					this.connectionParams = { evtChWSpS };
-					[...this.subscribers.keys()].map( connector => {
-						const subscriber = connector( evtChWSpS, hook );
-						this.subscribers.set(connector, subscriber);
+					[...this.subscribers.keys()].map( connect => {
+						const subscriber = connect( evtChWSpS, hook, this.type );
+						this.subscribers.set(connect, subscriber);
 						subscriber( this.queue );
 					} );
 					return this.createEmitter();
@@ -59,8 +60,8 @@ export class StorableAC extends Stream2 {
 			}
 		}
 		else {
-			const subscriber = connector( this.connectionParams.evtChWSpS, hook );
-			this.subscribers.set(connector, subscriber);
+			const subscriber = connect( this.connectionParams.evtChWSpS, hook, this.type );
+			this.subscribers.set(connect, subscriber);
 			subscriber( this.queue );
 		}
 		return this._activated;

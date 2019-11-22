@@ -41,5 +41,9 @@ export class Record {
 	map(fn) {
 		return new Record( this.owner, fn(this.value), this.sttmp, this.origin );
 	}
-
+	
+	from(value) {
+		return new Record( this.owner, value, this.sttmp, this.origin );
+	}
+	
 }

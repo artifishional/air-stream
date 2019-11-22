@@ -14,8 +14,8 @@ const STATIC_PROJECTS = {
 	AIO: (...args) => args,
 };
 const USER_EVENT = {};
-
 const KEY_SIGNALS = new Set(Observable.keys);
+const TYPES = { PIPE: 0, STORE: 1, };
 
 export class Stream2 {
 	
@@ -30,6 +30,7 @@ export class Stream2 {
 		/*</@debug>*/
 		this.project = proJ;
 		this.ctx = ctx;
+		this.type = TYPES.PIPE;
 	}
 	
 	get(getter) {
@@ -201,63 +202,29 @@ export class Stream2 {
 					else if(streamExist.size !== neighbours.length) {
 						exist.set(rec.owner, streamExist = new Map(
 							neighbours
-								.map( ({ stream }) => [ stream, streamExist.get(stream) || null ] )
+								.map( ({ stream }) => [ stream, streamExist.get(stream) ] )
 						));
 					}
-					streamExist.get(stream).push(rec);
-					debugger;
+					streamExist.set(stream, rec);
 				} );
-				
-				//Если режим sync то дожидаться подключения всех потоков
+				// Если режим sync то дожидаться подключения всех потоков
 				// not connected
 				if(!this.vent) {
 					return;
 				}
-
 				// if there are still streams with a similar source
 				const sortedSTTMP = [...this.event5tore.keys()].sort( (a, b) => a - b );
 
 				for(let i = 0; i < sortedSTTMP.length; i ++ ) {
-					
 					// здесь необходимо определить, какие сообщения были синхронизированы
 					// и готовы для дальнейшего распотранения
-					
 					const streams = this.event5tore.get( sortedSTTMP[i] );
-					
 					//TODO: need perf refactor
-					const soliDstacks = [ ...streams.values() ][0];
-					if(soliDstacks.size === ) {
-					
-					}
-					
-				}
-				
-
-				const { neighbours: { state, index, streams } } = this.streams.get(stream);
-				
-				/*<@debug>*/
-				if(!state[index]) throw `
-					${this.owner._label}: Attempt to rewrite existing state in neighbours queue
-				`;
-				/*</@debug>*/
-				
-				state[index] = [evt, rec];
-				if(state.every(Boolean)) {
-					const res = streams.reduce( (acc, stream, i) => {
-						if(state[i][0] !== EMPTY) {
-							const { handler } = this.streams.get( stream );
-							const res = handler( state[i][0], stream, state[i][1] );
-							return res !== undefined ? res : acc;
-						}
-						return acc;
-					}, undefined );
-					if(res !== undefined) {
-						this.vent( res, rec );
-					}
-					else {
-						this.vent( EMPTY, rec );
-					}
-					state.fill(null);
+					const soliDStacks = [ ...streams.values().next().value ];
+					const rec = soliDStacks[0][1];
+					this.vent([ rec.from( this.hn(
+						soliDStacks.map( ([ stream, rec ]) => [ stream, rec.value, rec ] )
+					) ) ]);
 				}
 			}
 
@@ -326,9 +293,9 @@ export class Stream2 {
 	
 	map(project) {
 		return new Stream2((connect, control) => {
-			this.connect( (evtStreamsSRC, hook) => {
+			this.connect( (evtStreamsSRC, hook, type) => {
 				control.to(hook);
-				const e = connect( evtStreamsSRC );
+				const e = connect( evtStreamsSRC, type );
 				return soliD => e(soliD.map( rec => rec.map( project ) ));
 			});
 		});
@@ -336,9 +303,9 @@ export class Stream2 {
 	
 	filter(project) {
 		return new Stream2((connect, control) => {
-			this.connect( (evtStreamsSRC, hook) => {
+			this.connect( (evtStreamsSRC, hook, type) => {
 				control.to(hook);
-				const e = connect( evtStreamsSRC );
+				const e = connect( evtStreamsSRC, type );
 				return soliD => e(soliD.filter( rec => project(rec.value, rec) ));
 			} );
 		});
@@ -655,8 +622,6 @@ export class RemouteService extends Stream2 {
 
 }
 
-Stream2.FROM_OWNER_STREAM = FROM_OWNER_STREAM;
-
 export class Controller {
 	
 	constructor(src) {
@@ -730,7 +695,10 @@ export class EndPoint extends Stream2 {
 
 }
 
+Stream2.FROM_OWNER_STREAM = FROM_OWNER_STREAM;
+Stream2.TYPES = TYPES;
 Stream2.KEY_SIGNALS = KEY_SIGNALS;
+stream2.TYPES = TYPES;
 const isKeySignal = Stream2.isKeySignal;
 
 const UPS = new class {
