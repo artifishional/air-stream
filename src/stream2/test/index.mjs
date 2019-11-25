@@ -1,4 +1,5 @@
 import "../../polyfills"
+export * from "../stream"
 /*
 import './simple';
 import "./reducer";

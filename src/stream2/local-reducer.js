@@ -14,9 +14,9 @@ export class LocalReducer extends StorableAC {
 	constructor(eventCh, proJ = (_, data) => data, primary) {
 		super( ( connect, control ) => {
 			let state = primary;
-			eventCh.connect( (eventChWSpS, eventChHook) => {
-				control.todisconnect( eventChHook );
-				const feeder = connect( [ STATIC_SYNC_WELL_SPRING, ...eventChWSpS ] );
+			eventCh.connect( (evtChWSpS, evtChHook) => {
+				control.todisconnect( evtChHook );
+				const feeder = connect( [ STATIC_SYNC_WELL_SPRING, ...evtChWSpS ] );
 				feeder( [ STATIC_SYNC_WELL_SPRING.rec(state, 0) ] );
 				return solid => {
 					feeder( solid.map(
@@ -28,3 +28,7 @@ export class LocalReducer extends StorableAC {
 	}
 
 }
+
+Stream2.prototype.store = function() {
+	return new LocalReducer( this, undefined, 1 );
+};

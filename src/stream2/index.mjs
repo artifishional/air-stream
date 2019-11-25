@@ -24,13 +24,13 @@ export class Stream2 {
 	}
 	
 	constructor(proJ, ctx = null) {
-		//this.subscribers = [];
+		this.connections = new Map();
 		/*<@debug>*/
 		this._label = "";
 		/*</@debug>*/
 		this.project = proJ;
 		this.ctx = ctx;
-		this.type = TYPES.PIPE;
+		this.type = new.target.TYPES.PIPE;
 	}
 	
 	get(getter) {
@@ -172,6 +172,13 @@ export class Stream2 {
 			}
 			
 			onStreamEvent(stream, soliD) {
+				
+				// Если режим sync то дожидаться подключения всех потоков
+				// not connected
+				if(!this.vent) {
+					return;
+				}
+				
 				// grouping
 				// каждое сообщение (или группу если поддерживается несколько событий
 				// в рамках одного sttmp) из солид необходимо разместить в ячейке
@@ -179,6 +186,8 @@ export class Stream2 {
 				// так как после каждого события необходимо дождаться ответа от всех
 				// потоков, а также необходимо сохранять очередность использования данных
 				// в функции хендлера согласно очередности потоков в this.streams
+				
+				// синхронизируются сообщения только ОДНОГО источника
 				soliD.forEach( ( rec ) => {
 					let exist = this.event5tore.get(rec.sttmp);
 					if(!exist) {
@@ -207,11 +216,7 @@ export class Stream2 {
 					}
 					streamExist.set(stream, rec);
 				} );
-				// Если режим sync то дожидаться подключения всех потоков
-				// not connected
-				if(!this.vent) {
-					return;
-				}
+			
 				// if there are still streams with a similar source
 				const sortedSTTMP = [...this.event5tore.keys()].sort( (a, b) => a - b );
 
@@ -222,13 +227,23 @@ export class Stream2 {
 					//TODO: need perf refactor
 					const soliDStacks = [ ...streams.values().next().value ];
 					const rec = soliDStacks[0][1];
+					
+					debugger;
+					
+					if(soliDStacks.some( ([, rec ]) => !rec )) {
+						return ;
+					}
+			
 					this.vent([ rec.from( this.hn(
 						soliDStacks.map( ([ stream, rec ]) => [ stream, rec.value, rec ] )
 					) ) ]);
 				}
 			}
 
-			onStreamConnect(stream, eventChWSpS, eventChHook) {
+			onStreamConnect(stream, eventChWSpS, eventChHook, own) {
+				
+				debugger;
+				
 				this.control.to(eventChHook);
 				const streamRelatedData = this.streams.get(stream);
 				streamRelatedData.eventChWSpS = eventChWSpS;
@@ -265,8 +280,8 @@ export class Stream2 {
 				// then hooks realize
 				streams
 					.forEach( stream => {
-						stream.connect((eventChWSpS, eventChHook) =>
-							this.onStreamConnect(stream, eventChWSpS, eventChHook)
+						stream.connect((eventChWSpS, eventChHook, own) =>
+							this.onStreamConnect(stream, eventChWSpS, eventChHook, own)
 						);
 						return this;
 					});
@@ -286,16 +301,12 @@ export class Stream2 {
 			const hn = new Handler( this, connect, control, hnProJ, streams );
 		});
 	}
-
-	store() {
-		return new Reducer( null, null, this );
-	}
 	
 	map(project) {
 		return new Stream2((connect, control) => {
-			this.connect( (evtStreamsSRC, hook, type) => {
+			this.connect( (evtStreamsSRC, hook, own ) => {
 				control.to(hook);
-				const e = connect( evtStreamsSRC, type );
+				const e = connect( evtStreamsSRC, own );
 				return soliD => e(soliD.map( rec => rec.map( project ) ));
 			});
 		});
@@ -303,9 +314,9 @@ export class Stream2 {
 	
 	filter(project) {
 		return new Stream2((connect, control) => {
-			this.connect( (evtStreamsSRC, hook, type) => {
+			this.connect( (evtStreamsSRC, hook, own) => {
 				control.to(hook);
-				const e = connect( evtStreamsSRC, type );
+				const e = connect( evtStreamsSRC, own );
 				return soliD => e(soliD.filter( rec => project(rec.value, rec) ));
 			} );
 		});
@@ -326,8 +337,9 @@ export class Stream2 {
 	}
 	/*</@debug>*/
 	
-	connect( connector = () => () => {} ) {
-		const controller = this.createController();
+	connect( connect = () => () => {} ) {
+		this.connections.set(connect, null);
+		const control = this.createController();
 		const hook = (action = "disconnect", data = null) => {
 			/*<@debug>*/
 			if(typeof action !== "string") {
@@ -335,13 +347,13 @@ export class Stream2 {
 			}
 			/*</@debug>*/
 			if(action === "disconnect") {
-				this._deactivate( connector, controller );
+				this._deactivate( connect, control );
 			}
 			else {
-				controller.send(action, data);
+				control.send(action, data);
 			}
 		};
-		this._activate( controller, connector, hook );
+		this._activate( control, connect, hook );
 	}
 	
 	distinct(equal) {
@@ -369,15 +381,28 @@ export class Stream2 {
 		});
 	}
 	
-	_activate( controller = this.createController(), connector, hook ) {
-		this.project.call(this.ctx, (evtChWSpS) => {
-			//when projectable stream connecting rdy
-			return this.createEmitter( connector( evtChWSpS, hook ), evtChWSpS);
-		}, controller);
-		return controller;
+	registerSubscriber( connect, subscriber ) {
+		// if deactivation occurred earlier than the subscription
+		if(this.connections.has(connect)) {
+			this.connections.set(connect, subscriber);
+		}
+	}
+	
+	_activate( control = this.createController(), connect, hook ) {
+		this.project.call(this.ctx, (evtChWSpS, own = this) => {
+			this.startConnectionToSlave(connect, evtChWSpS, own, hook);
+		}, control);
+	}
+	
+	startConnectionToSlave(connect, evtChWSpS, own, hook) {
+		//when projectable stream connecting rdy
+		const subscriber = connect( evtChWSpS, hook, own );
+		this.registerSubscriber( connect, subscriber );
+		return this.createEmitter( subscriber, evtChWSpS);
 	}
 
-	_deactivate( connector, controller ) {
+	_deactivate( connect, controller ) {
+		this.connections.delete(connect);
 		controller.send("disconnect", null);
 	}
 	
@@ -491,18 +516,6 @@ export class Stream2 {
 					}
 				}
 			} );
-		} );
-	}
-
-	/**
-	 * Кеширует соединение линии потока, чтобы новые стримы не создавались
-	 */
-	endpoint() {
-		return new EndPoint( null, (e, controller) => {
-			this.connect(hook => {
-				controller.to(hook);
-				return e;
-			});
 		} );
 	}
 	
@@ -656,40 +669,6 @@ export class Controller {
 		else {
 			this.disconnected = true;
 			this._todisconnect.map( connector => connector(action, data) );
-		}
-	}
-
-}
-
-export class EndPoint extends Stream2 {
-
-	createEmitter( subscriber ) {
-		if(!this.emitter) {
-			this.emitter = (data, record = { ttmp: getTTMP() }) => {
-				this.subscribers.map( subscriber => subscriber(data, record) );
-			};
-		}
-		return this.emitter;
-	}
-	
-	createController( ) {
-		if(!this.__controller) {
-			this.__controller = super.createController();
-		}
-		return this.__controller;
-	}
-
-	_activate() {
-		if(!this._activated) {
-			this._activated = super._activate();
-		}
-		return this._activated;
-	}
-
-	_deactivate(subscriber, controller) {
-		if(this._activated && !this.subscribers.length) {
-			super._deactivate( subscriber, controller );
-			this._activated = null;
 		}
 	}
 

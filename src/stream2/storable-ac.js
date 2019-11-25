@@ -1,79 +1,37 @@
-import {Stream2} from "./index";
+import {EndPoint} from "./end-point";
 import getTTMP from "./get-ttmp";
 
 const MAX_MSG_LIVE_TIME_MS = 7000;
 
-/**
- * every RemoteReducer creates your
- */
-
-export class StorableAC extends Stream2 {
+export class StorableAC extends EndPoint {
 	
 	constructor(proJ = (_, data) => data) {
 		super( proJ );
-		this.connectionParams = null;
-		this.subscribers = new Map();
-		this._activated = null;
 		this._queue = [];
-		this.emitter = null;
-		this.__controller = null;
-		this.type = StorableAC.TYPES.STORE;
+		this.type = new.target.TYPES.PIPE;
 	}
 	
 	get queue() {
 		return this._queue;
 	}
 	
-	createEmitter( ) {
-		if(!this.emitter) {
-			this.emitter = (solid) => {
-				this.queue.push( ...solid );
+	registerSubscriber( connect, subscriber ) {
+		super.registerSubscriber(connect, subscriber);
+		subscriber( this.queue );
+	}
+	
+	createEmitter() {
+		if(!this._emitter) {
+			this.queue.length = 0;
+			this._emitter = (solid) => {
+				this.queue.push(...solid);
 				if(this.queue.length > 1) {
 					this.queueNormalize();
 				}
-				[...this.subscribers.values()].map( subscriber => subscriber( solid ) );
+				[...this.connections.values()].map( subscriber => subscriber( solid ) );
 			};
 		}
-		return this.emitter;
-	}
-	
-	createController( ) {
-		if(!this.__controller) {
-			this.__controller = super.createController();
-		}
-		return this.__controller;
-	}
-	
-	_activate( control, connect, hook ) {
-		this.subscribers.set(connect, null);
-		if(!this.connectionParams) {
-			if(!this._activated) {
-				this._activated = super._activate(control, (evtChWSpS, hook) => {
-					this.connectionParams = { evtChWSpS };
-					[...this.subscribers.keys()].map( connect => {
-						const subscriber = connect( evtChWSpS, hook, this.type );
-						this.subscribers.set(connect, subscriber);
-						subscriber( this.queue );
-					} );
-					return this.createEmitter();
-				}, hook );
-			}
-		}
-		else {
-			const subscriber = connect( this.connectionParams.evtChWSpS, hook, this.type );
-			this.subscribers.set(connect, subscriber);
-			subscriber( this.queue );
-		}
-		return this._activated;
-	}
-	
-	_deactivate(connector, controller) {
-		this.subscribers.delete(connector);
-		if(this._activated && !this.subscribers.size) {
-			super._deactivate( connector, controller );
-			this._activated = null;
-			this.__controller = null;
-		}
+		return this._emitter;
 	}
 	
 	queueNormalize() {

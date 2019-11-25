@@ -8,3 +8,9 @@ export const evtChRmtWSpS = 1; // event channel (remote) well-springs
 export const evtChSoliD = 1; // event channel (remote) solid data
 export const evtChRmtSoliD = 1; // event channel (remote) solid data
 export const evtChRmtRec = 1; // event channel (remote) record
+/**
+ * Очень сильно напоминает ичтоник событий
+ * основной задачей является
+ * - определить тип потока,
+ */
+export const own = 1;

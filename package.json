@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node run.js",
     "dev": "webpack --config=webpack.dev.config.js",
-    "test": "jest --verbose",
+    "test": "jest --verbose --runInBand",
     "patch": "npm version patch && npm publish && git push origin",
     "minor": "npm version minor && npm publish && git push origin"
   },
