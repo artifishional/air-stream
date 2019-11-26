@@ -12,5 +12,6 @@ export const evtChRmtRec = 1; // event channel (remote) record
  * Очень сильно напоминает ичтоник событий
  * основной задачей является
  * - определить тип потока,
+ * - определить начальное состояние для owner (master) потока вида редьюсера
  */
 export const own = 1;

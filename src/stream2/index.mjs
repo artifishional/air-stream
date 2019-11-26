@@ -189,10 +189,7 @@ export class Stream2 {
 				
 				// синхронизируются сообщения только ОДНОГО источника
 				soliD.forEach( ( rec ) => {
-					let exist = this.event5tore.get(rec.sttmp);
-					if(!exist) {
-						this.event5tore.set(rec.sttmp, exist = new Map());
-					}
+					const exist = this.event5tore;
 					let streamExist = exist.get( rec.owner );
 					const neighbours = this.neighbourStreamsBySource.get(rec.owner);
 					if(!streamExist) {
@@ -221,8 +218,7 @@ export class Stream2 {
 				const sortedSTTMP = [...this.event5tore.keys()].sort( (a, b) => a - b );
 
 				for(let i = 0; i < sortedSTTMP.length; i ++ ) {
-					// здесь необходимо определить, какие сообщения были синхронизированы
-					// и готовы для дальнейшего распотранения
+					// only synced msg's here
 					const streams = this.event5tore.get( sortedSTTMP[i] );
 					//TODO: need perf refactor
 					const soliDStacks = [ ...streams.values().next().value ];
@@ -241,9 +237,6 @@ export class Stream2 {
 			}
 
 			onStreamConnect(stream, eventChWSpS, eventChHook, own) {
-				
-				debugger;
-				
 				this.control.to(eventChHook);
 				const streamRelatedData = this.streams.get(stream);
 				streamRelatedData.eventChWSpS = eventChWSpS;
@@ -390,7 +383,7 @@ export class Stream2 {
 	
 	_activate( control = this.createController(), connect, hook ) {
 		this.project.call(this.ctx, (evtChWSpS, own = this) => {
-			this.startConnectionToSlave(connect, evtChWSpS, own, hook);
+			return this.startConnectionToSlave(connect, evtChWSpS, own, hook);
 		}, control);
 	}
 	

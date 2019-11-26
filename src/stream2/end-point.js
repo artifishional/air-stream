@@ -62,9 +62,9 @@ export class EndPoint extends Stream2 {
  */
 Stream2.prototype.endpoint = function() {
 	return new EndPoint( (connect, control) => {
-		this.connect((evtChWSpS, hook, type) => {
+		this.connect((evtChWSpS, hook, own) => {
 			control.to(hook);
-			return connect( evtChWSpS, type );
+			return connect( evtChWSpS, own );
 		});
 	} );
 };

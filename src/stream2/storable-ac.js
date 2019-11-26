@@ -14,11 +14,13 @@ export class StorableAC extends EndPoint {
 	get queue() {
 		return this._queue;
 	}
-	
+	/*
 	registerSubscriber( connect, subscriber ) {
 		super.registerSubscriber(connect, subscriber);
-		subscriber( this.queue );
-	}
+		// subscriber( this.queue );
+		// более не требуется, так как начальное состояние не передается в потоки контрллера
+		// в ином случае оно берется напрямую из queue через master own
+	}*/
 	
 	createEmitter() {
 		if(!this._emitter) {

@@ -2,10 +2,10 @@ import { stream2 as stream } from "../../index.mjs";
 import {WSpring} from "../well-spring";
 
 describe('with', function () {
-/*
+
     test('simple', (done) => {
         const expected = [
-            [1], [1, 2]
+            [2], [1, 2]
         ];
         const wsp1 = new WSpring();
         const source1 = stream(function(connect) {
@@ -32,8 +32,8 @@ describe('with', function () {
                 expect(e).toEqual(queue1.next().value)
             });
         queue1.next().done && done();
-    });*/
-
+    });
+/*
     test('single source', (done) => {
         const expected = [
             ["a1", "b1"],
@@ -58,5 +58,5 @@ describe('with', function () {
             .get(e => expect(e).toEqual(queue1.next().value));
         setTimeout( () => queue1.next().done && done() );
     });
-    
+    */
 });
