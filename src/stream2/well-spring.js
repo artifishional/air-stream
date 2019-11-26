@@ -1,3 +1,5 @@
+import { EMPTY } from './signals';
+
 let LOCAL_WELLSPRING_ID_COUNTER = 0;
 
 const TTMP = new class TTMPSyncController {
@@ -39,15 +41,31 @@ export class WSpring {
 
 export class Record {
 	
-	constructor( owner, value, sttmp, origin = this ) {
+	constructor( owner, value, sttmp, origin = this, empty = false ) {
 		this.origin = origin;
 		this.value = value;
 		this.owner = owner;
 		this.sttmp = sttmp;
+		this.empty = empty;
 	}
 	
 	map(fn) {
-		return new Record( this.owner, fn(this.value), this.sttmp, this.origin );
+		if(this.empty) {
+			return this;
+		}
+		return new Record( this.owner, fn(this.value, this), this.sttmp, this.origin );
+	}
+
+	filter(fn) {
+		if(this.empty) {
+			return this;
+		}
+		if(fn(this.value, this)) {
+			return this;
+		}
+		else {
+			return new Record( this.owner, EMPTY, this.sttmp, this.origin, true );
+		}
 	}
 	
 	from(value) {

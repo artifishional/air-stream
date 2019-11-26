@@ -9,15 +9,13 @@ describe('with', function () {
         ];
         const wsp1 = new WSpring();
         const source1 = stream(function(connect) {
-            connect([wsp1])([
-                wsp1.rec(1)
-            ]);
+            const e = connect([wsp1]);
+            e(wsp1.rec(1));
         });
         const wsp2 = new WSpring();
         const source2 = stream(function(connect) {
-            connect([wsp2])([
-                wsp2.rec(2)
-            ]);
+            const e = connect([wsp2]);
+            e(wsp1.rec(2));
         });
         const queue1 = expected.values();
         stream

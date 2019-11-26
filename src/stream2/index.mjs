@@ -1,6 +1,6 @@
 import Observable, {keyA} from '../observable/index.mjs'
 import getTTMP from "./get-ttmp.mjs"
-import {CONNECT, EMPTY} from "./signals";
+import {CONNECT} from "./signals";
 import {Record, WSpring} from "./well-spring";
 
 
@@ -38,7 +38,7 @@ export class Stream2 {
 			this.connect( (evtChWSpS, hook) => {
 				control.to(hook);
 				connect( evtChWSpS );
-				return solid => solid.map( rc => getter(rc.value, rc) )
+				return rec => getter(rec.value, rec)
 			});
 		}).connect();
 	}
@@ -295,22 +295,22 @@ export class Stream2 {
 		});
 	}
 	
-	map(project) {
+	map(proJ) {
 		return new Stream2((connect, control) => {
-			this.connect( (evtStreamsSRC, hook, own ) => {
+			this.connect((evtChWSpS, hook, own) => {
 				control.to(hook);
-				const e = connect( evtStreamsSRC, own );
-				return soliD => e(soliD.map( rec => rec.map( project ) ));
+				const e = connect(evtChWSpS, own);
+				return rec => e(rec.map(proJ));
 			});
 		});
 	}
 	
-	filter(project) {
+	filter(proJ) {
 		return new Stream2((connect, control) => {
-			this.connect( (evtStreamsSRC, hook, own) => {
+			this.connect((evtChWSpS, hook, own) => {
 				control.to(hook);
-				const e = connect( evtStreamsSRC, own );
-				return soliD => e(soliD.filter( rec => project(rec.value, rec) ));
+				const e = connect(evtChWSpS, own);
+				return rec => e(rec.filter(proJ));
 			} );
 		});
 	}
@@ -318,12 +318,12 @@ export class Stream2 {
 	/*<@debug>*/
 	log() {
 		return new Stream2( (conect, control) => {
-			this.connect((evtStreamsSRC, hook) => {
+			this.connect((evtChWSpS, hook) => {
 				control.to( hook );
-				const e = conect( evtStreamsSRC );
-				return (solid) => {
-					solid.map(rec => console.log(rec.value));
-					e(solid);
+				const e = conect( evtChWSpS );
+				return rec => {
+					console.log(rec.value);
+					e(rec);
 				}
 			});
 		});
