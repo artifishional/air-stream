@@ -11,7 +11,7 @@ const TTMP = new class TTMPSyncController {
 	get(ttmp) {
 		if(this.sttmp === -1) {
 			if(ttmp === -1) ttmp = window.performance.now();
-			this.sttmp = ttmp | 0;
+			this.sttmp = ttmp;
 			queueMicrotask(() => this.sttmp = -1);
 		}
 		return this.sttmp;
@@ -19,7 +19,7 @@ const TTMP = new class TTMPSyncController {
 
 };
 
-export class WSpring {
+export class WSP {
 
 	constructor( id = LOCAL_WELLSPRING_ID_COUNTER ++ ) {
 		this.id = id;
@@ -55,6 +55,10 @@ export class Record {
 		}
 		return new Record( this.owner, fn(this.value, this), this.sttmp, this.origin );
 	}
+	
+	createEmpty() {
+		return new Record( this.owner, EMPTY, this.sttmp, this.origin, true );
+	}
 
 	filter(fn) {
 		if(this.empty) {
@@ -64,7 +68,7 @@ export class Record {
 			return this;
 		}
 		else {
-			return new Record( this.owner, EMPTY, this.sttmp, this.origin, true );
+			return this.createEmpty();
 		}
 	}
 	

@@ -1,7 +1,7 @@
 import Observable, {keyA} from '../observable/index.mjs'
 import getTTMP from "./get-ttmp.mjs"
 import {CONNECT} from "./signals";
-import {Record, WSpring} from "./well-spring";
+import {Record, WSP} from "./wsp";
 
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
@@ -171,14 +171,12 @@ export class Stream2 {
 				this.attach(streams, this.hn);
 			}
 			
-			onStreamEvent(stream, soliD) {
-				
+			onStreamEvent(stream, rec) {
 				// Если режим sync то дожидаться подключения всех потоков
 				// not connected
 				if(!this.vent) {
 					return;
 				}
-				
 				// grouping
 				// каждое сообщение (или группу если поддерживается несколько событий
 				// в рамках одного sttmp) из солид необходимо разместить в ячейке
@@ -186,53 +184,48 @@ export class Stream2 {
 				// так как после каждого события необходимо дождаться ответа от всех
 				// потоков, а также необходимо сохранять очередность использования данных
 				// в функции хендлера согласно очередности потоков в this.streams
-				
 				// синхронизируются сообщения только ОДНОГО источника
-				soliD.forEach( ( rec ) => {
-					const exist = this.event5tore;
-					let streamExist = exist.get( rec.owner );
-					const neighbours = this.neighbourStreamsBySource.get(rec.owner);
-					if(!streamExist) {
-						exist.set(
-							rec.owner,
-							streamExist = new Map(
-								neighbours
-									.map( ({ stream }) => [ stream,
-										null /* soliD from stream from cur sttmp */
-									] )
-							)
-						);
-					}
-					// если формирование массива исходных потоков происходит динамически
-					// (одновременно с получением данных из потоков)
-					else if(streamExist.size !== neighbours.length) {
-						exist.set(rec.owner, streamExist = new Map(
+				const exist = this.event5tore;
+				let streamExist = exist.get( rec.owner );
+				const neighbours = this.neighbourStreamsBySource.get(rec.owner);
+				if(!streamExist) {
+					exist.set(
+						rec.owner,
+						streamExist = new Map(
 							neighbours
-								.map( ({ stream }) => [ stream, streamExist.get(stream) ] )
-						));
-					}
-					streamExist.set(stream, rec);
-				} );
-			
-				// if there are still streams with a similar source
-				const sortedSTTMP = [...this.event5tore.keys()].sort( (a, b) => a - b );
-
-				for(let i = 0; i < sortedSTTMP.length; i ++ ) {
+								.map( ({ stream }) => [ stream,
+									null /* rec from stream from cur sttmp */
+								] )
+						)
+					);
+				}
+				// если формирование массива исходных потоков происходит динамически
+				// (одновременно с получением данных из потоков)
+				else if(streamExist.size !== neighbours.length) {
+					exist.set(rec.owner, streamExist = new Map(
+						neighbours
+							.map( ({ stream }) => [ stream, streamExist.get(stream) ] )
+					));
+				}
+				streamExist.set(stream, rec);
+				const event5tore = [...this.event5tore.keys()];
+				//TODO: need perf refactor
+				for(let i = 0; i < event5tore.length; i ++ ) {
+					const streams = [ ...this.event5tore.get( event5tore[i] ) ];
+					// TODO: любая первая запись
+					const rec = streams[0][1];
 					// only synced msg's here
-					const streams = this.event5tore.get( sortedSTTMP[i] );
-					//TODO: need perf refactor
-					const soliDStacks = [ ...streams.values().next().value ];
-					const rec = soliDStacks[0][1];
-					
-					debugger;
-					
-					if(soliDStacks.some( ([, rec ]) => !rec )) {
-						return ;
+					if(streams.some( ([, rec ]) => !rec )) { return; }
+					this.event5tore.delete(event5tore[i]);
+					const updates = streams.filter( ([, rec ]) => !rec.empty);
+					if(updates.length) {
+						this.vent( rec.from( this.hn(
+							updates.map( ([ stream, rec ]) => [ stream, rec.value, rec ] )
+						) ) );
 					}
-			
-					this.vent([ rec.from( this.hn(
-						soliDStacks.map( ([ stream, rec ]) => [ stream, rec.value, rec ] )
-					) ) ]);
+					else {
+						this.vent( rec.createEmpty() );
+					}
 				}
 			}
 
@@ -401,20 +394,20 @@ export class Stream2 {
 	
 	createEmitter( subscriber, evtChWSpS ) {
 		/*<@debug>*/
-		return (solid) => {
+		return (rec) => {
 			if(!Array.isArray(evtChWSpS)) {
 				throw new TypeError("Zero spring chanel produced some data?");
 			}
-			if(evtChWSpS.some( wsp => !(wsp instanceof WSpring) )) {
-				throw new TypeError("WSpring event sources only supported");
+			if(evtChWSpS.some( wsp => !(wsp instanceof WSP) )) {
+				throw new TypeError("WSP event sources only supported");
 			}
-			if(!Array.isArray(solid) || solid.some( rec => !(rec instanceof Record))) {
-				throw new TypeError("Solid array of WellSpring records expected");
-			}/*
-			if(!this.subscribers.includes(subscriber)) {
+			if(!(rec instanceof Record)) {
+				throw new TypeError("WellSpring record expected");
+			}
+			if(![...this.connections.values()].includes(subscriber)) {
 				throw "More unused stream continues to emit data";
-			}*/
-			subscriber(solid);
+			}
+			subscriber(rec);
 		};
 		/*</@debug>*/
 		return subscriber;

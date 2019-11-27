@@ -1,7 +1,7 @@
 import {Stream2} from "./index";
 import getTTMP from "./get-ttmp";
 import {REQUEST} from "./signals";
-import {Record, WSpring} from "./well-spring";
+import {Record, WSP} from "./wsp";
 import {Request} from "./request";
 import {StorableAC} from "./storable-ac";
 
@@ -43,7 +43,7 @@ export class RemoteReducerView extends StorableAC {
 	constructor(evtCh, proJ = (_, data) => data, evtChRmt, evtChRmtMap = null) {
 		super( ( connect, control ) => {
 			evtChRmt.connect( (_, evtChRmtHook) => {
-				const evtChRmtWSpS = [ new WSpring() ];
+				const evtChRmtWSpS = [ new WSP() ];
 				control.todisconnect( evtChRmtHook );
 				let state;
 				return (evtChRmtSoliD, evtChRmtRec) => {

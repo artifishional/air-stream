@@ -1,7 +1,7 @@
 import { stream2 as stream } from '../index';
 import { streamEqualStrict } from '../../utils';
 import { LocalReducer } from '../local-reducer';
-import {WSpring} from "../well-spring";
+import {WSP} from "../wsp";
 
 describe('reducer', function () {
 
@@ -22,7 +22,7 @@ describe('reducer', function () {
     });
 
     test('simple1', () => {
-        const wsp = new WSpring();
+        const wsp = new WSP();
         const dataCh = stream((connect) => {
             connect([wsp])([
                 wsp.rec({kind: "add", vl: 1}),
@@ -46,7 +46,7 @@ describe('reducer', function () {
     });
 
     test('several subscriptions dissolved - source stream disconnect', (done) => {
-        const wsp = new WSpring();
+        const wsp = new WSP();
         const dataCh = stream( (connect, control) => {
             control.todisconnect( () => done() );
             connect([wsp])([

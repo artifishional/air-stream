@@ -1,10 +1,10 @@
 import { stream2 as stream } from '../index.mjs';
-import {WSpring} from "../well-spring";
+import {WSP} from "../wsp";
 
 describe('one stream', () => {
     
     test('event stream connection source', (done) => {
-        const wsp = new WSpring();
+        const wsp = new WSP();
         const source = stream(function(connect) {
             connect([ wsp ]);
         });
@@ -19,8 +19,8 @@ describe('one stream', () => {
             } );
     });
     
-    test('Throw: WSpring event sources only supported', () => {
-        const wsp = new WSpring();
+    test('Throw: WSP event sources only supported', () => {
+        const wsp = new WSP();
         const source = stream(function(connect) {
             connect([ {} ])([
                 wsp.rec(3)
@@ -28,11 +28,11 @@ describe('one stream', () => {
         });
         expect(() => {
             source.connect( ( ) => () => {} );
-        }).toThrow( new TypeError("WSpring event sources only supported") );
+        }).toThrow( new TypeError("WSP event sources only supported") );
     });
     
     test('Throw: Zero spring chanel produced some data?', () => {
-        const wsp = new WSpring();
+        const wsp = new WSP();
         const source = stream(function(connect) {
             const e = connect();
             e([wsp.rec(3)]);
@@ -46,7 +46,7 @@ describe('one stream', () => {
         const expected = [
             3, 4, 2
         ];
-        const wsp = new WSpring();
+        const wsp = new WSP();
         const source = stream(function (connect) {
             connect([wsp])([
                 wsp.rec(3), wsp.rec(4), wsp.rec(2)
@@ -60,7 +60,7 @@ describe('one stream', () => {
       const expected = [
           1, 2, 3
       ];
-      const wsp = new WSpring();
+      const wsp = new WSP();
     const source = stream(function (connect) {
         connect( [wsp] )([
             wsp.rec(1), wsp.rec(2), wsp.rec(3)
@@ -82,7 +82,7 @@ describe('one stream', () => {
           expect(args[0]).toEqual( "test console msg" );
           consoleLogOrigin(...args);
       };
-      const wsp = new WSpring();
+      const wsp = new WSP();
       const source = stream(function (connect) {
           const e = connect([wsp]);
           e([wsp.rec("test console msg")]);
@@ -104,7 +104,7 @@ describe('one stream', () => {
   });
     
     test('disconnecting after first msg', (done) => {
-        const wsp = new WSpring();
+        const wsp = new WSP();
         const source = stream(function (connect, controller) {
             controller.todisconnect(() => done());
             connect([wsp])([
@@ -126,7 +126,7 @@ describe('one stream', () => {
             return () => !--count && done();
         }
         done = doneCounter(2, done);
-        const wsp = new WSpring();
+        const wsp = new WSP();
         const source = stream(function (connect, controller) {
             controller.todisconnect(done);
             connect([wsp])([

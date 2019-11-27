@@ -1,5 +1,5 @@
 import { stream2 as stream } from "../../index.mjs";
-import {WSpring} from "../well-spring";
+import {WSP} from "../wsp";
 
 describe('filter', function () {
     
@@ -7,7 +7,7 @@ describe('filter', function () {
         const expected = [
             1, 3,
         ];
-        const wsp = new WSpring();
+        const wsp = new WSP();
         const source = stream(function(connect) {
             connect([wsp])([
                 wsp.rec(1), wsp.rec(2), wsp.rec(3)
@@ -23,8 +23,8 @@ describe('filter', function () {
         const expected = [
             1, 3, 5
         ];
-        const wsp1 = new WSpring();
-        const wsp2 = new WSpring();
+        const wsp1 = new WSP();
+        const wsp2 = new WSP();
         const source = stream(function(connect) {
             const e = connect([wsp1, wsp2]);
             e([wsp1.rec(1), wsp1.rec(2), wsp1.rec(3)]);
