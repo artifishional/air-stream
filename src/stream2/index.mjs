@@ -1,6 +1,6 @@
 import Observable, {keyA} from '../observable/index.mjs'
 import getTTMP from "./get-ttmp.mjs"
-import {CONNECT} from "./signals";
+import { CONNECT, DEFAULT_TOKEN } from './signals';
 import {Record, WSP} from "./wsp";
 
 
@@ -172,11 +172,6 @@ export class Stream2 {
 			}
 			
 			onStreamEvent(stream, rec) {
-				// Если режим sync то дожидаться подключения всех потоков
-				// not connected
-				if(!this.vent) {
-					return;
-				}
 				// grouping
 				// каждое сообщение (или группу если поддерживается несколько событий
 				// в рамках одного sttmp) из солид необходимо разместить в ячейке
@@ -208,6 +203,11 @@ export class Stream2 {
 					));
 				}
 				streamExist.set(stream, rec);
+				// Если режим sync то дожидаться подключения всех потоков
+				// not connected
+				if(!this.vent) {
+					return;
+				}
 				const event5tore = [...this.event5tore.keys()];
 				//TODO: need perf refactor
 				for(let i = 0; i < event5tore.length; i ++ ) {

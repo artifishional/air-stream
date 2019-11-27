@@ -1,9 +1,9 @@
-import {EndPoint} from "./end-point";
+import { EndPointAC } from './end-point-ac';
 import getTTMP from "./get-ttmp";
 
 const MAX_MSG_LIVE_TIME_MS = 7000;
 
-export class StorableAC extends EndPoint {
+export class StorableAC extends EndPointAC {
 	
 	constructor(proJ = (_, data) => data) {
 		super( proJ );

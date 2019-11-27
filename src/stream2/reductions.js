@@ -9,6 +9,7 @@ export const evtChRmtWSpS = 1; // event channel (remote) well-springs
 export const evtChSoliD = 1; // event channel (remote) solid data
 export const evtChRmtSoliD = 1; // event channel (remote) solid data
 export const evtChRmtRec = 1; // event channel (remote) record
+export const ac = 1; // abstract class or interface
 /**
  * Очень сильно напоминает ичтоник событий
  * основной задачей является

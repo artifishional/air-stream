@@ -2,7 +2,7 @@ import { stream2 as stream } from "../../index.mjs";
 import {WSP} from "../wsp";
 
 describe('with', function () {
-
+/*
     test('simple', (done) => {
         const expected = [
             [1], [1, 2]
@@ -55,7 +55,7 @@ describe('with', function () {
             } )
             .get(e => expect(e).toEqual(queue1.next().value));
         queueMicrotask( () => queue1.next().done && done() );
-    });
+    });*/
     
     test('single wsp (sync mode) with empty record', (done) => {
         const expected = [
@@ -82,7 +82,37 @@ describe('with', function () {
             .get(e => expect(e).toEqual(queue1.next().value));
         queueMicrotask( () => queue1.next().done && done() );
     });
-    
-    //record retention mex on endpoints with single wsp
-    
+/*
+    test('single wsp (sync mode) - record retention mex', (done) => {
+        const expected = [
+            ["a1", "b1"],
+        ];
+        const wsp = new WSP();
+        const source = stream(function(connect) {
+            const e = connect([wsp]);
+            e(wsp.rec(1));
+        })
+          .endpoint();
+        const pipe1 = source.map( vl => "a" + vl );
+        const pipe2 = source.map( vl => "b" + vl );
+        const queue1 = expected.values();
+        stream
+          .with( [ pipe1, pipe2 ], (own) => {
+              const state = new Map();
+              return (updates) => {
+                  updates.forEach( ([stream, data]) => state.set(stream, data) );
+                  return [ ...state.values() ];
+              };
+          } )
+          .get(e => expect(e).toEqual(queue1.next().value));
+        queueMicrotask( () => queue1.next().done && done() );
+    });
+*/
+    // late stream connection on several wspS
+
+    // late stream connection on single wsp - is it real?
+    // single wsp DOESN'T supp several events per frame
+    // single wsp is a single wsp - it is always synchronized with itself
+    // what about a stream with combined wsp?
+
 });
