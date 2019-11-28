@@ -73,6 +73,10 @@ const DEFAULT_OPTIONS = {
   timeout: null
 };
 
+export function async() {
+  let gen = Promise.resolve();
+  return next => gen = gen.then( next );
+}
 
 export const streamEqualStrict = (done, source, data = [], options = {}) => {
   //set default timeout
