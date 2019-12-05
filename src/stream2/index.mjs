@@ -287,13 +287,27 @@ export class Stream2 {
 			const hn = new Handler( this, connect, control, hnProJ, streams );
 		});
 	}
+
+	//канал является переходит в состояние включен
+	//когда получает ссылку на эмитер при вызове connect
+
+	get(getter) {
+		return new Stream2((connect, control) => {
+			this.connect( (/* evtChWSpS, */own, hook) => {
+				control.to(hook);
+				connect( own.get(getter) );
+				//return rec => getter(rec.value, rec)
+			});
+		}).connect();
+	}
 	
 	map(proJ) {
 		return new Stream2((connect, control) => {
-			this.connect((evtChWSpS, hook, own) => {
+			this.connect((/* evtChWSpS, */own, hook) => {
 				control.to(hook);
-				const e = connect(evtChWSpS, own);
-				return rec => e(rec.map(proJ));
+				//источники должны быть привязаны к own instance
+				connect(/* evtChWSpS, */own.map( proJ ));
+				//return rec => e(rec.map(proJ));
 			});
 		});
 	}

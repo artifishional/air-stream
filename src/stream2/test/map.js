@@ -1,4 +1,4 @@
-import { stream2 as stream } from "../../index.mjs";
+import { stream2 as ch } from "../../index.mjs";
 import {WSP} from "../wsp";
 
 describe('map', function () {
@@ -8,15 +8,11 @@ describe('map', function () {
             10, 20, 30,
         ];
         const wsp = new WSP();
-        const source = stream(function(connect) {
-            connect([wsp])([
-                wsp.rec(1), wsp.rec(2), wsp.rec(3)
-            ]);
-        });
+        const source = ch(connect => connect(wsp));
         const queue1 = expected.values();
         source
             .map( evt => evt * 10 )
-            .get(e => expect(e).toEqual(queue1.next().value));
+            .get( e => expect(e).toEqual(queue1.next().value) );
     });
     
     test('mix sources', () => {
