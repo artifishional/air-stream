@@ -1,7 +1,7 @@
 import {Stream2} from "./index";
 import {WSP} from "./wsp";
 import { StorableAC } from './storable-ac';
-const STATIC_SYNC_WELL_SPRING = new WSP();
+//const STATIC_SYNC_WELL_SPRING = new WSP();
 
 export class LocalReducer extends StorableAC {
 

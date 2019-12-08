@@ -1,8 +1,26 @@
 import { stream2 as ch } from "../../index.mjs";
 import {WSP} from "../wsp";
+import {async} from "../../utils";
 
 describe('map', function () {
     
+    test('simple', (done) => {
+        const _ = async();
+        const expected = [
+            10, 20, 30,
+        ];
+        const wsp = new WSP();
+        _(() => wsp.rec(1));
+        _(() => wsp.rec(2));
+        _(() => wsp.rec(3));
+        const queue1 = expected.values();
+        wsp
+            .map( evt => evt * 10 )
+            .get( e => expect(e).toEqual(queue1.next().value) );
+        _( () => queue1.next().done && done() );
+    });
+    
+    /*
     test('simple', () => {
         const expected = [
             10, 20, 30,
@@ -68,6 +86,6 @@ describe('map', function () {
             .connect( (_, hook) => {
                 setTimeout(() => hook( ));
             } );
-    });
+    });*/
     
 });

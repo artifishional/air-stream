@@ -1,40 +1,19 @@
 import { DEFAULT_TOKEN, EMPTY } from './signals';
+import { STTMP } from './sync-ttmp-controller';
 
 let WSP_ID_COUNT = 0;
-
-export const TTMP = new class TTMPSyncController {
-
-	constructor () {
-		this.token = null;
-		this.cbs = [];
-	}
-
-	get(ttmp = -1) {
-		if(!this.token) {
-			if(ttmp === -1) ttmp = globalThis.performance.now();
-			this.token = { sttmp: ttmp };
-			debugger;
-			queueMicrotask(() => {
-				this.token = null;
-				this.cbs.map( cb => cb() );
-			} );
-		}
-		return this.token;
-	}
-
-	async(cb) {
-		this.get();
-		this.cbs.push(cb);
-	}
-
-};
 
 export class WSP {
 
 	constructor( streams = [], hnProJ = null, id = WSP_ID_COUNT ++ ) {
+		this.curFrameCachedRecord = null;
+		this.streams = new Map(streams.map(stream => [ stream, {
+			stream,
+			eventChWSpS: null,
+			neighbours: [],
+		} ]));
 		this.id = id;
 		this.slaves = new Set();
-		this.streams = new Map();
 		this.neighbourStreamsBySource = new Map();
 		if(!streams.length) {
 			this.originWSpS = [ this ];
@@ -61,12 +40,14 @@ export class WSP {
 				neighbourStreams.push(streamRelatedData);
 			} );
 		});
-		streams.map(stream => stream.on(this));
-		this.hn = hnProJ( this );
+		if(hnProJ) {
+			this.hn = hnProJ( this );
+		}
 		this.lastedstoken = DEFAULT_TOKEN;
+		streams.map(stream => stream.on(this));
 	}
 
-	handle( stream, origRec ) {
+	handle( stream, cuR ) {
 		// grouping
 		// каждое сообщение (или группу если поддерживается несколько событий
 		// в рамках одного sttmp) из солид необходимо разместить в ячейке
@@ -79,15 +60,15 @@ export class WSP {
 			this.event5tore = new Map();
 		}
 		const exist = this.event5tore;
-		let streamExist = exist.get( origRec.owner );
-		const neighbours = this.neighbourStreamsBySource.get(origRec.owner);
+		let streamExist = exist.get( cuR.owner );
+		const neighbours = this.neighbourStreamsBySource.get(cuR.owner);
 		if(!streamExist) {
 			exist.set(
-				origRec.owner,
+				cuR.owner,
 				streamExist = new Map(
 					neighbours
 						.map( ({ stream }) => [ stream,
-							null /* origRec from stream from cur sttmp */
+							null /* cuR from stream from cur sttmp */
 						] )
 				)
 			);
@@ -95,13 +76,12 @@ export class WSP {
 		// если формирование массива исходных потоков происходит динамически
 		// (одновременно с получением данных из потоков)
 		else if(streamExist.size !== neighbours.length) {
-			exist.set(origRec.owner, streamExist = new Map(
+			exist.set(cuR.owner, streamExist = new Map(
 				neighbours
 					.map( ({ stream }) => [ stream, streamExist.get(stream) ] )
 			));
 		}
-		streamExist.set(stream, origRec);
-
+		streamExist.set(stream, cuR);
 		const event5tore = [...this.event5tore.keys()];
 		//TODO: need perf refactor
 		for(let i = 0; i < event5tore.length; i ++ ) {
@@ -111,14 +91,14 @@ export class WSP {
 			// only synced msg's here
 			if(streams.some( ([, rec ]) => !rec )) { return; }
 			this.event5tore.delete(event5tore[i]);
-			const updates = streams.filter( ([, rec ]) => !rec.empty);
+			const updates = streams.filter( ([, rec ]) => rec.value !== EMPTY);
 			if(updates.length) {
-				this.rec( rec.from( this.hn(
-					updates.map( ([ stream, rec ]) => [ stream, rec.value, rec ] )
-				) ), origRec );
+				this.next( rec.from( this.hn(
+					updates.map( ([ stream, rec ]) => [ rec.value, stream, rec ] )
+				) ) );
 			}
 			else {
-				this.rec( EMPTY, origRec );
+				this.next( rec.from( EMPTY ) );
 			}
 		}
 	}
@@ -128,22 +108,38 @@ export class WSP {
 	}
 
 	on( slv ) {
+		if(this.curFrameCachedRecord && this.curFrameCachedRecord.token === STTMP.get()) {
+			slv.handle(this, this.curFrameCachedRecord)
+		}
+		else {
+			this.curFrameCachedRecord = null;
+		}
 		this.slaves.add(slv);
 	}
 	
-	rec(value, origRec = null, token = TTMP.get()) {
+	get( proJ ) {
+		return new WSP( [ this ], () => ( [ [ update ] ] ) => (proJ(update), update) );
+	}
+	
+	next( rec ) {
+		this.curFrameCachedRecord = rec;
+		this.slaves.forEach( slv => slv.handle(this, rec) );
+	}
+	
+	rec(value, token = STTMP.get()) {
 		/*<@debug>*/
 		if(token === this.lastedstoken || this.lastedstoken.sttmp >= token.sttmp) {
 			throw new Error("More than one event at a time for the current source");
 		}
-		/*</@debug>*/
 		this.lastedstoken = token;
-		const rec = origRec ? origRec.from(value) : new Record(this, value, token);
-		this.slaves.forEach( slv => slv.handle(this, rec) );
+		/*</@debug>*/
+		this.next( new Record(this, value, token) );
 	}
 
 	map( proJ ) {
-		return new WSP( [ this ], () => ( [ [ update ] ] ) => proJ(update) );
+		return new WSP( [ this ],
+			() => ( [ [ update ] ] ) => proJ(update)
+		);
 	}
 
 	filter( proJ ) {
@@ -161,7 +157,6 @@ export class Record {
 		this.value = value;
 		this.owner = owner;
 		this.token = token;
-		this.sttmp = token.sttmp;
 	}
 	
 	map(fn) {

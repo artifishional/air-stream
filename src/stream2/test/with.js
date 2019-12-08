@@ -3,33 +3,26 @@ import {WSP} from "../wsp";
 import {async} from "../../utils";
 
 describe('with', function () {
-
+    
     test('simple', (done) => {
         const _ = async();
         const expected = [
             [1], [1, 2]
         ];
         const wsp1 = new WSP();
-        const source1 = stream(function(connect) {
-            const e = connect([wsp1]);
-            _(() => e(wsp1.rec(1)));
-        });
+        _(() => wsp1.rec(1));
         const wsp2 = new WSP();
-        const source2 = stream(function(connect) {
-            const e = connect([wsp2]);
-            _(() => e(wsp2.rec(2)));
-        });
+        _(() => wsp2.rec(2));
         const queue1 = expected.values();
-        stream
-            .with( [ source1, source2 ], () => {
-                const state = new Map();
-                return (updates) => {
-                    updates.forEach( ([stream, data]) => state.set(stream, data) );
-                    return [ ...state.values() ];
-                };
-            } )
+        new WSP( [ wsp1, wsp2 ], () => {
+            const state = new Map();
+            return (updates) => {
+                updates.forEach( ([data, stream]) => state.set(stream, data) );
+                return [ ...state.values() ];
+            };
+        } )
             .get(e => {
-                expect(e).toEqual(queue1.next().value);
+                expect(e).toEqual(queue1.next().value)
             });
         _( () => queue1.next().done && done() );
     });
@@ -40,49 +33,41 @@ describe('with', function () {
             ["a1", "b1"],
         ];
         const wsp = new WSP();
-        const source = stream(function(connect) {
-            const e = connect([wsp]);
-            _( () => e(wsp.rec(1)) );
-        })
-            .endpoint();
-        const pipe1 = source.map( vl => "a" + vl );
-        const pipe2 = source.map( vl => "b" + vl );
+        _(() => wsp.rec(1));
+        const wsp1 = wsp.map( vl => "a" + vl );
+        const wsp2 = wsp.map( vl => "b" + vl );
         const queue1 = expected.values();
-        stream
-            .with( [ pipe1, pipe2 ], (own) => {
-                const state = new Map();
-                return (updates) => {
-                    updates.forEach( ([stream, data]) => state.set(stream, data) );
-                    return [ ...state.values() ];
-                };
-            } )
-            .get(e => expect(e).toEqual(queue1.next().value));
+        new WSP( [ wsp1, wsp2 ], () => {
+            const state = new Map();
+            return (updates) => {
+                updates.forEach( ([data, stream]) => state.set(stream, data) );
+                return [ ...state.values() ];
+            };
+        } )
+            .get(e => {
+                expect(e).toEqual(queue1.next().value)
+            });
         _( () => queue1.next().done && done() );
     });
-
+    
     test('single wsp (sync mode) with empty record', (done) => {
         const _ = async();
         const expected = [
             ["a1"], ["a2"],
         ];
         const wsp = new WSP();
-        const source = stream(function(connect) {
-            const e = connect([wsp]);
-            _( () => e(wsp.rec(1)) );
-            _( () => e(wsp.rec(2)) );
-        })
-            .endpoint();
-        const pipe1 = source.map( vl => "a" + vl );
-        const pipe2 = source.filter( () => false );
+        _( () => wsp.rec(1) );
+        _( () => wsp.rec(2) );
+        const wsp1 = wsp.map( vl => "a" + vl );
+        const wsp2 = wsp.filter( () => false );
         const queue1 = expected.values();
-        stream
-            .with( [ pipe1, pipe2 ], (own) => {
-                const state = new Map();
-                return (updates) => {
-                    updates.forEach( ([stream, data]) => state.set(stream, data) );
-                    return [ ...state.values() ];
-                };
-            } )
+        new WSP( [ wsp1, wsp2 ], () => {
+            const state = new Map();
+            return (updates) => {
+                updates.forEach( ([data, stream]) => state.set(stream, data) );
+                return [ ...state.values() ];
+            };
+        } )
             .get(e => expect(e).toEqual(queue1.next().value));
         _( () => queue1.next().done && done() );
     });
@@ -93,19 +78,14 @@ describe('with', function () {
             ["a1", "b1"],
         ];
         const wsp = new WSP();
-        const source = stream(function(connect) {
-            const e = connect([wsp]);
-            e(wsp.rec(1));
-        })
-          .endpoint();
-        const pipe1 = source.map( vl => "a" + vl );
-        const pipe2 = source.map( vl => "b" + vl );
+        wsp.rec(1);
+        const wsp1 = wsp.map( vl => "a" + vl );
+        const wsp2 = wsp.map( vl => "b" + vl );
         const queue1 = expected.values();
-        stream
-          .with( [ pipe1, pipe2 ], (own) => {
+        new WSP( [ wsp1, wsp2 ], () => {
               const state = new Map();
               return (updates) => {
-                  updates.forEach( ([stream, data]) => state.set(stream, data) );
+                  updates.forEach( ([data, stream]) => state.set(stream, data) );
                   return [ ...state.values() ];
               };
           } )

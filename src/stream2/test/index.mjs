@@ -1,13 +1,19 @@
 import "../../polyfills"
 export * from "../stream"
+
+
+//import "./map";
+import "./with";
 /*
+
 import './simple';
 import "./reducer";
-import "./map";
+
 import "./filter";
 */
+/*
 import "./with";
-
+*/
 /*
 import '../../utils';
 import './constructor';
