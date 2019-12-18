@@ -1,17 +1,38 @@
 import {WSP} from "./wsp";
 
-export class RedWSP {
+export class RedWSP extends WSP {
 	
 	/**
 	 *
-	 * @param {Array.<Record>} state
+	 * @param {Array.<Record>} reliable
+	 * @param {Function} hnProJ
 	 */
-	constructor( state ) {
-		//если следи стримов есть хотябы один контроллер - то это мастер редьюсер,
+	constructor(reliable, hnProJ) {
+		super([], hnProJ);
+		//если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
 		//мастер редьюсер должен получить начальное состояние извне
 		//в ином случае состояние создается на базе мастер стримов
-		
-		this.state = state;
+
+		//В первой хранится текущее (надежное) состояние
+		//Во второй очереди хранятся события в исходном виде
+		//Второая очередь является дополнением к первой
+
+		//В третьей очереди хранится результирующее состояние
+		//Причем первый элемент является бессрочным
+
+		this.reliable = reliable;
+		this.t4queue = [];
+
+		this.sequence = reliable;
+
+
+		t4queue.reduce( ( acc, next ) => {
+
+		} );
+
+		this.state = [];
+
+
 	}
 	
 	map( proJ ) {

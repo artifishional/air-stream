@@ -1,5 +1,7 @@
 import { stream2 as stream } from '../index';
 import {series} from "../../utils.mjs";
+import { async } from '../../utils';
+import { WSP } from '../wsp';
 
 
 class Socket {
@@ -54,7 +56,7 @@ describe('1.', function () {
 });*/
 
 describe('complicated', function () {
-    test('stream reopening', (done) => {
+    /*test('stream reopening', (done) => {
         done = series(done, [
             evt => expect(evt).toEqual( "a1" ),
             evt => expect(evt).toEqual( "b2" ),
@@ -76,5 +78,35 @@ describe('complicated', function () {
             hook();
             source.on( done );
         }, 10);
+    });*/
+
+
+    //изменение порядка
+    //отмена
+
+    test("slave mixed type storage combinator with retouch", (done) => {
+
+        const _ = async();
+        const expected = [
+            ["a1", "b1"],
+        ];
+        const wsp1 = new RWSP(rt4);
+        wsp1.rec(2);
+
+        const wsp2 = new RWSP(rt4);
+        wsp2.rec(1);
+
+        const queue1 = expected.values();
+        new RsWSP( [ wsp1, wsp2 ], () => {
+            const state = new Map();
+            return (updates) => {
+                updates.forEach( ([data, stream]) => state.set(stream, data) );
+                return [ ...state.values() ];
+            };
+        } )
+          .get(e => expect(e).toEqual(queue1.next().value));
+        _( () => queue1.next().done && done() );
     });
+
+
 });

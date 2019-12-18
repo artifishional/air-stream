@@ -47,7 +47,7 @@ export class WSP {
 		streams.map(stream => stream.on(this));
 	}
 
-	handle( stream, cuR ) {
+	handleEvent( stream, cuR ) {
 		// grouping
 		// каждое сообщение (или группу если поддерживается несколько событий
 		// в рамках одного sttmp) из солид необходимо разместить в ячейке
@@ -103,13 +103,22 @@ export class WSP {
 		}
 	}
 
+	handleReTouch( stream, cuRt4 ) {
+
+	}
+
+	rt4(t4queue) {
+		this.t4queue = t4queue;
+		this.slaves.forEach( slv => slv.handleReTouch(this, t4queue) );
+	}
+
 	off( slv ) {
 		this.slaves.delete(slv);
 	}
 
 	on( slv ) {
 		if(this.curFrameCachedRecord && this.curFrameCachedRecord.token === STTMP.get()) {
-			slv.handle(this, this.curFrameCachedRecord)
+			slv.handleEvent(this, this.curFrameCachedRecord)
 		}
 		else {
 			this.curFrameCachedRecord = null;
@@ -118,12 +127,16 @@ export class WSP {
 	}
 	
 	get( proJ ) {
-		return new WSP( [ this ], () => ( [ [ update ] ] ) => (proJ(update), update) );
+		return new WSP( [ this ],
+			() => ( [ [ update ] ] ) => {
+			proJ(update);
+			return update
+		} );
 	}
 	
 	next( rec ) {
 		this.curFrameCachedRecord = rec;
-		this.slaves.forEach( slv => slv.handle(this, rec) );
+		this.slaves.forEach( slv => slv.handleEvent(this, rec) );
 	}
 	
 	rec(value, token = STTMP.get()) {
