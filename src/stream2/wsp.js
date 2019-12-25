@@ -93,7 +93,7 @@ export class WSP {
 			this.event5tore.delete(event5tore[i]);
 			const updates = streams.filter( ([, rec ]) => rec.value !== EMPTY);
 			if(updates.length) {
-				this.next( rec.from( this.hn(
+				this.next( rec.from( this.produce(
 					updates.map( ([ stream, rec ]) => [ rec.value, stream, rec ] )
 				) ) );
 			}
@@ -105,6 +105,10 @@ export class WSP {
 
 	handleReTouch( stream, cuRt4 ) {
 
+	}
+
+	produce( updates ) {
+		return this.hn( updates );
 	}
 
 	rt4(t4queue) {

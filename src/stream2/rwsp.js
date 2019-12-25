@@ -1,4 +1,9 @@
-import {WSP} from "./wsp";
+import { Record, WSP } from './wsp';
+
+
+	stream.outwards()
+		.withLatest( [ state, stage ] )
+		.reduce(  );
 
 export class RedWSP extends WSP {
 	
@@ -9,6 +14,7 @@ export class RedWSP extends WSP {
 	 */
 	constructor(reliable, hnProJ) {
 		super([], hnProJ);
+		this.redSlaves = [];
 		//если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
 		//мастер редьюсер должен получить начальное состояние извне
 		//в ином случае состояние создается на базе мастер стримов
@@ -20,19 +26,39 @@ export class RedWSP extends WSP {
 		//В третьей очереди хранится результирующее состояние
 		//Причем первый элемент является бессрочным
 
+		//действия могут быть отменены в результате исключения
+		//это значит что для любого действия требуется короткое ожидание
 		this.reliable = reliable;
 		this.t4queue = [];
+		this.state = [ ...reliable ];
+	}
 
-		this.sequence = reliable;
+	onRecordStatusUpdate( rec, status ) {
 
-
-		t4queue.reduce( ( acc, next ) => {
-
-		} );
-
-		this.state = [];
+		const indexOf = this.t4queue.indexOf( rec );
 
 
+
+		this.redSlaves.forEach( slv => slv.handleR(this) );
+
+		if(status === Record.STATUS.SUCCESS) {
+
+			if(indexOf === 0) {
+				this.t4queue.shift();
+			}
+
+
+		}
+		else if(status === Record.STATUS.FAILURE) {
+			this.
+		}
+	}
+
+	next( rec ) {
+		rec.on( this );
+		this.t4queue.push( rec );
+		this.reliable.push( rec );
+		super.next( rec );
 	}
 	
 	map( proJ ) {
