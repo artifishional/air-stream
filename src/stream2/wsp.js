@@ -1,5 +1,6 @@
 import { DEFAULT_TOKEN, EMPTY } from './signals';
 import { STTMP } from './sync-ttmp-controller';
+import
 
 let WSP_ID_COUNT = 0;
 
@@ -93,22 +94,22 @@ export class WSP {
 			this.event5tore.delete(event5tore[i]);
 			const updates = streams.filter( ([, rec ]) => rec.value !== EMPTY);
 			if(updates.length) {
-				this.next( rec.from( this.produce(
+				this.next( this.createRecordFrom( rec, this.hn(
 					updates.map( ([ stream, rec ]) => [ rec.value, stream, rec ] )
 				) ) );
 			}
 			else {
-				this.next( rec.from( EMPTY ) );
+				this.next( this.createRecordFrom(rec, EMPTY ));
 			}
 		}
 	}
 
-	handleReTouch( stream, cuRt4 ) {
-
+	createRecordFrom(rec, updates) {
+		return rec.from( updates, Record );
 	}
 
-	produce( updates ) {
-		return this.hn( updates );
+	handleReTouch( stream, cuRt4 ) {
+
 	}
 
 	rt4(t4queue) {
@@ -194,9 +195,30 @@ export class Record {
 			return new Record( this.owner, EMPTY, this.token, this.origin );
 		}
 	}
-	
-	from(value) {
-		return new Record( this.owner, value, this.token, this.origin );
+
+	//TODO: redic. species set
+	from(value, species = Record) {
+		return new species( this.owner, value, this.token, this.origin );
 	}
 	
+}
+
+export const RED_RECORD_STATUS = {
+	PENDING: 	0,
+	FAILURE: -1,
+	SUCCESS: 	1,
+};
+
+export class RedRecord extends Record {
+
+	constructor ( owner, value, token, origin ) {
+		super( owner, value, token, origin );
+		this.status = RedRecord.STATUS.PENDING;
+
+	}
+
+	static get STATUS() {
+		return RED_RECORD_STATUS;
+	}
+
 }

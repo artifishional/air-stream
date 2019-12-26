@@ -1,9 +1,5 @@
-import { Record, WSP } from './wsp';
+import { RedRecord, Record, WSP } from './wsp';
 
-
-	stream.outwards()
-		.withLatest( [ state, stage ] )
-		.reduce(  );
 
 export class RedWSP extends WSP {
 	
@@ -33,7 +29,11 @@ export class RedWSP extends WSP {
 		this.state = [ ...reliable ];
 	}
 
-	onRecordStatusUpdate( rec, status ) {
+	createRecordFrom(rec, updates) {
+		return rec.from( updates, RedRecord );
+	}
+
+	onRecordStatusUpdate( rec ) {
 
 		const indexOf = this.t4queue.indexOf( rec );
 
@@ -41,7 +41,7 @@ export class RedWSP extends WSP {
 
 		this.redSlaves.forEach( slv => slv.handleR(this) );
 
-		if(status === Record.STATUS.SUCCESS) {
+		if(rec.status === RedRecord.STATUS.SUCCESS) {
 
 			if(indexOf === 0) {
 				this.t4queue.shift();
@@ -49,7 +49,7 @@ export class RedWSP extends WSP {
 
 
 		}
-		else if(status === Record.STATUS.FAILURE) {
+		else if(rec.status === RedRecord.STATUS.FAILURE) {
 			this.
 		}
 	}
