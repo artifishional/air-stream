@@ -1,8 +1,5 @@
 import { DEFAULT_TOKEN, EMPTY } from './signals';
 import { STTMP } from './sync-ttmp-controller';
-import
-
-let WSP_ID_COUNT = 0;
 
 export class WSP {
 
@@ -209,12 +206,49 @@ export const RED_RECORD_STATUS = {
 	SUCCESS: 	1,
 };
 
+export class WssChannel {
+
+	constructor ( ws ) {
+		this.ws = ws;
+		this.ws.addEventListener("message", this);
+		this.subscribers = new Set();
+	}
+
+	handleEvent( raw ) {
+		const data = JSON.stringify( raw );
+		this.subscribers.forEach( rec => rec.onRequestReady(data) );
+	}
+
+	on( rec ) {
+		this.subscribers.add( rec );
+	}
+
+	off( rec ) {
+		this.subscribers.delete( rec );
+	}
+
+	send( data ) {
+		const raw = JSON.parse( data );
+		this.ws.send( raw );
+	}
+
+}
+
 export class RedRecord extends Record {
 
 	constructor ( owner, value, token, origin ) {
 		super( owner, value, token, origin );
 		this.status = RedRecord.STATUS.PENDING;
+		this.rQ = new owner.createRequest( this );
+	}
 
+	onRequestReady( { status } ) {
+		this.status = status;
+		this.owner.onRecordStatusUpdate( this );
+	}
+
+	error() {
+		this.onRequestReady( { status: RedRecord.STATUS.FAILURE } );
 	}
 
 	static get STATUS() {

@@ -7,10 +7,13 @@ export class RedWSP extends WSP {
 	 *
 	 * @param {Array.<Record>} reliable
 	 * @param {Function} hnProJ
+	 * @param {WssChannel} remote
 	 */
-	constructor(reliable, hnProJ) {
+	constructor(reliable, hnProJ, remote) {
 		super([], hnProJ);
 		this.redSlaves = [];
+		this.connect = remote;
+
 		//если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
 		//мастер редьюсер должен получить начальное состояние извне
 		//в ином случае состояние создается на базе мастер стримов
@@ -50,12 +53,19 @@ export class RedWSP extends WSP {
 
 		}
 		else if(rec.status === RedRecord.STATUS.FAILURE) {
-			this.
+
+			const deleteCount = this.state.length - this.reliable.length;
+
+			this.t4queue.shift();
+			this.state.splice(
+				this.reliable.length,
+				deleteCount,
+				...this.t4queue.map( rec =>  )
+			);
 		}
 	}
 
 	next( rec ) {
-		rec.on( this );
 		this.t4queue.push( rec );
 		this.reliable.push( rec );
 		super.next( rec );
