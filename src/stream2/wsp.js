@@ -194,8 +194,8 @@ export class Record {
 	}
 
 	//TODO: redic. species set
-	from(value, species = Record) {
-		return new species( this.owner, value, this.token, this.origin );
+	from(value, species = Record, owner = this.owner) {
+		return new species( owner, value, this.token, this.origin );
 	}
 	
 }
@@ -238,17 +238,6 @@ export class RedRecord extends Record {
 
 	constructor ( owner, value, token, origin ) {
 		super( owner, value, token, origin );
-		this.status = RedRecord.STATUS.PENDING;
-		this.rQ = new owner.createRequest( this );
-	}
-
-	onRequestReady( { status } ) {
-		this.status = status;
-		this.owner.onRecordStatusUpdate( this );
-	}
-
-	error() {
-		this.onRequestReady( { status: RedRecord.STATUS.FAILURE } );
 	}
 
 	static get STATUS() {

@@ -7,12 +7,11 @@ export class RedWSP extends WSP {
 	 *
 	 * @param {Array.<Record>} reliable
 	 * @param {Function} hnProJ
-	 * @param {WssChannel} remote
+	 * @param {Function} createRecordFrom
 	 */
-	constructor(reliable, hnProJ, remote) {
+	constructor(reliable, hnProJ, { createRecordFrom }) {
 		super([], hnProJ);
 		this.redSlaves = [];
-		this.connect = remote;
 
 		//если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
 		//мастер редьюсер должен получить начальное состояние извне
@@ -30,32 +29,30 @@ export class RedWSP extends WSP {
 		this.reliable = reliable;
 		this.t4queue = [];
 		this.state = [ ...reliable ];
+
+		if(createRecordFrom) {
+			//создается запись
+			//контейнер создает запрос
+			//в результате контейнер вызывает метод реакции
+			this.createRecordFrom = createRecordFrom;
+		}
 	}
 
+	//как передать ссылку на поток соединения минуюя данный класс?
 	createRecordFrom(rec, updates) {
 		return rec.from( updates, RedRecord );
 	}
 
-	onRecordStatusUpdate( rec ) {
-
+	onRecordStatusUpdate( rec, status ) {
 		const indexOf = this.t4queue.indexOf( rec );
-
-
-
 		this.redSlaves.forEach( slv => slv.handleR(this) );
-
-		if(rec.status === RedRecord.STATUS.SUCCESS) {
-
+		if(status === RedRecord.STATUS.SUCCESS) {
 			if(indexOf === 0) {
 				this.t4queue.shift();
 			}
-
-
 		}
-		else if(rec.status === RedRecord.STATUS.FAILURE) {
-
+		else if(status === RedRecord.STATUS.FAILURE) {
 			const deleteCount = this.state.length - this.reliable.length;
-
 			this.t4queue.shift();
 			this.state.splice(
 				this.reliable.length,
