@@ -1,3 +1,6 @@
+
+const boiler = new Map();
+
 export const STTMP = new class TTMPSyncController {
 	
 	constructor () {
@@ -6,8 +9,14 @@ export const STTMP = new class TTMPSyncController {
 	}
 	
 	get(ttmp = -1) {
-		if(!this.token) {
-			if(ttmp === -1) ttmp = globalThis.performance.now();
+		if(ttmp !== -1) {
+			if(!boiler.has(ttmp)) {
+				boiler.set( ttmp, { sttmp: ttmp } );
+			}
+			return boiler.get( ttmp );
+		}
+		else if(!this.token) {
+			ttmp = globalThis.performance.now();
 			this.token = { sttmp: ttmp };
 			queueMicrotask(() => {
 				this.token = null;

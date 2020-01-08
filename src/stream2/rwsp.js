@@ -1,16 +1,14 @@
 import { RedRecord, Record, WSP } from './wsp';
+import {STTMP} from "./sync-ttmp-controller";
 
 
-export class RedWSP extends WSP {
+export class RedWSP {
 	
 	/**
-	 *
-	 * @param {Array.<Record>} reliable
 	 * @param {Function} hnProJ
 	 * @param {Function} createRecordFrom
 	 */
-	constructor(reliable, hnProJ, { createRecordFrom }) {
-		super([], hnProJ);
+	constructor(hnProJ, { createRecordFrom = null } = {}) {
 		this.redSlaves = [];
 
 		//если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
@@ -26,9 +24,10 @@ export class RedWSP extends WSP {
 
 		//действия могут быть отменены в результате исключения
 		//это значит что для любого действия требуется короткое ожидание
-		this.reliable = reliable;
-		this.t4queue = [];
-		this.state = [ ...reliable ];
+		this.reliable = null;
+		this.hn = hnProJ( this );
+		this.t4queue = null;
+		this.state = null;
 
 		if(createRecordFrom) {
 			//создается запись
@@ -36,6 +35,48 @@ export class RedWSP extends WSP {
 			//в результате контейнер вызывает метод реакции
 			this.createRecordFrom = createRecordFrom;
 		}
+	}
+	
+	next( cuR ) {
+		if( cuR instanceof RedRecord ) {
+			/**
+			 * In case of remote control
+			 */
+			if(cuR.status === 1) {
+				//требуется проверка очередности
+				const rec = this.createRecordFrom(
+					cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
+				);
+				this.t4queue.push( rec );
+				this.reliable.push( rec );
+				this.state.push( rec );
+			}
+			else {
+				const rec = this.createRecordFrom(
+					cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
+				);
+				this.t4queue.push( rec );
+				this.reliable.push( rec );
+				this.state.push( rec );
+				this.next( rec );
+			}
+		}
+		else {
+			const rec = this.createRecordFrom(
+				cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
+			);
+			this.t4queue.push( rec );
+			this.reliable.push( rec );
+			this.state.push( rec );
+			rec.on(this);
+			this.next( rec );
+		}
+	}
+	
+	fill( state ) {
+		this.t4queue = [];
+		this.reliable = state;
+		this.state = [ ...state ];
 	}
 
 	//как передать ссылку на поток соединения минуюя данный класс?
@@ -57,15 +98,9 @@ export class RedWSP extends WSP {
 			this.state.splice(
 				this.reliable.length,
 				deleteCount,
-				...this.t4queue.map( rec =>  )
+				...this.t4queue.map( rec => {} )
 			);
 		}
-	}
-
-	next( rec ) {
-		this.t4queue.push( rec );
-		this.reliable.push( rec );
-		super.next( rec );
 	}
 	
 	map( proJ ) {

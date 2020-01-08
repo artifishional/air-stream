@@ -1,6 +1,8 @@
 import { DEFAULT_TOKEN, EMPTY } from './signals';
 import { STTMP } from './sync-ttmp-controller';
 
+let WSP_ID_COUNT = 1;
+
 export class WSP {
 
 	constructor( streams = [], hnProJ = null, id = WSP_ID_COUNT ++ ) {
@@ -167,8 +169,8 @@ export class WSP {
 
 export class Record {
 	
-	constructor( owner, value, token, origin = this ) {
-		this.origin = origin;
+	constructor( owner, value, token, head = this ) {
+		this.origin = head;
 		this.value = value;
 		this.owner = owner;
 		this.token = token;
