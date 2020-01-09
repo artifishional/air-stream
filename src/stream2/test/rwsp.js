@@ -4,6 +4,10 @@ import {async} from "../../utils";
 import {RedWSP} from "../rwsp";
 import {STTMP} from "../sync-ttmp-controller";
 
+function prop(prop) {
+	return data => data[prop];
+}
+
 describe('RedWSP', function () {
 	
 	test('Forwarding a confirmed event', () => {
@@ -20,7 +24,7 @@ describe('RedWSP', function () {
 			undefined,
 			RED_RECORD_STATUS.SUCCESS
 		));
-		expect(rwsp.state.slice(-1)[0].value).toEqual(37);
+		expect(rwsp.state.slice(-2).map(prop("value"))).toEqual([25, 37]);
 	});
 
 	test('Forwarding a unconfirmed event', () => {
@@ -37,7 +41,7 @@ describe('RedWSP', function () {
 			undefined,
 			RED_RECORD_STATUS.PENDING
 		));
-		expect(rwsp.state.slice(-1)[0].value).toEqual(37);
+		expect(rwsp.state.slice(-2).map(prop("value"))).toEqual([25, 37]);
 	});
 
 	test('Event from controller - consecutive cancellation', () => {
@@ -57,7 +61,7 @@ describe('RedWSP', function () {
 		rwsp.propagate(aeR);
 		aeR.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
 		rwsp.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
-		expect(rwsp.state.slice(-1)[0].value).toEqual(25);
+		expect(rwsp.state.slice(-1).map(prop("value"))).toEqual([25]);
 	});
 
 	test('Event from controller - non consecutive cancellation', () => {
@@ -69,22 +73,29 @@ describe('RedWSP', function () {
 		]);
 		rwsp.propagate(new RedMRecord(
 			rwsp,
-			12,
-			STTMP.get(4),
+			2,
+			STTMP.get(1),
 			undefined,
 			RED_RECORD_STATUS.PENDING
 		));
 		const aeR = new RedMRecord(
 			rwsp,
-			12,
-			STTMP.get(4),
+			1,
+			STTMP.get(2),
 			undefined,
 			RED_RECORD_STATUS.PENDING
 		);
 		rwsp.propagate(aeR);
+		rwsp.propagate(new RedMRecord(
+			rwsp,
+			-3,
+			STTMP.get(3),
+			undefined,
+			RED_RECORD_STATUS.PENDING
+		));
 		aeR.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
 		rwsp.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
-		expect(rwsp.state.slice(-1)[0].value).toEqual(25);
+		expect(rwsp.state.slice(-3).map(prop("value"))).toEqual([25, 27, 24]);
 	});
 
 });

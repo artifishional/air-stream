@@ -58,41 +58,26 @@ export class RedWSP {
 	 *    - Являются для данного типа аналогом данных от потоков контроллера
 	 */
 	propagate( cuR ) {
+		const rec = cuR.from(
+			this.hn( this.state.slice(-1)[0].value, cuR.value ), RedRecord
+		);
 		if( cuR instanceof RedRecord ) {
 			if(!cuR.status) {
-				const rec = this.createRecordFrom(
-					cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
-				);
-				this.t4queue.push( rec );
-				this.state.push( rec );
-				this.next( rec );
+				this.t4queue.push( cuR );
 			}
 			else {
-				const rec = this.createRecordFrom(
-					cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
-				);
-				this.t4queue.push( rec );
+				this.t4queue.push( cuR );
 				this.reliable.push( rec );
-				this.state.push( rec );
-				this.next( rec );
 			}
 		}
 		else if( cuR instanceof RedSRecord ) {
-			const rec = this.createRecordFrom(
-				cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
-			);
-			this.t4queue.push( rec );
-			this.state.push( rec );
-			this.next( rec );
+			this.t4queue.push( cuR );
 		}
 		else {
-			const rec = this.createRecordFrom(
-				cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
-			);
-			this.t4queue.push( rec );
-			this.state.push( rec );
-			this.next( rec );
+			this.t4queue.push( cuR );
 		}
+		this.state.push( rec );
+		this.next( rec );
 	}
 
 	next( rec ) {
