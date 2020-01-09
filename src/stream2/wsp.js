@@ -202,6 +202,10 @@ export class Record {
 	
 }
 
+/**
+ * @readonly
+ * @enum {number}
+ */
 export const RED_RECORD_STATUS = {
 	PENDING: 	0,
 	FAILURE: -1,
@@ -236,10 +240,39 @@ export class WssChannel {
 
 }
 
-export class RedRecord extends Record {
+export class RedRecord extends Record { }
 
-	constructor ( owner, value, token, origin ) {
-		super( owner, value, token, origin );
+export class RedMRecord extends RedRecord {
+
+	/**
+	 * @param owner Owner stream
+	 * @param value
+	 * @param token Unique ttmp token
+	 * @param head Link on head wsp
+	 * @param {RED_RECORD_STATUS} status
+	 */
+	constructor (
+		owner,
+		value,
+		token,
+		head,
+		status = RED_RECORD_STATUS.PENDING
+	) {
+		super( owner, value, token, head );
+		this.subscribers = new Set();
+		this.status = status;
+	}
+
+	onRecordStatusUpdate(rec, status) {
+		this.status = status;
+	}
+
+	on(subscriber) {
+		this.subscribers.add(subscriber);
+	}
+
+	off(subscriber) {
+		this.subscribers.delete(subscriber);
 	}
 
 	static get STATUS() {

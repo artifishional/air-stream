@@ -1,4 +1,4 @@
-import { RedRecord, Record, WSP } from './wsp';
+import { RedMRecord, RedRecord, Record, WSP, RED_RECORD_STATUS } from './wsp';
 import {STTMP} from "./sync-ttmp-controller";
 
 
@@ -10,7 +10,7 @@ export class RedWSP {
 	 */
 	constructor(hnProJ, { createRecordFrom = null } = {}) {
 		this.redSlaves = [];
-
+		this.slaves = [];
 		//если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
 		//мастер редьюсер должен получить начальное состояние извне
 		//в ином случае состояние создается на базе мастер стримов
@@ -36,20 +36,36 @@ export class RedWSP {
 			this.createRecordFrom = createRecordFrom;
 		}
 	}
-	
-	next( cuR ) {
+
+	/**
+	 * Источники:
+	 * 1. Данные дополенения от текущего удаленного хранилища (в рамках моста)
+	 * 	 	- Статус подтвержден
+	 * 		- Пересчет позиций
+	 * 	 	- Владельцем является текущий store
+	 * 2. Данные от потоков контроллера
+	 * 		- Должны быть превращены в red master record с запросом на подтверждение
+	 * 	 	- Статус не подтвержден
+	 * 	 	- Владелец внешний
+	 * 3. Данные от соседнего ВНЕШНЕГО хранилища
+	 * 	 	- Статус любой
+	 * 	 		Соседний store
+	 * 	 				может получать новые данные от контроллера,
+	 * 	 				может также быть восстановлен готовыми данными с сервера.
+	 * 		- Пересчет позиций
+	 * 	 	- Владелец внешний
+	 * 4. Данные от соседнего ВНУТРЕННЕГО хранилища
+	 *    - Являются для данного типа аналогом данных от потоков контроллера
+	 */
+	propagate( cuR ) {
 		if( cuR instanceof RedRecord ) {
-			/**
-			 * In case of remote control
-			 */
-			if(cuR.status === 1) {
-				//требуется проверка очередности
+			if(!cuR.status) {
 				const rec = this.createRecordFrom(
 					cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
 				);
 				this.t4queue.push( rec );
-				this.reliable.push( rec );
 				this.state.push( rec );
+				this.next( rec );
 			}
 			else {
 				const rec = this.createRecordFrom(
@@ -61,16 +77,26 @@ export class RedWSP {
 				this.next( rec );
 			}
 		}
+		else if( cuR instanceof RedSRecord ) {
+			const rec = this.createRecordFrom(
+				cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
+			);
+			this.t4queue.push( rec );
+			this.state.push( rec );
+			this.next( rec );
+		}
 		else {
 			const rec = this.createRecordFrom(
 				cuR, this.hn( this.state.slice(-1)[0].value, cuR.value )
 			);
 			this.t4queue.push( rec );
-			this.reliable.push( rec );
 			this.state.push( rec );
-			rec.on(this);
 			this.next( rec );
 		}
+	}
+
+	next( rec ) {
+		this.slaves.forEach( slv => slv.handleEvent(this, rec) );
 	}
 	
 	fill( state ) {
@@ -86,21 +112,23 @@ export class RedWSP {
 
 	onRecordStatusUpdate( rec, status ) {
 		const indexOf = this.t4queue.indexOf( rec );
-		this.redSlaves.forEach( slv => slv.handleR(this) );
-		if(status === RedRecord.STATUS.SUCCESS) {
+		this.t4queue.splice( indexOf, 1 );
+		if(status === RED_RECORD_STATUS.SUCCESS) {
 			if(indexOf === 0) {
-				this.t4queue.shift();
+				this.reliable.push( this.state[this.reliable.length] );
 			}
 		}
-		else if(status === RedRecord.STATUS.FAILURE) {
-			const deleteCount = this.state.length - this.reliable.length;
-			this.t4queue.shift();
-			this.state.splice(
-				this.reliable.length,
-				deleteCount,
-				...this.t4queue.map( rec => {} )
-			);
+		else if(status === RED_RECORD_STATUS.FAILURE) {
+			this.state.splice(this.reliable.length, Infinity);
+			this.t4queue.reduce( (acc, rec) => {
+				const res = this.createRecordFrom(
+					rec, this.hn( acc.value, rec.value )
+				);
+				this.state.push(res);
+				return res;
+			}, this.reliable.slice(-1)[0] );
 		}
+		this.redSlaves.forEach( slv => slv.handleR(this) );
 	}
 	
 	map( proJ ) {
