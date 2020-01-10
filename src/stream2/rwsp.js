@@ -6,9 +6,8 @@ export class RedWSP {
 	
 	/**
 	 * @param {Function} hnProJ
-	 * @param {Function} createRecordFrom
 	 */
-	constructor(hnProJ, { createRecordFrom = null } = {}) {
+	constructor(hnProJ) {
 		this.redSlaves = [];
 		this.slaves = [];
 		//если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
@@ -28,13 +27,6 @@ export class RedWSP {
 		this.hn = hnProJ( this );
 		this.t4queue = null;
 		this.state = null;
-
-		if(createRecordFrom) {
-			//создается запись
-			//контейнер создает запрос
-			//в результате контейнер вызывает метод реакции
-			this.createRecordFrom = createRecordFrom;
-		}
 	}
 
 	/**
@@ -56,13 +48,14 @@ export class RedWSP {
 	 * 	 	- Владелец внешний
 	 * 4. Данные от соседнего ВНУТРЕННЕГО хранилища
 	 *    - Являются для данного типа аналогом данных от потоков контроллера
+	 *    Как различать тип хранилища?
 	 */
 	propagate( cuR ) {
-		const rec = cuR.from(
-			this.hn( this.state.slice(-1)[0].value, cuR.value ), RedRecord
+		const rec = this.createRecordFrom( cuR,
+			this.hn( this.state.slice(-1)[0].value, cuR.value ),
 		);
-		if( cuR instanceof RedRecord ) {
-			if(!cuR.status) {
+		if( cuR instanceof RedMRecord ) {
+			if(cuR.status === RED_RECORD_STATUS.PENDING) {
 				this.t4queue.push( cuR );
 			}
 			else {
@@ -90,9 +83,11 @@ export class RedWSP {
 		this.state = [ ...state ];
 	}
 
-	//как передать ссылку на поток соединения минуюя данный класс?
 	createRecordFrom(rec, updates) {
-		return rec.from( updates, RedRecord );
+		if(!(rec instanceof RedMRecord)) {
+			return rec.from( updates, RedMRecord );
+		}
+		return rec.from( updates );
 	}
 
 	onRecordStatusUpdate( rec, status ) {

@@ -169,7 +169,7 @@ export class WSP {
 
 export class Record {
 	
-	constructor( owner, value, token, head = this ) {
+	constructor( src, owner, value, token, head = this ) {
 		this.origin = head;
 		this.value = value;
 		this.owner = owner;
@@ -180,7 +180,7 @@ export class Record {
 		if(this.value === EMPTY) {
 			return this;
 		}
-		return new Record( this.owner, fn(this.value, this), this.token, this.origin );
+		return new Record( this, this.owner, fn(this.value, this), this.token, this.origin );
 	}
 
 	filter(fn) {
@@ -191,13 +191,13 @@ export class Record {
 			return this;
 		}
 		else {
-			return new Record( this.owner, EMPTY, this.token, this.origin );
+			return new Record( this, this.owner, EMPTY, this.token, this.origin );
 		}
 	}
 
 	//TODO: redic. species set
 	from(value, species = Record, owner = this.owner) {
-		return new species( owner, value, this.token, this.origin );
+		return new species( this, owner, value, this.token, this.origin );
 	}
 	
 }
@@ -212,55 +212,50 @@ export const RED_RECORD_STATUS = {
 	SUCCESS: 	1,
 };
 
-export class WssChannel {
-
-	constructor ( ws ) {
-		this.ws = ws;
-		this.ws.addEventListener("message", this);
-		this.subscribers = new Set();
-	}
-
-	handleEvent( raw ) {
-		const data = JSON.stringify( raw );
-		this.subscribers.forEach( rec => rec.onRequestReady(data) );
-	}
-
-	on( rec ) {
-		this.subscribers.add( rec );
-	}
-
-	off( rec ) {
-		this.subscribers.delete( rec );
-	}
-
-	send( data ) {
-		const raw = JSON.parse( data );
-		this.ws.send( raw );
-	}
-
-}
+/**
+ * @readonly
+ * @enum {number}
+ */
+export const RED_RECORD_LOCALIZATION = {
+	LOCAL: true,
+	REMOTE: false,
+};
 
 export class RedRecord extends Record { }
 
 export class RedMRecord extends RedRecord {
 
 	/**
-	 * @param owner Owner stream
-	 * @param value
-	 * @param token Unique ttmp token
-	 * @param head Link on head wsp
+	 * @param {WSP} src Source wsp
+	 * @param {WSP} owner Owner stream
+	 * @param {*} value
+	 * @param {{sttmp:Number}} token Unique ttmp token
+	 * @param {Record} head Link on head wsp
+	 * @param {Record} author
 	 * @param {RED_RECORD_STATUS} status
+	 * @param {RED_RECORD_LOCALIZATION} localization
 	 */
 	constructor (
+		src,
 		owner,
 		value,
 		token,
 		head,
-		status = RED_RECORD_STATUS.PENDING
+		{
+			status = RED_RECORD_STATUS.PENDING,
+			localization = RED_RECORD_LOCALIZATION.LOCAL
+		}
 	) {
-		super( owner, value, token, head );
+		super( src, owner, value, token, head );
+		this.src = src;
 		this.subscribers = new Set();
 		this.status = status;
+		this.localization = localization;
+		this.registered = false;
+	}
+
+	register() {
+		this.registered = true;
 	}
 
 	onRecordStatusUpdate(rec, status) {
