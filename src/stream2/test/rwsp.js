@@ -1,5 +1,5 @@
 import { stream2 as stream } from "../../index.mjs";
-import { Record, RED_RECORD_STATUS, RedMRecord, WSP } from '../wsp';
+import {Record, RED_RECORD_LOCALIZATION, RED_RECORD_STATUS, RedMRecord, WSP} from '../wsp';
 import {async} from "../../utils";
 import {RedWSP} from "../rwsp";
 import {STTMP} from "../sync-ttmp-controller";
@@ -15,14 +15,18 @@ describe('RedWSP', function () {
 			() => (count, add) => count + add,
 		);
 		rwsp.fill([
-			new Record(rwsp, 25, STTMP.get(3)),
+			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
 		rwsp.propagate(new RedMRecord(
+			null,
 			rwsp,
 			12,
 			STTMP.get(4),
 			undefined,
-			RED_RECORD_STATUS.SUCCESS
+			{
+				status: RED_RECORD_STATUS.SUCCESS,
+				localization: RED_RECORD_LOCALIZATION.REMOTE
+			}
 		));
 		expect(rwsp.state.slice(-2).map(prop("value"))).toEqual([25, 37]);
 	});
@@ -32,14 +36,18 @@ describe('RedWSP', function () {
 			() => (count, add) => count + add,
 		);
 		rwsp.fill([
-			new Record(rwsp, 25, STTMP.get(3)),
+			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
 		rwsp.propagate(new RedMRecord(
+			null,
 			rwsp,
 			12,
 			STTMP.get(4),
 			undefined,
-			RED_RECORD_STATUS.PENDING
+			{
+				status: RED_RECORD_STATUS.PENDING,
+				localization: RED_RECORD_LOCALIZATION.REMOTE
+			}
 		));
 		expect(rwsp.state.slice(-2).map(prop("value"))).toEqual([25, 37]);
 	});
@@ -49,14 +57,18 @@ describe('RedWSP', function () {
 			() => (count, add) => count + add,
 		);
 		rwsp.fill([
-			new Record(rwsp, 25, STTMP.get(3)),
+			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
 		const aeR = new RedMRecord(
+			null,
 			rwsp,
 			12,
 			STTMP.get(4),
 			undefined,
-			RED_RECORD_STATUS.PENDING
+			{
+				status: RED_RECORD_STATUS.PENDING,
+				localization: RED_RECORD_LOCALIZATION.REMOTE
+			}
 		);
 		rwsp.propagate(aeR);
 		aeR.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
@@ -69,33 +81,67 @@ describe('RedWSP', function () {
 			() => (count, add) => count + add,
 		);
 		rwsp.fill([
-			new Record(rwsp, 25, STTMP.get(3)),
+			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
 		rwsp.propagate(new RedMRecord(
+			null,
 			rwsp,
 			2,
 			STTMP.get(1),
 			undefined,
-			RED_RECORD_STATUS.PENDING
+			{
+				status: RED_RECORD_STATUS.PENDING,
+				localization: RED_RECORD_LOCALIZATION.REMOTE
+			}
 		));
 		const aeR = new RedMRecord(
+			null,
 			rwsp,
 			1,
 			STTMP.get(2),
 			undefined,
-			RED_RECORD_STATUS.PENDING
+			{
+				status: RED_RECORD_STATUS.PENDING,
+				localization: RED_RECORD_LOCALIZATION.REMOTE
+			}
 		);
 		rwsp.propagate(aeR);
 		rwsp.propagate(new RedMRecord(
+			null,
 			rwsp,
 			-3,
 			STTMP.get(3),
 			undefined,
-			RED_RECORD_STATUS.PENDING
+			{
+				status: RED_RECORD_STATUS.PENDING,
+				localization: RED_RECORD_LOCALIZATION.REMOTE
+			}
 		));
 		aeR.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
 		rwsp.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
 		expect(rwsp.state.slice(-3).map(prop("value"))).toEqual([25, 27, 24]);
 	});
-
+	
+	test('Transform for remote from local type', () => {
+		const rwsp = new RedWSP(
+			() => (count, add) => count + add,
+		);
+		rwsp.fill([
+			new Record(null, rwsp, 25, STTMP.get(3)),
+		]);
+		rwsp.propagate(new RedMRecord(
+			null,
+			rwsp,
+			2,
+			STTMP.get(1),
+			undefined,
+			{
+				status: RED_RECORD_STATUS.PENDING,
+				localization: RED_RECORD_LOCALIZATION.LOCAL
+			}
+		));
+		rwsp.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
+		expect(rwsp.state.slice(-3).map(prop("value"))).toEqual([25, 27, 24]);
+	});
+	
 });
