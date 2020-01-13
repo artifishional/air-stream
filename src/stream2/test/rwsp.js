@@ -126,12 +126,16 @@ describe('RedWSP', function () {
 		const rwsp = new RedWSP(
 			() => (count, add) => count + add,
 		);
+		const rwsp2 = new RedWSP(
+			() => (count, add) => count + add,
+			{ localization: RED_RECORD_LOCALIZATION.LOCAL }
+		);
 		rwsp.fill([
 			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
 		rwsp.propagate(new RedMRecord(
 			null,
-			rwsp,
+			rwsp2,
 			2,
 			STTMP.get(1),
 			undefined,
@@ -141,7 +145,7 @@ describe('RedWSP', function () {
 			}
 		));
 		rwsp.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
-		expect(rwsp.state.slice(-3).map(prop("value"))).toEqual([25, 27, 24]);
+		expect(rwsp.state.slice(-3).map(prop("value"))).toEqual([25, 27]);
 	});
 	
 });
