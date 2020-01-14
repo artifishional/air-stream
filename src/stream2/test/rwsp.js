@@ -1,8 +1,14 @@
-import { stream2 as stream } from "../../index.mjs";
-import {Record, RED_RECORD_LOCALIZATION, RED_RECORD_STATUS, RedMRecord, WSP} from '../wsp';
-import {async} from "../../utils";
+import {
+	Record,
+	RED_RECORD_LOCALIZATION,
+	RED_RECORD_STATUS,
+	RED_RECORD_SUBORDINATION,
+	RedRecord,
+} from '../record';
 import {RedWSP} from "../rwsp";
 import {STTMP} from "../sync-ttmp-controller";
+import {WSP} from "../wsp";
+import {stream2 as stream} from "../index";
 
 function prop(prop) {
 	return data => data[prop];
@@ -17,13 +23,14 @@ describe('RedWSP', function () {
 		rwsp.fill([
 			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
-		rwsp.propagate(new RedMRecord(
+		rwsp.propagate(new RedRecord(
 			null,
 			rwsp,
 			12,
 			STTMP.get(4),
 			undefined,
 			{
+				subordination: RED_RECORD_SUBORDINATION.MASTER,
 				status: RED_RECORD_STATUS.SUCCESS,
 				localization: RED_RECORD_LOCALIZATION.REMOTE
 			}
@@ -38,13 +45,14 @@ describe('RedWSP', function () {
 		rwsp.fill([
 			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
-		rwsp.propagate(new RedMRecord(
+		rwsp.propagate(new RedRecord(
 			null,
 			rwsp,
 			12,
 			STTMP.get(4),
 			undefined,
 			{
+				subordination: RED_RECORD_SUBORDINATION.MASTER,
 				status: RED_RECORD_STATUS.PENDING,
 				localization: RED_RECORD_LOCALIZATION.REMOTE
 			}
@@ -59,13 +67,14 @@ describe('RedWSP', function () {
 		rwsp.fill([
 			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
-		const aeR = new RedMRecord(
+		const aeR = new RedRecord(
 			null,
 			rwsp,
 			12,
 			STTMP.get(4),
 			undefined,
 			{
+				subordination: RED_RECORD_SUBORDINATION.MASTER,
 				status: RED_RECORD_STATUS.PENDING,
 				localization: RED_RECORD_LOCALIZATION.REMOTE
 			}
@@ -83,36 +92,39 @@ describe('RedWSP', function () {
 		rwsp.fill([
 			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
-		rwsp.propagate(new RedMRecord(
+		rwsp.propagate(new RedRecord(
 			null,
 			rwsp,
 			2,
 			STTMP.get(1),
 			undefined,
 			{
+				subordination: RED_RECORD_SUBORDINATION.MASTER,
 				status: RED_RECORD_STATUS.PENDING,
 				localization: RED_RECORD_LOCALIZATION.REMOTE
 			}
 		));
-		const aeR = new RedMRecord(
+		const aeR = new RedRecord(
 			null,
 			rwsp,
 			1,
 			STTMP.get(2),
 			undefined,
 			{
+				subordination: RED_RECORD_SUBORDINATION.MASTER,
 				status: RED_RECORD_STATUS.PENDING,
 				localization: RED_RECORD_LOCALIZATION.REMOTE
 			}
 		);
 		rwsp.propagate(aeR);
-		rwsp.propagate(new RedMRecord(
+		rwsp.propagate(new RedRecord(
 			null,
 			rwsp,
 			-3,
 			STTMP.get(3),
 			undefined,
 			{
+				subordination: RED_RECORD_SUBORDINATION.MASTER,
 				status: RED_RECORD_STATUS.PENDING,
 				localization: RED_RECORD_LOCALIZATION.REMOTE
 			}
@@ -133,18 +145,21 @@ describe('RedWSP', function () {
 		rwsp.fill([
 			new Record(null, rwsp, 25, STTMP.get(3)),
 		]);
-		rwsp.propagate(new RedMRecord(
+		rwsp.propagate(new RedRecord(
 			null,
 			rwsp2,
 			2,
 			STTMP.get(1),
 			undefined,
 			{
+				subordination: RED_RECORD_SUBORDINATION.MASTER,
 				status: RED_RECORD_STATUS.PENDING,
 				localization: RED_RECORD_LOCALIZATION.LOCAL
 			}
 		));
-		expect(rwsp.state.slice(-3).map(prop("value"))).toEqual([25, 27]);
+		expect(rwsp.state.slice(-1).map(prop("localization")))
+			.toEqual([RED_RECORD_LOCALIZATION.REMOTE]);
+		expect(rwsp.state.slice(-2).map(prop("value"))).toEqual([25, 27]);
 	});
 	
 });

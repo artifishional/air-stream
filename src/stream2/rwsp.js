@@ -1,6 +1,10 @@
-import { RedMRecord, RedRecord, Record, WSP, RED_RECORD_STATUS, RED_RECORD_LOCALIZATION } from './wsp';
-import {STTMP} from "./sync-ttmp-controller";
-
+import { WSP } from './wsp';
+import {
+	RED_RECORD_STATUS,
+	RED_RECORD_LOCALIZATION,
+	RED_RECORD_SUBORDINATION,
+	RedRecord
+} from "./record";
 
 export class RedWSP {
 	
@@ -58,7 +62,7 @@ export class RedWSP {
 		const rec = this.createRecordFrom( cuR,
 			this.hn( this.state.slice(-1)[0].value, cuR.value ),
 		);
-		if( cuR instanceof RedMRecord ) {
+		if( cuR.subordination === RED_RECORD_SUBORDINATION.MASTER ) {
 			if(cuR.status === RED_RECORD_STATUS.PENDING) {
 				this.t4queue.push( cuR );
 			}
@@ -67,7 +71,7 @@ export class RedWSP {
 				this.reliable.push( rec );
 			}
 		}
-		else if( cuR instanceof RedSRecord ) {
+		else if( cuR.subordination === RED_RECORD_SUBORDINATION.SLAVE ) {
 			this.t4queue.push( cuR );
 		}
 		else {
@@ -88,10 +92,24 @@ export class RedWSP {
 	}
 
 	createRecordFrom(rec, updates) {
-		if(!(rec instanceof RedMRecord)) {
-			return rec.from( updates, RedMRecord );
+		if(this.localization === RED_RECORD_LOCALIZATION.REMOTE) {
+			if(rec.localization === RED_RECORD_LOCALIZATION.LOCAL) {
+				return rec.from( updates, RedRecord, undefined, {
+					subordination: RED_RECORD_SUBORDINATION.MASTER,
+					localization: RED_RECORD_LOCALIZATION.REMOTE,
+				} );
+			}
+			else {
+				return rec.from( updates, RedRecord, undefined, {
+					subordination: RED_RECORD_SUBORDINATION.SLAVE,
+					localization: RED_RECORD_LOCALIZATION.REMOTE,
+				} );
+			}
 		}
-		return rec.from( updates );
+		return rec.from( updates, RedRecord, undefined, {
+			subordination: RED_RECORD_SUBORDINATION.MASTER,
+			localization: RED_RECORD_LOCALIZATION.REMOTE,
+		} );
 	}
 
 	onRecordStatusUpdate( rec, status ) {
