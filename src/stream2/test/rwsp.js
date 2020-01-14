@@ -122,13 +122,13 @@ describe('RedWSP', function () {
 		expect(rwsp.state.slice(-3).map(prop("value"))).toEqual([25, 27, 24]);
 	});
 	
-	test('Transform for remote from local type', () => {
+	test('Transform segment type from remote to local', () => {
 		const rwsp = new RedWSP(
 			() => (count, add) => count + add,
 		);
 		const rwsp2 = new RedWSP(
 			() => (count, add) => count + add,
-			{ localization: RED_RECORD_LOCALIZATION.LOCAL }
+			{ localization: RED_RECORD_LOCALIZATION.REMOTE }
 		);
 		rwsp.fill([
 			new Record(null, rwsp, 25, STTMP.get(3)),
@@ -144,7 +144,6 @@ describe('RedWSP', function () {
 				localization: RED_RECORD_LOCALIZATION.LOCAL
 			}
 		));
-		rwsp.onRecordStatusUpdate(aeR, RED_RECORD_STATUS.FAILURE);
 		expect(rwsp.state.slice(-3).map(prop("value"))).toEqual([25, 27]);
 	});
 	

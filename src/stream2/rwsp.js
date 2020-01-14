@@ -1,4 +1,4 @@
-import { RedMRecord, RedRecord, Record, WSP, RED_RECORD_STATUS } from './wsp';
+import { RedMRecord, RedRecord, Record, WSP, RED_RECORD_STATUS, RED_RECORD_LOCALIZATION } from './wsp';
 import {STTMP} from "./sync-ttmp-controller";
 
 
@@ -6,10 +6,14 @@ export class RedWSP {
 	
 	/**
 	 * @param {Function} hnProJ
+	 * @param {RED_RECORD_LOCALIZATION} localization
 	 */
-	constructor(hnProJ) {
+	constructor(hnProJ, {
+		localization = RED_RECORD_LOCALIZATION.LOCAL
+	} = {}) {
 		this.redSlaves = [];
 		this.slaves = [];
+		this.localization = localization;
 		//если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
 		//мастер редьюсер должен получить начальное состояние извне
 		//в ином случае состояние создается на базе мастер стримов
