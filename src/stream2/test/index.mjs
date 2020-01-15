@@ -1,5 +1,4 @@
 import "../../polyfills"
-export * from "../stream"
 
 
 //import "./map";

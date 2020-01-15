@@ -10,10 +10,4 @@ export const evtChSoliD = 1; // event channel (remote) solid data
 export const evtChRmtSoliD = 1; // event channel (remote) solid data
 export const evtChRmtRec = 1; // event channel (remote) record
 export const ac = 1; // abstract class or interface
-/**
- * Очень сильно напоминает ичтоник событий
- * основной задачей является
- * - определить тип потока,
- * - определить начальное состояние для owner (master) потока вида редьюсера
- */
-export const own = 1;
+export const red = 1; // reducible

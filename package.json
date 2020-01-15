@@ -10,7 +10,7 @@
     "patch": "npm version patch && npm publish && git push origin",
     "minor": "npm version minor && npm publish && git push origin"
   },
-  "author": "/ai",
+  "author": ".ai",
   "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.0.0",
@@ -26,13 +26,16 @@
     "@babel/plugin-transform-modules-commonjs": "^7.5.0",
     "@babel/preset-env": "^7.0.0",
     "@babel/register": "^7.0.0",
+    "@babel/runtime": "^7.7.2",
     "babel-jest": "^24.8.0",
     "babel-loader": "^8.0.0",
     "copy-webpack-plugin": "^5.0.4",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-plugin-import": "^2.20.0",
     "jest": "^24.8.0",
     "webpack": "^4.39.1",
-    "webpack-cli": "^3.3.7",
-    "@babel/runtime": "^7.7.2"
+    "webpack-cli": "^3.3.7"
   },
   "dependencies": {
     "queue-microtask": "^1.1.2"
