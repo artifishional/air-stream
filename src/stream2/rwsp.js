@@ -9,15 +9,26 @@ import {
 export class RedWSP {
 	
 	/**
+	 * @param {[WSP]|null} streams Массив источников
+	 * Для мастера может быть только один источник
+	 * null - если это головной узел
 	 * @param {Function} hnProJ
 	 * @param {RED_RECORD_LOCALIZATION} localization
+	 * @param {RED_RECORD_SUBORDINATION} subordination
 	 */
-	constructor(hnProJ, {
-		localization = RED_RECORD_LOCALIZATION.LOCAL
+	constructor(streams, hnProJ, {
+		subordination = RED_RECORD_SUBORDINATION.MASTER,
+		localization = RED_RECORD_LOCALIZATION.LOCAL,
 	} = {}) {
+		/*<@debug>*/
+		if(streams.length > 1 && subordination === RED_RECORD_SUBORDINATION.MASTER) {
+			throw new TypeError("Unsupported configuration type. Master WSP can have no more than one source");
+		}
+		/*<@/debug>*/
 		this.redSlaves = [];
 		this.slaves = [];
 		this.localization = localization;
+		this.subordination = subordination;
 		//если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
 		//мастер редьюсер должен получить начальное состояние извне
 		//в ином случае состояние создается на базе мастер стримов
@@ -35,6 +46,7 @@ export class RedWSP {
 		this.hn = hnProJ( this );
 		this.t4queue = null;
 		this.state = null;
+		streams.map(stream => stream.on(this));
 	}
 
 	/**
@@ -83,6 +95,10 @@ export class RedWSP {
 
 	next( rec ) {
 		this.slaves.forEach( slv => slv.handleEvent(this, rec) );
+	}
+
+	handleReTouch( stream, cuRt4 ) {
+
 	}
 	
 	fill( state ) {

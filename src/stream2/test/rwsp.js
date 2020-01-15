@@ -136,9 +136,11 @@ describe('RedWSP', function () {
 	
 	test('Transform segment type from remote to local', () => {
 		const rwsp = new RedWSP(
+			null,
 			() => (count, add) => count + add,
 		);
 		const rwsp2 = new RedWSP(
+			[rwsp],
 			() => (count, add) => count + add,
 			{ localization: RED_RECORD_LOCALIZATION.REMOTE }
 		);

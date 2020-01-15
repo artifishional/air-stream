@@ -15,11 +15,13 @@ handle( () => {} )
 	
 
 // how to sync evt from the same controller?
+// same controller's events do not synced
+// handle is a evt src
 
 const
   s1 = handle( () => {} ),
   s2 = handle( () => {} );
 
   stream
-    .controller( [ s1 ], project )
-    .controller( [ s2 ], project );
+    .controller( s1, project )
+    .controller( s2, project );
