@@ -6,6 +6,7 @@ import {
   RedRecord,
 } from '../red-record';
 import RedWSP from '../rwsp';
+import WSP from '../wsp';
 import STTMP from '../sync-ttmp-controller';
 
 // eslint-disable-next-line no-undef
@@ -139,9 +140,9 @@ describe('RedWSP', () => {
   });
 
   test('Transform segment type from remote to local', () => {
-    const wsp = new WSP(  );
+    const wsp = new WSP(null);
     const rwsp = new RedWSP(
-      null,
+      [wsp],
       () => (count, add) => count + add,
       { localization: RED_REC_LOCALIZATION.REMOTE },
     );
