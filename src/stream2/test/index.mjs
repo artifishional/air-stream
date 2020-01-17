@@ -1,11 +1,11 @@
-import "../../polyfills"
+import '../../polyfills';
 
 
-//import "./map";
-//import "./with";
-//import "./complicated";
+// import "./map";
+// import "./with";
+// import "./complicated";
 
-import "./rwsp";
+import './rwsp';
 
 /*
 
@@ -30,8 +30,8 @@ import "./first";
 import "./map";
 import "./merge";
 import "./reducer";
-import "./withlatest";*/
-/*import "./service.mjs"
+import "./withlatest"; */
+/* import "./service.mjs"
 import "./combine"
 import "./first"
 /*

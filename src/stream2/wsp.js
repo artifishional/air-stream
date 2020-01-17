@@ -122,11 +122,16 @@ export default class WSP {
   }
 
   next(rec) {
-    this.curFrameCachedRecord = rec;
+    this.curFrameCachedRecord.push(rec);
     this.slaves.forEach((slv) => slv.handleR(this, rec));
   }
 
-  rec(value, token = STTMP.get()) {
+  /**
+   * Конструктор новых событий (handle)
+   * @param value
+   * @param token
+   */
+  burn(value, token = STTMP.get()) {
     /* <@debug> */
     if (token === this.lastedstoken || this.lastedstoken.sttmp >= token.sttmp) {
       throw new Error('More than one event at a time for the current source');

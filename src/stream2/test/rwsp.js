@@ -139,20 +139,21 @@ describe('RedWSP', () => {
   });
 
   test('Transform segment type from remote to local', () => {
+    const wsp = new WSP(  );
     const rwsp = new RedWSP(
       null,
       () => (count, add) => count + add,
       { localization: RED_REC_LOCALIZATION.REMOTE },
     );
-    const rwsp2 = RedWSP.with([rwsp], () => (count) => count);
     rwsp.open([
-      new Record(null, rwsp, 25, STTMP.get(3)),
+      new Record(null, rwsp, 25, STTMP.get(1)),
     ]);
+    const rwsp2 = RedWSP.with([rwsp], () => (count) => count);
     rwsp.handleR(null, new RedRecord(
       null,
       rwsp2,
       2,
-      STTMP.get(1),
+      STTMP.get(2),
       undefined,
       {
         subordination: RED_REC_SUBORDINATION.MASTER,
@@ -160,7 +161,7 @@ describe('RedWSP', () => {
         localization: RED_REC_LOCALIZATION.LOCAL,
       },
     ));
-    expect(rwsp.state.slice(-1).map(prop('localization')))
+    expect(rwsp2.state.slice(-1).map(prop('localization')))
       .toEqual([RED_REC_LOCALIZATION.REMOTE]);
     expect(rwsp.state.slice(-2).map(prop('value'))).toEqual([25, 27]);
   });

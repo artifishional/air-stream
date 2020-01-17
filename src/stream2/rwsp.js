@@ -59,6 +59,7 @@ export default class RedWSP extends WSP {
   }
 
   /**
+   * Обработчик нового события от внешнего источника
   * Источники:
   * 1. Данные дополенения от текущего удаленного хранилища (в рамках моста)
   *    - Статус подтвержден
@@ -167,7 +168,7 @@ export default class RedWSP extends WSP {
 
   static with(wsps, hnProJ, { localization = null, subordination = null } = {}) {
     /* <@debug> */
-    if (wsps.length > 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
+    if (wsps.length !== 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
       throw new TypeError(
         'Unsupported configuration type. Master WSP can have no more than one source',
       );
