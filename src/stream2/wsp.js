@@ -7,42 +7,37 @@ let WSP_ID_COUNT = 1;
 export default class WSP {
   constructor(streams = [], hnProJ = null, id = WSP_ID_COUNT += 1) {
     this.id = id;
-    this.curFrameCachedRecord = null;
-    this.streams = new Map(streams.map((stream) => [stream, {
-      stream,
-      eventChWSpS: null,
-      neighbours: [],
-    }]));
-    this.slaves = new Set();
-    this.neighbourStreamsBySource = new Map();
-    if (!streams.length) {
-      this.originWSpS = [this];
-    } else if (streams.length === 1) {
-      this.originWSpS = streams[0].originWSpS;
-    } else {
-      this.originWSpS = [...streams.reduce(
-        (acc, { originWSpS }) => {
-          originWSpS.forEach((wsp) => acc.add(wsp));
-          return acc;
-        }, new Set(),
-      )];
-    }
     this.event5tore = null;
-    streams.forEach((stream) => {
-      const streamRelatedData = this.streams.get(stream);
-      stream.originWSpS.forEach((wsp) => {
-        let neighbourStreams = this.neighbourStreamsBySource.get(wsp);
-        if (!neighbourStreams) {
-          this.neighbourStreamsBySource.set(wsp, neighbourStreams = []);
-        }
-        neighbourStreams.push(streamRelatedData);
-      });
-    });
+    this.lastedstoken = DEFAULT_TOKEN;
+    this.curFrameCachedRecord = null;
     if (hnProJ) {
       this.hn = hnProJ(this);
     }
-    this.lastedstoken = DEFAULT_TOKEN;
-    streams.map((stream) => stream.on(this));
+    this.streams = streams ? new Map(streams.map((stream) => [stream, {
+      stream,
+      eventChWSpS: null,
+      neighbours: [],
+    }])) : null;
+    this.slaves = new Set();
+    this.neighbourStreamsBySource = new Map();
+    if (!streams) {
+      this.originWSpS = [this];
+    } else {
+      this.originWSpS = [...new Set(streams.map(({ originWSpS }) => originWSpS))];
+    }
+    if (streams) {
+      streams.forEach((stream) => {
+        const streamRelatedData = this.streams.get(stream);
+        stream.originWSpS.forEach((wsp) => {
+          let neighbourStreams = this.neighbourStreamsBySource.get(wsp);
+          if (!neighbourStreams) {
+            this.neighbourStreamsBySource.set(wsp, neighbourStreams = []);
+          }
+          neighbourStreams.push(streamRelatedData);
+        });
+      });
+      streams.map((stream) => stream.on(this));
+    }
   }
 
   handleR(stream, cuR) {
@@ -101,10 +96,6 @@ export default class WSP {
 
   createRecordFrom(rec, updates) {
     return rec.from(updates, Record);
-  }
-
-  handleRt4(/* stream, cuRt4 */) {
-    return this;
   }
 
   off(slv) {

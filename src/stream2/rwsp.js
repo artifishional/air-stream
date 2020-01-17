@@ -9,25 +9,18 @@ import WSP from './wsp';
 
 export default class RedWSP extends WSP {
   /**
-  * @param {[WSP]|null} streams Массив источников
+  * @param {[WSP|RedWSP]|null} wsps Массив источников
   * Для мастера может быть только один источник
   * null - если это головной узел
   * @param {Function} hnProJ
   * @param {RED_REC_LOCALIZATION} localization
   * @param {RED_REC_SUBORDINATION} subordination
   */
-  constructor(streams, hnProJ, {
+  constructor(wsps, hnProJ, {
     subordination = RED_REC_SUBORDINATION.MASTER,
     localization = RED_REC_LOCALIZATION.LOCAL,
   } = {}) {
-    /* <@debug> */
-    if (streams && streams.length > 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
-      throw new TypeError(
-        'Unsupported configuration type. Master WSP can have no more than one source',
-      );
-    }
-    /* <@/debug> */
-    super(streams, hnProJ);
+    super(wsps, hnProJ);
     // Если создается новая запись, то вызываются все слейвы
     this.slaves = new Set();
     // Если происходит изменение в состоянии то вызываются только реды
@@ -50,13 +43,18 @@ export default class RedWSP extends WSP {
     this.reliable = null;
     this.t4queue = null;
     this.state = null;
-    if (streams) {
-      streams.forEach((stream) => {
-        if (stream instanceof RedWSP) {
-          stream.onRed(this);
-        }
-        stream.on(this);
-      });
+    if (wsps) {
+      /**
+       * Если это мастер, то только один источник, и он
+       * рассматривается как контроллер
+       */
+      /* if (subordination === RED_REC_SUBORDINATION.MASTER) {
+
+      } */
+      /**
+       * Если это слейв, то все источники должны быть накопителями
+       */
+      wsps.forEach((wsp) => wsp.onRed(this));
     }
   }
 
@@ -104,11 +102,11 @@ export default class RedWSP extends WSP {
     this.slaves.forEach((slv) => slv.handleR(this, rec));
   }
 
-  handleRt4(/* stream, cuRt4 */) {
-    return this;
+  handleRt4(src, rt4) {
+    return this.open(rt4);
   }
 
-  fill(state) {
+  open(state) {
     this.t4queue = [];
     this.reliable = state;
     this.state = [...state];
@@ -138,6 +136,12 @@ export default class RedWSP extends WSP {
   }
 
   onRed(slv) {
+    /**
+     * TODO: may be duplicate users
+     */
+    if (this.state) {
+      slv.handleRt4(this, this.state);
+    }
     this.redSlaves.add(slv);
   }
 
@@ -161,8 +165,32 @@ export default class RedWSP extends WSP {
     this.redSlaves.forEach((slv) => slv.handleR(this));
   }
 
-  map(proJ) {
-    return new RedWSP([this],
-      () => ([[update]]) => proJ(update));
+  static with(wsps, hnProJ, { localization = null, subordination = null } = {}) {
+    /* <@debug> */
+    if (wsps.length > 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
+      throw new TypeError(
+        'Unsupported configuration type. Master WSP can have no more than one source',
+      );
+    }
+    /* <@/debug> */
+    const calculableConfig = {
+      localization,
+      subordination,
+    };
+    if (!localization) {
+      if (wsps.some((wsp) => wsp.localization === RED_REC_LOCALIZATION.LOCAL)) {
+        calculableConfig.localization = RED_REC_LOCALIZATION.LOCAL;
+      } else {
+        calculableConfig.localization = RED_REC_LOCALIZATION.REMOTE;
+      }
+    }
+    if (!subordination) {
+      calculableConfig.subordination = RED_REC_SUBORDINATION.SLAVE;
+    }
+    return new RedWSP(
+      wsps,
+      hnProJ,
+      calculableConfig,
+    );
   }
 }

@@ -21,7 +21,7 @@ describe('RedWSP', () => {
       null,
       () => (count, add) => count + add,
     );
-    rwsp.fill([
+    rwsp.open([
       new Record(null, rwsp, 25, STTMP.get(3)),
     ]);
     rwsp.handleR(null, new RedRecord(
@@ -44,7 +44,7 @@ describe('RedWSP', () => {
       null,
       () => (count, add) => count + add,
     );
-    rwsp.fill([
+    rwsp.open([
       new Record(null, rwsp, 25, STTMP.get(3)),
     ]);
     rwsp.handleR(null, new RedRecord(
@@ -67,7 +67,7 @@ describe('RedWSP', () => {
       null,
       () => (count, add) => count + add,
     );
-    rwsp.fill([
+    rwsp.open([
       new Record(null, rwsp, 25, STTMP.get(3)),
     ]);
     const aeR = new RedRecord(
@@ -93,7 +93,7 @@ describe('RedWSP', () => {
       null,
       () => (count, add) => count + add,
     );
-    rwsp.fill([
+    rwsp.open([
       new Record(null, rwsp, 25, STTMP.get(3)),
     ]);
     rwsp.handleR(null, new RedRecord(
@@ -142,13 +142,10 @@ describe('RedWSP', () => {
     const rwsp = new RedWSP(
       null,
       () => (count, add) => count + add,
-    );
-    const rwsp2 = new RedWSP(
-      [rwsp],
-      () => (count, add) => count + add,
       { localization: RED_REC_LOCALIZATION.REMOTE },
     );
-    rwsp.fill([
+    const rwsp2 = RedWSP.with([rwsp], () => (count) => count);
+    rwsp.open([
       new Record(null, rwsp, 25, STTMP.get(3)),
     ]);
     rwsp.handleR(null, new RedRecord(

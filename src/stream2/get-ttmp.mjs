@@ -1,15 +1,16 @@
-import "./node-perf-hooks.js"
+import './node-perf-hooks';
 
 let cache = -1;
 
-export default function getTTMP() {
-	if(cache === -1) {
-		cache = _getTTMP();
-		setTimeout( () => {
-			cache = -1;
-		} );
-	}
-	return cache;
-}
+// eslint-disable-next-line no-bitwise
+const inGetTTMP = () => performance.now() | 0;
 
-const _getTTMP = () => performance.now() | 0;
+export default function getTTMP() {
+  if (cache === -1) {
+    cache = inGetTTMP();
+    setTimeout(() => {
+      cache = -1;
+    });
+  }
+  return cache;
+}
