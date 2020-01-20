@@ -21,6 +21,7 @@ export default class RedWSP extends WSP {
     localization = RED_REC_LOCALIZATION.LOCAL,
   } = {}) {
     super(wsps, hnProJ);
+    this.opend = false;
     // Если создается новая запись, то вызываются все слейвы
     this.slaves = new Set();
     // Если происходит изменение в состоянии то вызываются только реды
@@ -81,6 +82,11 @@ export default class RedWSP extends WSP {
   *    Как различать тип хранилища?
   */
   handleR(src, cuR) {
+    /* <@debug> */
+    if (!this.opend) {
+      throw new Error('Wsp is not opened');
+    }
+    /* <@/debug> */
     const rec = this.createRecordFrom(cuR,
       this.hn(this.state.slice(-1)[0].value, cuR.value));
     if (cuR.subordination === RED_REC_SUBORDINATION.MASTER) {
@@ -108,6 +114,7 @@ export default class RedWSP extends WSP {
   }
 
   open(state) {
+    this.opend = true;
     this.t4queue = [];
     this.reliable = state;
     this.state = [...state];

@@ -6,15 +6,11 @@ import {
   RedRecord,
 } from '../red-record';
 import RedWSP from '../rwsp';
-import WSP from '../wsp';
 import STTMP from '../sync-ttmp-controller';
+import { prop } from '../../utils';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
-
-function prop(property) {
-  return (data) => data[property];
-}
 
 describe('RedWSP', () => {
   test('Forwarding a confirmed event', () => {
@@ -140,13 +136,12 @@ describe('RedWSP', () => {
   });
 
   test('Transform segment type from remote to local', () => {
-    const wsp = new WSP(null);
     const rwsp = new RedWSP(
-      [wsp],
+      null,
       () => (count, add) => count + add,
       { localization: RED_REC_LOCALIZATION.REMOTE },
     );
-    rwsp.open([
+    rwsp.handleRt4(rwsp, [
       new Record(null, rwsp, 25, STTMP.get(1)),
     ]);
     const rwsp2 = RedWSP.with([rwsp], () => (count) => count);
