@@ -1,7 +1,13 @@
 import WSP from '../wsp';
 import { async, prop } from '../../utils';
 import RedWSP from '../rwsp';
-import { RED_REC_LOCALIZATION } from '../red-record';
+import {
+  RED_REC_LOCALIZATION,
+  RED_REC_STATUS,
+  RED_REC_SUBORDINATION,
+  RedRecord,
+} from '../red-record';
+import STTMP from '../sync-ttmp-controller';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
@@ -115,7 +121,39 @@ describe('with', () => {
       () => (count, add) => count + add,
       { localization: RED_REC_LOCALIZATION.REMOTE },
     );
-    const res = RedWSP.with([rwsp1, rwsp2], () => (count) => count);
-    expect(res.state.slice(-2).map(prop('value'))).toEqual([25, 27]);
+    rwsp1.handleRt4(rwsp1, [
+      new RedRecord(
+        null,
+        rwsp1,
+        24,
+        STTMP.get(1),
+        undefined,
+        {
+          subordination: RED_REC_SUBORDINATION.MASTER,
+          status: RED_REC_STATUS.PENDING,
+          localization: RED_REC_LOCALIZATION.LOCAL,
+        },
+      ),
+    ]);
+    const res = RedWSP.with([rwsp1, rwsp2], () => (acc, updates, com) => ({
+      t1: com[0],
+      t2: com[1],
+    }));
+    rwsp2.handleRt4(rwsp2, [
+      new RedRecord(
+        null,
+        rwsp2,
+        25,
+        STTMP.get(2),
+        undefined,
+        {
+          subordination: RED_REC_SUBORDINATION.MASTER,
+          status: RED_REC_STATUS.PENDING,
+          localization: RED_REC_LOCALIZATION.LOCAL,
+        },
+      ),
+    ]);
+    expect(res.state.slice(-2).map(prop('value')))
+      .toEqual([{ t1: 24, t2: 25 }, undefined]);
   });
 });

@@ -22,6 +22,10 @@ export default class RedWSP extends WSP {
   } = {}) {
     super(wsps, hnProJ);
     this.opend = false;
+    /**
+     * @property {Map} handleRt4 synced map
+     */
+    this.event5RtoreWaves = null;
     // Если создается новая запись, то вызываются все слейвы
     this.slaves = new Set();
     // Если происходит изменение в состоянии то вызываются только реды
@@ -109,7 +113,19 @@ export default class RedWSP extends WSP {
     this.slaves.forEach((slv) => slv.handleR(this, rec));
   }
 
-  handleRt4(src, rt4) {
+  handleRt4(stream, rt4) {
+    // TODO: как различать волны?
+    // один ttmp от одного источника является полным признаком волны
+    // выполнить очередную попытку синхронизации
+    // если успех то выполнить повторную попытку
+    this.syncWaves(stream, rt4);
+    // полное открытие просиходит тогда, когда удается разместить все
+    // данные из смежных состояний
+    /**
+     * По аналогии с handleR wsp
+     * сначала необходимо дождаться handleRt4 данных для всех потоков
+     * с общими источниками
+     */
     return this.open(rt4);
   }
 

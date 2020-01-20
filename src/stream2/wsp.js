@@ -53,8 +53,10 @@ export default class WSP {
       this.event5tore = new Map();
     }
     const exist = this.event5tore;
+    // потоки, которые должны быть синхронизированы для данного источника
     let streamExist = exist.get(cuR.owner);
     const neighbours = this.neighbourStreamsBySource.get(cuR.owner);
+    // если потоки еще не были определены
     if (!streamExist) {
       exist.set(
         cuR.owner,
@@ -73,6 +75,7 @@ export default class WSP {
           .map(({ stream: _stream }) => [_stream, streamExist.get(_stream)]),
       ));
     }
+    // текущее значение для данного потока
     streamExist.set(stream, cuR);
     const event5tore = [...this.event5tore.keys()];
     // TODO: need perf refactor
@@ -81,7 +84,9 @@ export default class WSP {
       // TODO: любая первая запись
       const rec = streams[0][1];
       // only synced msg's here
-      if (streams.some(([, _rec]) => !_rec)) { return; }
+      if (streams.some(([, _rec]) => !_rec)) {
+        return;
+      }
       this.event5tore.delete(event5tore[i]);
       const updates = streams.filter(([, _rec]) => _rec.value !== EMPTY);
       if (updates.length) {
