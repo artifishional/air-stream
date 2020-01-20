@@ -33,9 +33,8 @@ const rwsp2 = stream
   .reduce((/* owner */) => (acc, next/* , rec */) => acc + next, { remote: rm2 });
 
 stream.with( [rwsp1, rwsp2],
-  (/* owner */) => (acc, next, rec) => {
-    if(rec.own === rwsp1) {
-
-    }
-  }
+  (/* owner */) => (acc, updates, combined) => ({
+    propA: combined[0],
+    propB: combined[1],
+  })
 );
