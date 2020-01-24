@@ -1,5 +1,4 @@
 import { EMPTY } from './signals';
-import {RED_REC_STATUS} from "./red-record";
 
 export default class Record {
   constructor(src, owner, value, token, head = this) {

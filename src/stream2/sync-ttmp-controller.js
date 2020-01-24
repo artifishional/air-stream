@@ -11,7 +11,7 @@ export default new class TTMPSyncController {
   get(ttmp = -1) {
     if (ttmp !== -1) {
       if (!boiler.has(ttmp)) {
-        boiler.set(ttmp, { sttmp: ttmp });
+        boiler.set(ttmp, new Token(ttmp));
       }
       return boiler.get(ttmp);
     }
