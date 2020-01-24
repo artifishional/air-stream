@@ -1,18 +1,42 @@
 import { EMPTY } from './signals';
+import {RED_REC_STATUS} from "./red-record";
 
 export default class Record {
   constructor(src, owner, value, token, head = this) {
+    /**
+     * Ссылка на головную запись
+     * Головная запись сохраняется, даже для редьюсеров
+     * @type {Record}
+     */
+    this.head = head;
+    /**
+     * @type {Record}
+     * @deprecated
+     */
     this.origin = head;
     this.value = value;
-    this.owner = owner;
-    this.token = token;
+    /**
+     * @type {RedWSP} Поток-владелец (Мастер)
+     */
+    this.owner = owner; // only for owned rec
+    if (head === this) {
+      this.$token = token;
+    }
   }
 
   map(fn) {
     if (this.value === EMPTY) {
       return this;
     }
-    return new Record(this, this.owner, fn(this.value, this), this.token, this.origin);
+    return new Record(this, this.owner, fn(this.value, this), this.token, this.head);
+  }
+
+  reject() {
+    this.owner.reject();
+  }
+
+  get token() {
+    return this.head.$token;
   }
 
   filter(fn) {
@@ -23,11 +47,11 @@ export default class Record {
       return this;
     }
 
-    return new Record(this, this.owner, EMPTY, this.token, this.origin);
+    return new Record(this, this.owner, EMPTY, this.token, this.head);
   }
 
   // TODO: redic. species set
   from(value, Species = Record, owner = this.owner, conf) {
-    return new Species(this, owner, value, this.token, this.origin, conf);
+    return new Species(this, owner, value, this.token, this.head, conf);
   }
 }

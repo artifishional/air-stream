@@ -61,12 +61,29 @@ export class RedRecord extends Record {
     this.registered = false;
   }
 
+  /**
+   * Когда отправляется запрос на подтверждение (в т.ч. и локальный случай)
+   */
   register() {
     this.registered = true;
   }
 
+  /**
+   * Прямая отмена (при обнаружении ошибки, преждевременная, ожидает регистрации)
+   */
+  reject() {
+    this.status = RED_REC_STATUS.FAILURE;
+  }
+
   onRecordStatusUpdate(rec, status) {
+    /**
+     * При ошибке - создавать новый токен, но с аналогичным ttmp
+     */
+    if (status === RED_REC_STATUS.FAILURE) {
+      this.$token = this.token.compromised();
+    }
     this.status = status;
+    this.subscribers.forEach((rwsp) => rwsp.onRecordStatusUpdate(this, status));
   }
 
   on(subscriber) {

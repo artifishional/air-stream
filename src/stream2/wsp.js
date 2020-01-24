@@ -5,7 +5,7 @@ import Record from './record';
 let WSP_ID_COUNT = 1;
 
 export default class WSP {
-  constructor(streams = [], hnProJ = null, id = WSP_ID_COUNT += 1) {
+  constructor(streams = null, hnProJ = null, id = WSP_ID_COUNT += 1) {
     this.id = id;
     this.event5tore = null;
     this.lastedstoken = DEFAULT_TOKEN;
@@ -84,7 +84,12 @@ export default class WSP {
       // TODO: любая первая запись
       const rec = streams[0][1];
       // only synced msg's here
-      if (streams.some(([, _rec]) => !_rec)) {
+      // здесь также все токены головной записи должны совпадать,
+      // так как действие происходит от одного источника,
+      // а при откате, токен записи обновляется
+      if (streams.some(([, _rec]) => !_rec)
+        || new Set(streams.map(({ token }) => token)).size > 1
+      ) {
         return;
       }
       this.event5tore.delete(event5tore[i]);

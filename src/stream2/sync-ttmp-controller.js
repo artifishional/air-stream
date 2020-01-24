@@ -1,3 +1,5 @@
+import Token from './token';
+
 const boiler = new Map();
 
 export default new class TTMPSyncController {
@@ -15,7 +17,7 @@ export default new class TTMPSyncController {
     }
     if (!this.token) {
       ttmp = globalThis.performance.now();
-      this.token = { sttmp: ttmp };
+      this.token = new Token(ttmp);
       queueMicrotask(() => {
         this.token = null;
         this.cbs.map((cb) => cb());

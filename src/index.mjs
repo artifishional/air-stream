@@ -1,3 +1,3 @@
-import "./polyfills/index.mjs"
+import './polyfills/index';
 
-export * from "./stream2/index.mjs";
+export * from './stream2/index';
