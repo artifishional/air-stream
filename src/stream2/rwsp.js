@@ -5,6 +5,7 @@ import {
   RedRecord,
 } from './red-record';
 import WSP from './wsp';
+import ReT4, { RET4_TYPES } from './retouch';
 
 
 export default class RedWSP extends WSP {
@@ -21,6 +22,7 @@ export default class RedWSP extends WSP {
     localization = RED_REC_LOCALIZATION.LOCAL,
   } = {}) {
     super(wsps, hnProJ);
+    this.incompleteRet4 = null;
     this.opend = false;
     /**
      * @property {Map} handleRt4 synced map
@@ -113,20 +115,34 @@ export default class RedWSP extends WSP {
     this.slaves.forEach((slv) => slv.handleR(this, rec));
   }
 
-  handleRt4(stream, rt4) {
-    // TODO: как различать волны?
-    // один ttmp от одного источника является полным признаком волны
-    // выполнить очередную попытку синхронизации
-    // если успех то выполнить повторную попытку
-    this.syncWaves(stream, rt4);
+  /**
+   * @param rwsp
+   * @param reT4data
+   * @param {RET4_TYPES} type
+   */
+  handleReT4(rwsp, reT4data, type = RET4_TYPES.ReINIT) {
+    if (!this.incompleteRet4) {
+      this.incompleteRet4 = ReT4.create(this, type);
+    }
+    this.incompleteRet4.fill(rwsp, reT4data);
+    // не требуются дополнительные усилия за контролем над устарешвей очередью
+    // в случае ошибки - головна запись будет иметь соответсвтующий статус
+    // в случае восстановления - все предыдущие действия уже должны будут завершиться
+    // так как работа идет только в синхронном режиме
     // полное открытие просиходит тогда, когда удается разместить все
     // данные из смежных состояний
-    /**
-     * По аналогии с handleR wsp
-     * сначала необходимо дождаться handleRt4 данных для всех потоков
-     * с общими источниками
-     */
-    return this.open(rt4);
+  }
+
+  onReT4Complete(updates) {
+    const state = updates.reduce((acc, _rec) => {
+      const res = this.createRecordFrom(
+        _rec, this.hn(acc.value, _rec.value),
+      );
+      this.state.push(res);
+      return res;
+    }, updates.slice(-1)[0]);
+    this.incompleteRet4 = null;
+    return this.open(state);
   }
 
   open(state) {
@@ -186,7 +202,7 @@ export default class RedWSP extends WSP {
         return res;
       }, this.reliable.slice(-1)[0]);
     }
-    this.redSlaves.forEach((slv) => slv.handleR(this));
+    this.redSlaves.forEach((slv) => slv.handleReT4(this));
   }
 
   static with(wsps, hnProJ, { localization = null, subordination = null } = {}) {
