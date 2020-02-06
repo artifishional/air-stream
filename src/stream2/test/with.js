@@ -8,6 +8,7 @@ import {
   RedRecord,
 } from '../red-record';
 import STTMP from '../sync-ttmp-controller';
+import {RET4_TYPES} from "../retouch";
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
@@ -121,7 +122,7 @@ describe('with', () => {
       () => (count, add) => count + add,
       { localization: RED_REC_LOCALIZATION.REMOTE },
     );
-    rwsp1.handleRt4(rwsp1, [
+    rwsp1.handleReT4(rwsp1, [
       new RedRecord(
         null,
         rwsp1,
@@ -134,12 +135,12 @@ describe('with', () => {
           localization: RED_REC_LOCALIZATION.LOCAL,
         },
       ),
-    ]);
+    ], RET4_TYPES.ReINIT);
     const res = RedWSP.with([rwsp1, rwsp2], () => (acc, updates, com) => ({
       t1: com[0],
       t2: com[1],
     }));
-    rwsp2.handleRt4(rwsp2, [
+    rwsp2.handleReT4(rwsp2, [
       new RedRecord(
         null,
         rwsp2,
@@ -152,7 +153,7 @@ describe('with', () => {
           localization: RED_REC_LOCALIZATION.LOCAL,
         },
       ),
-    ]);
+    ], RET4_TYPES.ReINIT);
     expect(res.state.slice(-2).map(prop('value')))
       .toEqual([{ t1: 24, t2: 25 }, undefined]);
   });

@@ -120,7 +120,7 @@ export default class RedWSP extends WSP {
    * @param reT4data
    * @param {RET4_TYPES} type
    */
-  handleReT4(rwsp, reT4data, type = RET4_TYPES.ReINIT) {
+  handleReT4(rwsp, reT4data, type) {
     if (!this.incompleteRet4) {
       this.incompleteRet4 = ReT4.create(this, type);
     }
@@ -134,9 +134,9 @@ export default class RedWSP extends WSP {
   }
 
   onReT4Complete(updates) {
-    const state = updates.reduce((acc, _rec) => {
+    const state = updates.reduce((acc, wave) => {
       const res = this.createRecordFrom(
-        _rec, this.hn(acc.value, _rec.value),
+        wave[0], this.hn(acc.value, wave),
       );
       this.state.push(res);
       return res;
