@@ -111,7 +111,7 @@ describe('with', () => {
   // single wsp is a single wsp - it is always synchronized with itself
   // what about a stream with combined wsp?
 
-  test('slave rwsp rt4', () => {
+  test('slave rwsp reT4', () => {
     const rwsp1 = new RedWSP(
       null,
       () => (count, add) => count + add,
@@ -122,7 +122,7 @@ describe('with', () => {
       () => (count, add) => count + add,
       { localization: RED_REC_LOCALIZATION.REMOTE },
     );
-    rwsp1.handleReT4(rwsp1, [
+    rwsp1.open([
       new RedRecord(
         null,
         rwsp1,
@@ -135,12 +135,12 @@ describe('with', () => {
           localization: RED_REC_LOCALIZATION.LOCAL,
         },
       ),
-    ], RET4_TYPES.ReINIT);
+    ]);
     const res = RedWSP.with([rwsp1, rwsp2], () => (acc, updates, com) => ({
       t1: com[0],
       t2: com[1],
     }));
-    rwsp2.handleReT4(rwsp2, [
+    rwsp2.open([
       new RedRecord(
         null,
         rwsp2,
@@ -153,7 +153,8 @@ describe('with', () => {
           localization: RED_REC_LOCALIZATION.LOCAL,
         },
       ),
-    ], RET4_TYPES.ReINIT);
+    ]);
+    debugger;
     expect(res.state.slice(-2).map(prop('value')))
       .toEqual([{ t1: 24, t2: 25 }, undefined]);
   });

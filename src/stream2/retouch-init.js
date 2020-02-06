@@ -1,5 +1,4 @@
 import ReT4 from './retouch-base';
-import {ac} from "./reductions";
 
 
 export default class ReT4Init extends ReT4 {
@@ -32,7 +31,7 @@ export default class ReT4Init extends ReT4 {
        * разрешения очередности их срабатывания
        */
       this.acc.push(reT4Data);
-      if (this.acc.length === this.src.streams.length) {
+      if (this.acc.length === this.src.streams.size) {
         // TODO: need perf optimization
         const updates = this.acc
           .reduce((acc, next, idx) => [...acc, ...next.map((rec) => [idx, rec])], [])
@@ -42,15 +41,16 @@ export default class ReT4Init extends ReT4 {
             }
             return recA.token.sttmp - recB.token.sttmp;
           })
-          .reduce((acc, [, next]) => {
+          .reduce((acc, [idx, next]) => {
             const lastAcc = acc[acc.length - 1];
             if (lastAcc[0] === next.token) {
-              lastAcc[1].push(next);
+              lastAcc[1].push([idx, next]);
             } else {
-              acc.push([next.token, [next]]);
+              acc.push([next.token, [[idx, next]]]);
             }
             return acc;
-          }, [[-1, []]]);
+          }, [[-1, []]])
+          .map(([, rec]) => rec);
         this.src.onReT4Complete(updates.slice(1));
       }
     }

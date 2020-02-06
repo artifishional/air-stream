@@ -22,6 +22,6 @@ export default class ReT4 {
     if (type === RET4_TYPES.RACE) {
       return new ReT4Race(src);
     }
-    return null;
+    throw new TypeError('Unsupported reT4 type');
   }
 }

@@ -32,7 +32,14 @@ const rwsp1 = stream
 const rwsp2 = stream
   .reduce((/* owner */) => (acc, next/* , rec */) => acc + next, { remote: rm2 });
 
+// acc всегда должен быть определен
+// для локальных - в виде статичного начального значения
+// для удаленных - в виде open изменений
+
 stream.with( [rwsp1, rwsp2],
+  // updates - массив записей
+  // combined - массив последних записей, разобранных
+  //  по индексам в соответсвии с каждым входным потоком
   (/* owner */) => (acc, updates, combined) => ({
     propA: combined[0],
     propB: combined[1],

@@ -6,6 +6,7 @@ import {
 } from './red-record';
 import WSP from './wsp';
 import ReT4, { RET4_TYPES } from './retouch';
+import { EMPTY } from './signals';
 
 
 export default class RedWSP extends WSP {
@@ -16,12 +17,19 @@ export default class RedWSP extends WSP {
   * @param {Function} hnProJ
   * @param {RED_REC_LOCALIZATION} localization
   * @param {RED_REC_SUBORDINATION} subordination
+  * @param {*} localInitialValue
+  *   Видимо ведет себя по разному:
+   *   для зависимых - не создает новое сообщение, а только предоставляет
+   *    локальное постоянное обвноялемое значение
+   *   и только для местных головных - создает новое значение в момент
+   *    инциализации
   */
   constructor(wsps, hnProJ, {
     subordination = RED_REC_SUBORDINATION.MASTER,
     localization = RED_REC_LOCALIZATION.LOCAL,
-  } = {}) {
+  } = {}, localInitialValue = EMPTY) {
     super(wsps, hnProJ);
+    this.localInitialValue = localInitialValue;
     this.incompleteRet4 = null;
     this.opend = false;
     /**
@@ -61,7 +69,7 @@ export default class RedWSP extends WSP {
       /**
        * Если это слейв, то все источники должны быть накопителями
        */
-      wsps.forEach((wsp) => wsp.onRed(this));
+      wsps.forEach((rwsp) => rwsp.onRed(this));
     }
   }
 
@@ -134,13 +142,27 @@ export default class RedWSP extends WSP {
   }
 
   onReT4Complete(updates) {
-    const state = updates.reduce((acc, wave) => {
-      const res = this.createRecordFrom(
-        wave[0], this.hn(acc.value, wave),
-      );
-      this.state.push(res);
-      return res;
-    }, updates.slice(-1)[0]);
+    const state = [];
+    const combined = [];
+    updates.forEach((wave) => {
+      wave.forEach(([idx, rec]) => {
+        combined[idx] = rec;
+      });
+      let acc = null;
+      if (state.length > 0) {
+        [acc] = state.slice(-1);
+      } else if (this.localInitialValue !== EMPTY) {
+        acc = this.localInitialValue;
+      }
+      state.push(this.createRecordFrom(
+        wave[0][1],
+        this.hn(
+          acc,
+          wave.map(([, rec]) => rec),
+          combined,
+        ),
+      ));
+    });
     this.incompleteRet4 = null;
     return this.open(state);
   }
@@ -150,6 +172,11 @@ export default class RedWSP extends WSP {
     this.t4queue = [];
     this.reliable = state;
     this.state = [...state];
+    this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
+      this,
+      this.state,
+      RET4_TYPES.ReINIT,
+    ));
   }
 
   createRecordFrom(rec, updates) {
@@ -180,7 +207,7 @@ export default class RedWSP extends WSP {
      * TODO: may be duplicate users
      */
     if (this.state) {
-      slv.handleRt4(this, this.state);
+      slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
     }
     this.redSlaves.add(slv);
   }
