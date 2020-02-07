@@ -6,7 +6,7 @@ export default class ReT4Init extends ReT4 {
     super(src);
     /**
      * Данные активации для каждого входного стрима
-     * @type {Array.<Array<RedRecord>>}
+     * @type {Array.<Array.<RedRecord>>}
      */
     this.acc = [];
   }

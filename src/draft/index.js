@@ -40,7 +40,7 @@ stream.with( [rwsp1, rwsp2],
   // updates - массив записей
   // combined - массив последних записей, разобранных
   //  по индексам в соответсвии с каждым входным потоком
-  (/* owner */) => (acc, updates, combined) => ({
+  (/* owner */) => (updates, combined) => ({
     propA: combined[0],
     propB: combined[1],
   })
