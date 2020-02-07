@@ -136,9 +136,9 @@ describe('with', () => {
         },
       ),
     ]);
-    const res = RedWSP.with([rwsp1, rwsp2], () => (acc, updates, com) => ({
-      t1: com[0],
-      t2: com[1],
+    const res = RedWSP.with([rwsp1, rwsp2], () => (updates, com) => ({
+      t1: com[0].value,
+      t2: com[1].value,
     }));
     rwsp2.open([
       new RedRecord(
@@ -154,8 +154,7 @@ describe('with', () => {
         },
       ),
     ]);
-    debugger;
     expect(res.state.slice(-2).map(prop('value')))
-      .toEqual([{ t1: 24, t2: 25 }, undefined]);
+      .toEqual([{ t1: 24, t2: 25 }]);
   });
 });

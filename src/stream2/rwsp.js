@@ -148,6 +148,9 @@ export default class RedWSP extends WSP {
       wave.forEach(([idx, rec]) => {
         combined[idx] = rec;
       });
+      if (combined.length < this.streams.size || combined.includes(undefined)) {
+        return;
+      }
       let acc = null;
       if (state.length > 0) {
         [acc] = state.slice(-1);
