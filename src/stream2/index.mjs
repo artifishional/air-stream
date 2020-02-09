@@ -2,6 +2,8 @@ import getTTMP from './get-ttmp';
 import { CONNECT } from './signals';
 import WSP from './wsp';
 import Record from './record';
+import {RED_REC_LOCALIZATION, RED_REC_SUBORDINATION} from "./red-record";
+import RedWSPSlave from "./rwsp-slave";
 
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
@@ -122,157 +124,33 @@ export class Stream2 {
     });
   }
 
-  /**
-   @example
-   stream2.with( [streamA, streamB], owner => (event, source, record) => {
-    источник определяется в момент коннекта
-    может быть временно неопределенным
-    к синхронному к своим ичтоникам потоку
-    нельзя динамически присоединять другие асинхронные источники
-    такая операция будет вызывать исключение
-    owner.attach( stream[, customHandler ] );
-    используется общий обработчик, если явно не указан другой
-    owner.detach( stream );
-    } );
-   */
-  static with(streams, hnProJ, sync = true) {
-    /**
-     * Как убедиться в том что данные получены полнотсью в момент коннекта стрима?
-     *
-     * Один из вариантов - отказаться от мультиплекс событий для одинаковых sttmp
-     * тогда нужно уметь синхронизировать их внутри hn функции
-     * для этого данной функции придеться учитывать природу источника событий потоков
-     * либо явно указывать каким образом обрабатываютя синхронные события,
-     * при условии что каждая rec будет переслана (даже для пустых сообщений)
-     */
-
-    if (!sync) {
-      throw new Error('Async mode currently is not supported');
+  static with(wsps, hnProJ, { localization = null, subordination = null } = {}) {
+    /* <@debug> */
+    if (wsps.length !== 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
+      throw new TypeError(
+        'Unsupported configuration type. Master WSP can have no more than one source',
+      );
     }
-
-    class Handler {
-      constructor(owner, connect, control, hnProJ, streams = []) {
-        this.streams = new Map();
-        this.owner = owner;
-        this.connect = connect;
-        this.vent = null;
-        this.neighbourStreamsBySource = new Map();
-        this.control = control;
-        this.hn = hnProJ(this);
-        this.event5tore = new Map();
-        this.attach(streams, this.hn);
-      }
-
-      onStreamEvent(stream, rec) {
-        // grouping
-        // каждое сообщение (или группу если поддерживается несколько событий
-        // в рамках одного sttmp) из солид необходимо разместить в ячейке
-        // для исходного потока и для исходного sttmp
-        // так как после каждого события необходимо дождаться ответа от всех
-        // потоков, а также необходимо сохранять очередность использования данных
-        // в функции хендлера согласно очередности потоков в this.streams
-        // синхронизируются сообщения только ОДНОГО источника
-        const exist = this.event5tore;
-        let streamExist = exist.get(rec.owner);
-        const neighbours = this.neighbourStreamsBySource.get(rec.owner);
-        if (!streamExist) {
-          exist.set(
-            rec.owner,
-            streamExist = new Map(
-              neighbours
-                .map(({ stream }) => [stream,
-                  null, /* rec from stream from cur sttmp */
-                ]),
-            ),
-          );
-        }
-        // если формирование массива исходных потоков происходит динамически
-        // (одновременно с получением данных из потоков)
-        else if (streamExist.size !== neighbours.length) {
-          exist.set(rec.owner, streamExist = new Map(
-            neighbours
-              .map(({ stream }) => [stream, streamExist.get(stream)]),
-          ));
-        }
-        streamExist.set(stream, rec);
-        // Если режим sync то дожидаться подключения всех потоков
-        // not connected
-        if (!this.vent) {
-          return;
-        }
-        const event5tore = [...this.event5tore.keys()];
-        // TODO: need perf refactor
-        for (let i = 0; i < event5tore.length; i++) {
-          const streams = [...this.event5tore.get(event5tore[i])];
-          // TODO: любая первая запись
-          const rec = streams[0][1];
-          // only synced msg's here
-          if (streams.some(([, rec]) => !rec)) { return; }
-          this.event5tore.delete(event5tore[i]);
-          const updates = streams.filter(([, rec]) => !rec.empty);
-          if (updates.length) {
-            this.vent(rec.from(this.hn(
-              updates.map(([stream, rec]) => [stream, rec.value, rec]),
-            )));
-          } else {
-            this.vent(rec.createEmpty());
-          }
-        }
-      }
-
-      onStreamConnect(stream, eventChWSpS, eventChHook, own) {
-        this.control.to(eventChHook);
-        const streamRelatedData = this.streams.get(stream);
-        streamRelatedData.eventChWSpS = eventChWSpS;
-        eventChWSpS.forEach((wsp) => {
-          let neighbourStreams = this.neighbourStreamsBySource.get(wsp);
-          if (!neighbourStreams) {
-            this.neighbourStreamsBySource.set(wsp, neighbourStreams = []);
-          }
-          neighbourStreams.push(streamRelatedData);
-        });
-        if (!this.vent && [...this.streams.values()].every(({ eventChWSpS }) => eventChWSpS)) {
-          // all streams connected here
-          this.vent = this.connect([...this.neighbourStreamsBySource.keys()]);
-        }
-        return (soliD) => {
-          this.onStreamEvent(stream, soliD);
-        };
-      }
-
-      attach(streams, handler = this.hn) {
-        // primary streams initialization
-        streams
-          .forEach((stream) => {
-            const conf = {
-              handler,
-              stream,
-              eventChWSpS: null,
-              neighbours: [],
-            };
-            this.streams.set(stream, conf);
-            return stream;
-          });
-        // then hooks realize
-        streams
-          .forEach((stream) => {
-            stream.connect((eventChWSpS, eventChHook, own) => this.onStreamConnect(stream, eventChWSpS, eventChHook, own));
-            return this;
-          });
-      }
-
-      detach(stream) {
-        // unsubscribe
-        // clear neighbour queue cell
-        // clear neighbour state queue cell
-        this.streams.delete(stream);
-        return this;
+    /* <@/debug> */
+    const calculableConfig = {
+      localization,
+      subordination,
+    };
+    if (!localization) {
+      if (wsps.some((wsp) => wsp.localization === RED_REC_LOCALIZATION.LOCAL)) {
+        calculableConfig.localization = RED_REC_LOCALIZATION.LOCAL;
+      } else {
+        calculableConfig.localization = RED_REC_LOCALIZATION.REMOTE;
       }
     }
-
-    return new Stream2((connect, control) => {
-      const hn = new Handler(this, connect, control, hnProJ, streams);
-    });
+    if (!subordination) {
+      calculableConfig.subordination = RED_REC_SUBORDINATION.SLAVE;
+    }
+    return new RedWSPSlave(
+      wsps,
+      hnProJ,
+      calculableConfig,
+    );
   }
 
   // канал является переходит в состояние включен

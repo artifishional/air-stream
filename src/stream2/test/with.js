@@ -9,6 +9,7 @@ import {
 } from '../red-record';
 import STTMP from '../sync-ttmp-controller';
 import {RET4_TYPES} from "../retouch";
+import { stream2 } from '../index';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
@@ -136,7 +137,7 @@ describe('with', () => {
         },
       ),
     ]);
-    const res = RedWSP.with([rwsp1, rwsp2], () => (updates, com) => ({
+    const res = stream2.with([rwsp1, rwsp2], () => (updates, com) => ({
       t1: com[0].value,
       t2: com[1].value,
     }));
