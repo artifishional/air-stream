@@ -234,33 +234,4 @@ export default class RedWSP extends WSP {
     }
     this.redSlaves.forEach((slv) => slv.handleReT4(this));
   }
-
-  static with(wsps, hnProJ, { localization = null, subordination = null } = {}) {
-    /* <@debug> */
-    if (wsps.length !== 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
-      throw new TypeError(
-        'Unsupported configuration type. Master WSP can have no more than one source',
-      );
-    }
-    /* <@/debug> */
-    const calculableConfig = {
-      localization,
-      subordination,
-    };
-    if (!localization) {
-      if (wsps.some((wsp) => wsp.localization === RED_REC_LOCALIZATION.LOCAL)) {
-        calculableConfig.localization = RED_REC_LOCALIZATION.LOCAL;
-      } else {
-        calculableConfig.localization = RED_REC_LOCALIZATION.REMOTE;
-      }
-    }
-    if (!subordination) {
-      calculableConfig.subordination = RED_REC_SUBORDINATION.SLAVE;
-    }
-    return new RedWSP(
-      wsps,
-      hnProJ,
-      calculableConfig,
-    );
-  }
 }

@@ -4,6 +4,7 @@ import WSP from './wsp';
 import Record from './record';
 import {RED_REC_LOCALIZATION, RED_REC_SUBORDINATION} from "./red-record";
 import RedWSPSlave from "./rwsp-slave";
+import RedWSP from './rwsp';
 
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
@@ -108,10 +109,23 @@ export class Stream2 {
     throw new TypeError('Unsupported source type');
   }
 
-  fromCbFunc(loader) {
-    return new Stream2((cNect) => {
-      loader(cNect());
-    }).store();
+  static fromCbFunc(cb) {
+    return new Stream2(() => {
+      debugger;
+      cb();
+    });
+  }
+
+  reduce(proJ, { local, remote }) {
+    return new Stream2((connect, control) => {
+      this.connect((/* evtChWSpS, */own, hook) => {
+        debugger;
+        control.to(hook);
+        // источники должны быть привязаны к own instance
+        connect(/* evtChWSpS, */own.map(proJ));
+        // return rec => e(rec.map(proJ));
+      });
+    });
   }
 
   static fromPromise(source, project = STATIC_PROJECTS.STRAIGHT) {
@@ -131,6 +145,13 @@ export class Stream2 {
         'Unsupported configuration type. Master WSP can have no more than one source',
       );
     }
+
+    return new Stream2((connect, control) => {
+      return () => {
+        debugger;
+      }
+    });
+
     /* <@/debug> */
     const calculableConfig = {
       localization,
@@ -217,7 +238,7 @@ export class Stream2 {
         control.send(action, data);
       }
     };
-    this._activate(control, connect, hook);
+    this.$activate(control, connect, hook);
   }
 
   distinct(equal) {

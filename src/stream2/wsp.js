@@ -6,6 +6,13 @@ let WSP_ID_COUNT = 1;
 
 export default class WSP {
   constructor(streams = null, hnProJ = null, id = WSP_ID_COUNT += 1) {
+    /* <@debug> */
+    if (streams) {
+      if (streams.some((stream) => !(stream instanceof WSP))) {
+        throw new TypeError('Only WSP supported');
+      }
+    }
+    /* </@debug> */
     this.id = id;
     this.event5tore = null;
     this.lastedstoken = DEFAULT_TOKEN;

@@ -1,60 +1,37 @@
 import { stream2 as stream } from '../index';
-import {series} from "../../utils.mjs";
 import { async } from '../../utils';
-import { WSP } from '../wsp';
 
+// eslint-disable-next-line no-undef
+const { describe, test, expect } = globalThis;
 
-class Socket {
-
-    constructor() {
-        this.obs = [];
-    }
-
-    on( obs ) {
-        this.obs.push( obs );
-        setTimeout( () => obs( {
-            action: "initialize",
-            state: {
-                mass: [1, 5, 6, 7, 20],
-                rnm: 2
-            }
-        } ) );
-    }
-
-    off( obs ) {
-        this.obs.splice( this.obs.indexOf(obs), 1 );
-    }
-
-    send(data) {
-        setTimeout( () => this.obs.map( obs => obs( data ) ) );
-    }
-
-}
-/*
-describe('1.', function () {
-
-    it('a)', (done) => {
-
-        const srv = new Observable(function ({ push }) {
-
-            const socket = new Socket();
-            socket.on( function ( {action, __sid__ = -1, ...data} ) {
-
-                if(action === "ok") {
-                    push(  );
-                }
-
-            } );
-
-            return ( {action, data} ) => {
-                socket.send( { action, ...args } );
-            }
-        });
-
+describe('complicated', () => {
+  test('classic combine from the same source', (done) => {
+    debugger;
+    const _ = async();
+    const expected = [
+      [0, 10],
+      [2, 30],
+      [5, 80],
+    ];
+    const queue1 = expected.values();
+    const rc = stream.fromCbFunc((cb) => {
+      setTimeout(() => {
+        cb(2);
+        setTimeout(cb(3));
+      });
     });
+    const red1 = rc
+      .reduce(() => (acc, next) => acc + next, 0);
+    const red2 = rc
+      .reduce(() => (acc, next) => acc + next * 2, 10);
+    stream
+      .with([red1, red2],
+        (/* owner */) => (updates, combined) => combined)
+      .get((e) => expect(e).toEqual(queue1.next().value));
+    _(() => queue1.next().done && done());
+  });
 
-});*/
-
+  /*
 describe('complicated', function () {
     /*test('stream reopening', (done) => {
         done = series(done, [
@@ -78,7 +55,7 @@ describe('complicated', function () {
             hook();
             source.on( done );
         }, 10);
-    });*/
+    });
 
 
     //изменение порядка
@@ -106,7 +83,5 @@ describe('complicated', function () {
         } )
           .get(e => expect(e).toEqual(queue1.next().value));
         _( () => queue1.next().done && done() );
-    });
-
-
+    }); */
 });
