@@ -5,9 +5,9 @@ import Record from './record';
  * @enum {number}
  */
 export const RED_REC_STATUS = {
-  PENDING: 0,
-  FAILURE: -1,
-  SUCCESS: 1,
+  PENDING: 'PENDING',
+  FAILURE: 'FAILURE',
+  SUCCESS: 'SUCCESS',
 };
 
 /**
@@ -15,8 +15,8 @@ export const RED_REC_STATUS = {
  * @enum {number}
  */
 export const RED_REC_SUBORDINATION = {
-  MASTER: true,
-  SLAVE: false,
+  MASTER: 'MASTER',
+  SLAVE: 'SLAVE',
 };
 
 /**
@@ -24,8 +24,8 @@ export const RED_REC_SUBORDINATION = {
  * @enum {number}
  */
 export const RED_REC_LOCALIZATION = {
-  LOCAL: true,
-  REMOTE: false,
+  LOCAL: 'LOCAL',
+  REMOTE: 'REMOTE',
 };
 
 export class RedRecord extends Record {

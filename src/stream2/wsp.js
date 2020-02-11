@@ -30,12 +30,20 @@ export default class WSP {
     if (!streams) {
       this.originWSpS = [this];
     } else {
-      this.originWSpS = [...new Set(streams.map(({ originWSpS }) => originWSpS))];
+      this.originWSpS = [...new Set(streams.map(({ originWSpS }) => originWSpS).flat(1))];
+    }
+    // TODO: TypeCheck
+    if (this.originWSpS.some((wsp) => !(wsp instanceof WSP))) {
+      throw new TypeError();
     }
     if (streams) {
       streams.forEach((stream) => {
         const streamRelatedData = this.streams.get(stream);
         stream.originWSpS.forEach((wsp) => {
+          // TODO: TypeCheck
+          if (!(wsp instanceof WSP)) {
+            throw new TypeError();
+          }
           let neighbourStreams = this.neighbourStreamsBySource.get(wsp);
           if (!neighbourStreams) {
             this.neighbourStreamsBySource.set(wsp, neighbourStreams = []);
@@ -45,6 +53,12 @@ export default class WSP {
       });
       streams.map((stream) => stream.on(this));
     }
+  }
+
+  static fromCbFunc(cb) {
+    const res = new WSP();
+    cb((data) => res.burn(data));
+    return res;
   }
 
   handleR(stream, cuR) {
@@ -139,6 +153,9 @@ export default class WSP {
   }
 
   next(rec) {
+    if (!this.curFrameCachedRecord) {
+      this.curFrameCachedRecord = [];
+    }
     this.curFrameCachedRecord.push(rec);
     this.slaves.forEach((slv) => slv.handleR(this, rec));
   }
@@ -155,7 +172,7 @@ export default class WSP {
     }
     this.lastedstoken = token;
     /* </@debug> */
-    this.next(new Record(this, value, token));
+    this.next(new Record(null, this, value, token));
   }
 
   map(proJ) {
@@ -170,3 +187,8 @@ export default class WSP {
     );
   }
 }
+
+/* <@debug> */
+// eslint-disable-next-line no-undef
+globalThis.WSP = WSP;
+/* </@debug> */

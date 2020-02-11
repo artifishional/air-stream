@@ -30,16 +30,6 @@ export class Stream2 {
     this.type = new.target.TYPES.PIPE;
   }
 
-  get(getter) {
-    return new Stream2((connect, control) => {
-      this.connect((evtChWSpS, hook) => {
-        control.to(hook);
-        connect(evtChWSpS);
-        return (rec) => getter(rec.value, rec);
-      });
-    }).connect();
-  }
-
   static fromevent(target, event) {
     return new Stream2([], (e, controller) => {
       e(CONNECT, USER_EVENT);
@@ -110,20 +100,24 @@ export class Stream2 {
   }
 
   static fromCbFunc(cb) {
-    return new Stream2(() => {
-      debugger;
-      cb();
+    return new Stream2((onrdy) => {
+      onrdy([WSP.fromCbFunc(cb)]);
     });
   }
 
-  reduce(proJ, { local, remote }) {
+  /**
+   *
+   * @param hnProJ
+   * @param {{local}|{remote}} initialValue
+   * @returns {Stream2}
+   */
+  reduce(hnProJ, initialValue) {
     return new Stream2((connect, control) => {
-      this.connect((/* evtChWSpS, */own, hook) => {
-        debugger;
+      this.connect((evtChWSpS, hook) => {
+        // здесь если удаленный напокитель, то готовность только после
+        // открытия канала восстановления
         control.to(hook);
-        // источники должны быть привязаны к own instance
-        connect(/* evtChWSpS, */own.map(proJ));
-        // return rec => e(rec.map(proJ));
+        connect([new RedWSP(evtChWSpS, hnProJ, {}, initialValue.local)]);
       });
     });
   }
@@ -138,51 +132,54 @@ export class Stream2 {
     });
   }
 
-  static with(wsps, hnProJ, { localization = null, subordination = null } = {}) {
+  static with(streams, hnProJ, { localization = null, subordination = null } = {}) {
     /* <@debug> */
-    if (wsps.length !== 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
+    if (streams.length !== 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
       throw new TypeError(
         'Unsupported configuration type. Master WSP can have no more than one source',
       );
     }
-
-    return new Stream2((connect, control) => {
-      return () => {
-        debugger;
-      }
-    });
-
     /* <@/debug> */
     const calculableConfig = {
       localization,
       subordination,
     };
-    if (!localization) {
-      if (wsps.some((wsp) => wsp.localization === RED_REC_LOCALIZATION.LOCAL)) {
+    /* if (!localization) {
+      if (streams.some((wsp) => wsp.localization === RED_REC_LOCALIZATION.LOCAL)) {
         calculableConfig.localization = RED_REC_LOCALIZATION.LOCAL;
       } else {
         calculableConfig.localization = RED_REC_LOCALIZATION.REMOTE;
       }
-    }
-    if (!subordination) {
+    } */
+    if (subordination === null) {
       calculableConfig.subordination = RED_REC_SUBORDINATION.SLAVE;
     }
-    return new RedWSPSlave(
-      wsps,
-      hnProJ,
-      calculableConfig,
-    );
+    return new Stream2((onrdy/* , ctr */) => {
+      let notConnectedCounter = streams.length;
+      const wsps = [];
+      streams.forEach((stream) => {
+        stream.connect((evtChWSpS/* , hook */) => {
+          wsps.push(...evtChWSpS);
+          notConnectedCounter -= 1;
+          if (!notConnectedCounter) {
+            onrdy([new RedWSPSlave(wsps, hnProJ)]);
+          }
+        });
+      });
+    });
   }
 
   // канал является переходит в состояние включен
   // когда получает ссылку на эмитер при вызове connect
 
   get(getter) {
-    return new Stream2((connect, control) => {
-      this.connect((/* evtChWSpS, */own, hook) => {
+    return new Stream2((onrdy, control) => {
+      this.connect((evtChWSpS, hook) => {
         control.to(hook);
-        connect(own.get(getter));
-        // return rec => getter(rec.value, rec)
+        onrdy(new WSP(evtChWSpS, () => ([[update]]) => {
+          getter(update);
+          return update;
+        }));
       });
     }).connect();
   }

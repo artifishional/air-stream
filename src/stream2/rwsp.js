@@ -7,6 +7,8 @@ import {
 import WSP from './wsp';
 import ReT4, { RET4_TYPES } from './retouch';
 import { EMPTY } from './signals';
+import Record from './record';
+import STTMP from './sync-ttmp-controller';
 
 
 export default class RedWSP extends WSP {
@@ -69,7 +71,12 @@ export default class RedWSP extends WSP {
       /**
        * Если это слейв, то все источники должны быть накопителями
        */
-      wsps.forEach((rwsp) => rwsp.onRed(this));
+      if (subordination === RED_REC_SUBORDINATION.SLAVE) {
+        wsps.forEach((rwsp) => rwsp.onRed(this));
+      }
+    }
+    if (subordination === RED_REC_SUBORDINATION.MASTER) {
+      this.open([new Record(null, this, this.localInitialValue, STTMP.get())]);
     }
   }
 
@@ -171,6 +178,10 @@ export default class RedWSP extends WSP {
   }
 
   open(state) {
+    // TODO: TypeCheck
+    if (state.some((rec) => !(rec instanceof Record))) {
+      debugger;
+    }
     this.opend = true;
     this.t4queue = [];
     this.reliable = state;
