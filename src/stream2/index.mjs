@@ -222,7 +222,14 @@ export class Stream2 {
 
   connect(connect = () => () => {}) {
     this.connections.set(connect, null);
-    const control = this.createController();
+    if (!this.connection) {
+      this.connection = {
+        ctr: this.createController(),
+        wsp: null,
+      };
+    }
+    // const control = this.createController();
+    const { ctr } = this.connection;
     const hook = (action = 'disconnect', data = null) => {
       /* <@debug> */
       if (typeof action !== 'string') {
@@ -230,12 +237,12 @@ export class Stream2 {
       }
       /* </@debug> */
       if (action === 'disconnect') {
-        this._deactivate(connect, control);
+        this.$deactivate(connect, ctr);
       } else {
-        control.send(action, data);
+        ctr.send(action, data);
       }
     };
-    this.$activate(control, connect, hook);
+    this.$activate(ctr, connect, hook);
   }
 
   distinct(equal) {
@@ -269,11 +276,11 @@ export class Stream2 {
     }
   }
 
-  $activate(control = this.createController(), connect, hook) {
+  $activate(ctr, connect, hook) {
     this.project.call(
       this.ctx,
       (evtChWSpS, own = this) => this.startConnectionToSlave(connect, evtChWSpS, own, hook),
-      control,
+      ctr,
     );
   }
 
