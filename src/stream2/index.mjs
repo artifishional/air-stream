@@ -21,7 +21,10 @@ const TYPES = { PIPE: 0, STORE: 1 };
 
 export class Stream2 {
   constructor(proJ, ctx = null) {
-    this.connections = new Map();
+    this.con5ions = new Map();
+
+    this.wsp = null;
+
     /* <@debug> */
     this.$label = '';
     /* </@debug> */
@@ -185,12 +188,10 @@ export class Stream2 {
   }
 
   map(proJ) {
-    return new Stream2((connect, control) => {
-      this.connect((/* evtChWSpS, */own, hook) => {
-        control.to(hook);
-        // источники должны быть привязаны к own instance
-        connect(/* evtChWSpS, */own.map(proJ));
-        // return rec => e(rec.map(proJ));
+    return new Stream2((onrdy, ctr) => {
+      this.connect((wsp, hook) => {
+        ctr.to(hook);
+        onrdy(wsp.map(proJ));
       });
     });
   }
@@ -220,29 +221,30 @@ export class Stream2 {
   }
   /* </@debug> */
 
-  connect(connect = () => () => {}) {
-    this.connections.set(connect, null);
+  connect(con5ion = () => () => {}) {
+    this.con5ions.set(con5ion, null);
     if (!this.connection) {
+      const ctr = this.createController();
       this.connection = {
-        ctr: this.createController(),
+        ctr,
         wsp: null,
       };
+      this.hook = (action = 'disconnect', data = null) => {
+        /* <@debug> */
+        if (typeof action !== 'string') {
+          throw new TypeError('Action must be a string only');
+        }
+        /* </@debug> */
+        if (action === 'disconnect') {
+          this.$deactivate(con5ion, ctr);
+        } else {
+          ctr.send(action, data);
+        }
+      };
+      this.$activate(ctr);
+    } else if (this.wsp) {
+      con5ion(this.wsp, this.hook);
     }
-    // const control = this.createController();
-    const { ctr } = this.connection;
-    const hook = (action = 'disconnect', data = null) => {
-      /* <@debug> */
-      if (typeof action !== 'string') {
-        throw new TypeError('Action must be a string only');
-      }
-      /* </@debug> */
-      if (action === 'disconnect') {
-        this.$deactivate(connect, ctr);
-      } else {
-        ctr.send(action, data);
-      }
-    };
-    this.$activate(ctr, connect, hook);
   }
 
   distinct(equal) {
@@ -269,30 +271,23 @@ export class Stream2 {
     });
   }
 
-  registerSubscriber(connect, subscriber) {
-    // if deactivation occurred earlier than the subscription
-    if (this.connections.has(connect)) {
-      this.connections.set(connect, subscriber);
-    }
-  }
-
-  $activate(ctr, connect, hook) {
+  $activate(ctr) {
     this.project.call(
       this.ctx,
-      (evtChWSpS, own = this) => this.startConnectionToSlave(connect, evtChWSpS, own, hook),
+      (wsp) => this.startConnectionToSlave(wsp),
       ctr,
     );
   }
 
-  startConnectionToSlave(connect, evtChWSpS, own, hook) {
-    // when projectable stream connecting rdy
-    const subscriber = connect(evtChWSpS, hook, own);
-    this.registerSubscriber(connect, subscriber);
-    return this.createEmitter(subscriber, evtChWSpS);
+  // when projectable stream connecting rdy
+  startConnectionToSlave(wsp) {
+    this.wsp = wsp;
+    [...this.con5ions.keys()]
+      .forEach((con5ion) => con5ion(this.wsp, this.hook));
   }
 
   $deactivate(connect, controller) {
-    this.connections.delete(connect);
+    this.con5ions.delete(connect);
     controller.send('disconnect', null);
   }
 

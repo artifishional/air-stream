@@ -18,6 +18,7 @@ export default class RedWSPSlave extends RedWSP {
       if (combined.length < this.streams.size || combined.includes(undefined)) {
         return;
       }
+      this.combined = combined;
       state.push(this.createRecordFrom(
         wave[0][1],
         this.hn(
@@ -85,8 +86,12 @@ export default class RedWSPSlave extends RedWSP {
       this.event5tore.delete(event5tore[i]);
       const updates = streams.filter(([, _rec]) => _rec.value !== EMPTY);
       if (updates.length) {
+        updates.forEach(([wsp, update]) => {
+          this.combined[this.streams.get(wsp).idx] = update;
+        });
         this.next(this.createRecordFrom(rec, this.hn(
           updates.map(([_stream, _rec]) => [_rec.value, _stream, _rec]),
+          this.combined,
         )));
       } else {
         this.next(this.createRecordFrom(rec, EMPTY));

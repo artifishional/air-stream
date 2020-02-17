@@ -15,19 +15,23 @@ describe('complicated', () => {
     ];
     const queue1 = expected.values();
     const rc = stream.fromCbFunc((cb) => {
-      debugger;
       setTimeout(() => {
         cb(2);
-        setTimeout(cb(3));
+        setTimeout(() => cb(3));
       });
     });
     const red1 = rc
-      .reduce(() => (acc, next) => acc + next, { local: 0 });
+      .reduce(() => (acc, next) => {
+        return acc + next;
+      }, { local: 0 });
     const red2 = rc
       .reduce(() => (acc, next) => acc + next * 2, { local: 10 });
     stream
       .with([red1, red2],
-        (/* owner */) => (updates, combined) => combined.map(({ value }) => value))
+        (/* owner */) => (updates, combined) => {
+          debugger;
+          return combined.map(({ value }) => value);
+        })
       .get((e) => expect(e).toEqual(queue1.next().value));
     _(() => queue1.next().done && done());
   });

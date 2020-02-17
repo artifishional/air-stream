@@ -20,7 +20,8 @@ export default class WSP {
     if (hnProJ) {
       this.hn = hnProJ(this);
     }
-    this.streams = streams ? new Map(streams.map((stream) => [stream, {
+    this.streams = streams ? new Map(streams.map((stream, idx) => [stream, {
+      idx,
       stream,
       eventChWSpS: null,
       neighbours: [],
