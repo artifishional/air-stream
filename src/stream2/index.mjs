@@ -104,7 +104,7 @@ export class Stream2 {
 
   static fromCbFunc(cb) {
     return new Stream2((onrdy) => {
-      onrdy([WSP.fromCbFunc(cb)]);
+      onrdy(WSP.fromCbFunc(cb));
     });
   }
 
@@ -115,12 +115,12 @@ export class Stream2 {
    * @returns {Stream2}
    */
   reduce(hnProJ, initialValue) {
-    return new Stream2((connect, control) => {
-      this.connect((evtChWSpS, hook) => {
+    return new Stream2((onrdy, control) => {
+      this.connect((wsp, hook) => {
         // здесь если удаленный напокитель, то готовность только после
         // открытия канала восстановления
         control.to(hook);
-        connect([new RedWSP(evtChWSpS, hnProJ, {}, initialValue.local)]);
+        onrdy(new RedWSP([wsp], hnProJ, {}, initialValue.local));
       });
     });
   }
@@ -161,11 +161,11 @@ export class Stream2 {
       let notConnectedCounter = streams.length;
       const wsps = [];
       streams.forEach((stream) => {
-        stream.connect((evtChWSpS/* , hook */) => {
-          wsps.push(...evtChWSpS);
+        stream.connect((wsp/* , hook */) => {
+          wsps.push(wsp);
           notConnectedCounter -= 1;
           if (!notConnectedCounter) {
-            onrdy([new RedWSPSlave(wsps, hnProJ)]);
+            onrdy(new RedWSPSlave(wsps, hnProJ));
           }
         });
       });
@@ -177,11 +177,15 @@ export class Stream2 {
 
   get(getter) {
     return new Stream2((onrdy, control) => {
-      this.connect((evtChWSpS, hook) => {
+      this.connect((wsp, hook) => {
         control.to(hook);
-        onrdy(new WSP(evtChWSpS, () => ([[update]]) => {
+        let Species = WSP;
+        if (wsp instanceof RedWSP) {
+          Species = RedWSPSlave;
+        }
+        onrdy(new Species([wsp], () => ([update]) => {
           getter(update);
-          return update;
+          return [update];
         }));
       });
     }).connect();

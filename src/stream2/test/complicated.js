@@ -10,20 +10,19 @@ describe('complicated', () => {
     const _ = async();
     const expected = [
       [0, 10],
-      [2, 30],
-      [5, 80],
+      [2, 14],
+      [5, 20],
     ];
     const queue1 = expected.values();
     const rc = stream.fromCbFunc((cb) => {
-      setTimeout(() => {
+      _(() => {
+        debugger;
         cb(2);
-        setTimeout(() => cb(3));
       });
+      _(() => cb(3));
     });
     const red1 = rc
-      .reduce(() => (acc, next) => {
-        return acc + next;
-      }, { local: 0 });
+      .reduce(() => (acc, next) => acc + next, { local: 0 });
     const red2 = rc
       .reduce(() => (acc, next) => acc + next * 2, { local: 10 });
     stream
@@ -32,7 +31,7 @@ describe('complicated', () => {
           debugger;
           return combined.map(({ value }) => value);
         })
-      .get((e) => expect(e).toEqual(queue1.next().value));
+      .get(({ value }) => expect(value).toEqual(queue1.next().value));
     _(() => queue1.next().done && done());
   });
 
