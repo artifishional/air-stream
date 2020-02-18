@@ -6,7 +6,6 @@ const { describe, test, expect } = globalThis;
 
 describe('complicated', () => {
   test('classic combine from the same source', (done) => {
-    debugger;
     const _ = async();
     const expected = [
       [0, 10],
@@ -15,10 +14,7 @@ describe('complicated', () => {
     ];
     const queue1 = expected.values();
     const rc = stream.fromCbFunc((cb) => {
-      _(() => {
-        debugger;
-        cb(2);
-      });
+      _(() => cb(2));
       _(() => cb(3));
     });
     const red1 = rc
@@ -27,10 +23,7 @@ describe('complicated', () => {
       .reduce(() => (acc, next) => acc + next * 2, { local: 10 });
     stream
       .with([red1, red2],
-        (/* owner */) => (updates, combined) => {
-          debugger;
-          return combined.map(({ value }) => value);
-        })
+        (/* owner */) => (updates, combined) => combined.map(({ value }) => value))
       .get(({ value }) => expect(value).toEqual(queue1.next().value));
     _(() => queue1.next().done && done());
   });
