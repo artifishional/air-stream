@@ -15,7 +15,7 @@ export default class RedWSPSlave extends RedWSP {
       wave.forEach(([idx, rec]) => {
         combined[idx] = rec;
       });
-      if (combined.length < this.streams.size || combined.includes(undefined)) {
+      if (combined.length < this.streams.size || combined.includes()) {
         return;
       }
       this.combined = combined;
@@ -90,7 +90,7 @@ export default class RedWSPSlave extends RedWSP {
           this.combined[this.streams.get(wsp).idx] = update;
         });
         this.next(this.createRecordFrom(rec, this.hn(
-          updates.map(([_stream, _rec]) => [_rec.value, _stream, _rec]),
+          updates.map(([, _rec]) => _rec),
           this.combined,
         )));
       } else {
