@@ -8,7 +8,7 @@ const inGetTTMP = () => performance.now() | 0;
 export default function getTTMP() {
   if (cache === -1) {
     cache = inGetTTMP();
-    setTimeout(() => {
+    queueMicrotask(() => {
       cache = -1;
     });
   }

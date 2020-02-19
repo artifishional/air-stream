@@ -1,94 +1,88 @@
 import { stream2 as stream } from '../index';
-import { streamEqualStrict } from '../../utils';
-import { LocalReducer } from '../local-reducer';
-import {WSP} from "../wsp";
+import { async } from '../../utils';
+import { WSP } from '../wsp';
 
-describe('reducer', function () {
+// eslint-disable-next-line no-undef
+const { describe, test, expect } = globalThis;
 
-    test('clear reducer construct with initialized stream', () => {
-        const dataChStream = stream( (connect) => {
-            connect([]);
-        } );
-        const reducer = new LocalReducer(
-          dataChStream,
-          ( ) => { },
-          { ready: true }
-        );
-        const expected = [
-            { ready: true },
-        ];
-        const queue1 = expected.values();
-        reducer.get((e) => expect(e).toEqual(queue1.next().value));
+describe('reducer', () => {
+  /* test('clear reducer construct with initialized stream', () => {
+    const dataChStream = stream((connect) => {
+      connect([]);
     });
+    const reducer = new LocalReducer(
+      dataChStream,
+      () => { },
+      { ready: true },
+    );
+    const expected = [
+      { ready: true },
+    ];
+    const queue1 = expected.values();
+    reducer.get((e) => expect(e).toEqual(queue1.next().value));
+  });
 
-    test('simple1', () => {
-        const wsp = new WSP();
-        const dataCh = stream((connect) => {
-            connect([wsp])([
-                wsp.rec({kind: "add", vl: 1}),
-                wsp.rec({kind: "add", vl: 2}),
-                wsp.rec({kind: "del", vl: 3}),
-            ]);
-        } );
-        const expected = [
-            0, 1, 3, 0
-        ];
-        const reducer = new LocalReducer(dataCh, (acc, { kind, vl }) => {
-            if(kind === "add") {
-                return acc + vl;
-            }
-            else if(kind === "del") {
-                return acc - vl;
-            }
-        }, 0);
-        const queue1 = expected.values();
-        reducer.get((e) => expect(e).toEqual(queue1.next().value));
+  test('simple1', () => {
+    const wsp = new WSP();
+    const dataCh = stream((connect) => {
+      connect([wsp])([
+        wsp.rec({ kind: 'add', vl: 1 }),
+        wsp.rec({ kind: 'add', vl: 2 }),
+        wsp.rec({ kind: 'del', vl: 3 }),
+      ]);
     });
+    const expected = [
+      0, 1, 3, 0,
+    ];
+    const reducer = new LocalReducer(dataCh, (acc, { kind, vl }) => {
+      if (kind === 'add') {
+        return acc + vl;
+      }
+      if (kind === 'del') {
+        return acc - vl;
+      }
+    }, 0);
+    const queue1 = expected.values();
+    reducer.get((e) => expect(e).toEqual(queue1.next().value));
+  });
 
-    test('several subscriptions dissolved - source stream disconnect', (done) => {
-        const wsp = new WSP();
-        const dataCh = stream( (connect, control) => {
-            control.todisconnect( () => done() );
-            connect([wsp])([
-                wsp.rec(1),
-                wsp.rec(2)
-            ]);
-        } );
-        const store = new LocalReducer(
-            dataCh,
-          ( { count }, vl ) => ({ count: count + vl }),
-          { count: 0 }
-        );
-        store.connect( (_, hook) => {
-            return (solid) => {
-                solid.map( ({value: { count }}) => {
-                    if(count === 3) {
-                        hook();
-                    }
-                } );
-            }
-        } );
-        store.connect( (_, hook) => {
-            return (solid) => {
-                solid.map( ({value: { count }}) => {
-                    if(count === 1) {
-                        hook();
-                    }
-                } );
-            }
-        } );
-        store.connect( (_, hook) => {
-            return (solid) => {
-                solid.map( ({value: { count }}) => {
-                    if(count === 0) {
-                        hook();
-                    }
-                } );
-            }
-        } );
+  test('several subscriptions dissolved - source stream disconnect', (done) => {
+    const wsp = new WSP();
+    const dataCh = stream((connect, control) => {
+      control.todisconnect(() => done());
+      connect([wsp])([
+        wsp.rec(1),
+        wsp.rec(2),
+      ]);
     });
+    const store = new LocalReducer(
+      dataCh,
+      ({ count }, vl) => ({ count: count + vl }),
+      { count: 0 },
+    );
+    store.connect((_, hook) => (solid) => {
+      solid.map(({ value: { count } }) => {
+        if (count === 3) {
+          hook();
+        }
+      });
+    });
+    store.connect((_, hook) => (solid) => {
+      solid.map(({ value: { count } }) => {
+        if (count === 1) {
+          hook();
+        }
+      });
+    });
+    store.connect((_, hook) => (solid) => {
+      solid.map(({ value: { count } }) => {
+        if (count === 0) {
+          hook();
+        }
+      });
+    });
+  });
 
-    /*
    Подписка к редьюсеру, отписка
    Повторная подписка - начальное состояние не должно сохраниться
    так как может использоваться empty object state
@@ -118,10 +112,10 @@ test.connect( (hook) => {
 	return console.log;
 } );
 
-hook1();*/
+hook1(); */
 
 
-/*
+  /*
     it('abort action', (done) => {
 
         done = series(done, [
@@ -155,7 +149,7 @@ hook1();*/
 
     });
 */
-/*
+  /*
     it('refresh history', (done) => {
 
         done = series(done, [
@@ -178,6 +172,23 @@ hook1();*/
             } )
             .on( done );
 
-    });*/
+    }); */
 
+  test('Single local reducer with default value', (done) => {
+    const _ = async();
+    const expected = [
+      0,
+      2,
+      5,
+    ];
+    const queue1 = expected.values();
+    const rc = stream.fromCbFunc((cb) => {
+      _(() => cb(2));
+      _(() => cb(3));
+    });
+    const red1 = rc
+      .reduce(() => (acc, next) => acc + next, { local: 0 });
+    red1.get(({ value }) => expect(value).toEqual(queue1.next().value));
+    _(() => queue1.next().done && done());
+  });
 });

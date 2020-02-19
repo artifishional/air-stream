@@ -9,7 +9,11 @@ import ReT4, { RET4_TYPES } from './retouch';
 import { EMPTY } from './signals';
 import Record from './record';
 import STTMP from './sync-ttmp-controller';
+import getTTMP from './get-ttmp';
 
+
+const DEFAULT_START_TTMP = -1000000;
+const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 
 export default class RedWSP extends WSP {
   /**
@@ -76,7 +80,12 @@ export default class RedWSP extends WSP {
       }
     }
     if (subordination === RED_REC_SUBORDINATION.MASTER) {
-      this.open([new Record(null, this, this.localInitialValue, STTMP.get())]);
+      this.open([new RedRecord(
+        null,
+        this,
+        this.localInitialValue,
+        STTMP.get(DEFAULT_START_TTMP),
+      )]);
     }
   }
 
@@ -221,9 +230,31 @@ export default class RedWSP extends WSP {
      * TODO: may be duplicate users
      */
     if (this.state) {
+      this.updateT4status();
       slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
     }
     this.redSlaves.add(slv);
+  }
+
+  findIndexOfLastRelUpdate() {
+    const relTTMP = getTTMP() - DEFAULT_MSG_ALIVE_TIME_MS;
+    let i;
+    // eslint-disable-next-line no-plusplus
+    for (i = this.state.length; i--;) {
+      const state = this.state[i];
+      if (state.token.sttmp < relTTMP) {
+        if (i === this.state.length - 1) {
+          return i;
+        }
+        return i + 1;
+      }
+    }
+    return 0;
+  }
+
+  updateT4status() {
+    const lastRelUpdateIdx = this.findIndexOfLastRelUpdate();
+    this.state = this.state.slice(lastRelUpdateIdx);
   }
 
   onRecordStatusUpdate(rec, status) {

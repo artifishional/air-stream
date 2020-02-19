@@ -1,16 +1,16 @@
 import '../../polyfills';
 
-
+// import './reducer';
 // import "./map";
-//import './with';
- import "./complicated";
+// import './with';
+import './complicated';
 
 // import './rwsp';
 
 /*
 
 import './simple';
-import "./reducer";
+
 
 import "./filter";
 */

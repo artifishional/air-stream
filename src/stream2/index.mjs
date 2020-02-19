@@ -175,7 +175,7 @@ export class Stream2 {
   // канал является переходит в состояние включен
   // когда получает ссылку на эмитер при вызове connect
 
-  get(getter) {
+  get(getter = () => {}) {
     return new Stream2((onrdy, control) => {
       this.connect((wsp, hook) => {
         control.to(hook);

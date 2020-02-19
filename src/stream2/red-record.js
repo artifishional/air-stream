@@ -50,7 +50,7 @@ export class RedRecord extends Record {
       subordination = RED_REC_SUBORDINATION.MASTER,
       status = RED_REC_STATUS.PENDING,
       localization = RED_REC_LOCALIZATION.LOCAL,
-    },
+    } = {},
   ) {
     super(src, owner, value, token, head);
     this.subordination = subordination;

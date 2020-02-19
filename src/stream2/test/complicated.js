@@ -31,7 +31,6 @@ describe('complicated', () => {
   test('Connecting with ret4 after full message queue', (done) => {
     const _ = async();
     const expected = [
-      [0, 10],
       [2, 14],
       [5, 20],
     ];
@@ -44,11 +43,19 @@ describe('complicated', () => {
       .reduce(() => (acc, next) => acc + next, { local: 0 });
     const red2 = rc
       .reduce(() => (acc, next) => acc + next * 2, { local: 10 });
+    red1.get();
+    red2.get();
     _(() => {
       stream
         .with([red1, red2],
-          (/* owner */) => (updates, combined) => combined.map(({ value }) => value))
-        .get(({ value }) => expect(value).toEqual(queue1.next().value));
+          () => (updates, combined) => {
+            debugger;
+            return combined.map(({ value }) => value);
+          })
+        .get(({ value }) => {
+          debugger;
+          expect(value).toEqual(queue1.next().value);
+        });
     });
     _(() => queue1.next().done && done());
   });
