@@ -34,13 +34,16 @@ export default class ReT4Init extends ReT4 {
       if (this.acc.length === this.src.streams.size) {
         // TODO: need perf optimization
         const updates = this.acc
-          .reduce((acc, next, idx) => [...acc, ...next.map((rec) => [idx, rec])], [])
-          .sort(([idxA, recA], [idxB, recB]) => {
-            if (recA.token.sttmp - recB.token.sttmp) {
-              return idxA - idxB;
-            }
-            return recA.token.sttmp - recB.token.sttmp;
-          })
+          .reduce(
+            (acc, next, idx) =>
+              // eslint-disable-next-line
+              [...acc, ...next.map((rec) => [idx, rec])], [],
+          )
+          .sort(
+            ([idxA, recA], [idxB, recB]) =>
+              // eslint-disable-next-line
+              recA.token.sttmp - recB.token.sttmp || idxA - idxB,
+          )
           .reduce((acc, [idx, next]) => {
             const lastAcc = acc[acc.length - 1];
             if (lastAcc[0] === next.token) {
