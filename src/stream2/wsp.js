@@ -1,6 +1,7 @@
 import { DEFAULT_TOKEN, EMPTY } from './signals';
 import STTMP from './sync-ttmp-controller';
 import Record from './record';
+import Propagate from './propagate';
 
 let WSP_ID_COUNT = 1;
 
@@ -173,7 +174,7 @@ export default class WSP {
     }
     this.lastedstoken = token;
     /* </@debug> */
-    this.next(new Record(null, this, value, token));
+    this.next(Propagate.burn(new Record(null, this, value, token)));
   }
 
   map(proJ) {
