@@ -41,7 +41,7 @@ export default class Record {
   }
 
   reject() {
-    this.owner.reject();
+    this.head.reject();
   }
 
   get token() {

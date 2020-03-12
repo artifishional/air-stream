@@ -2,8 +2,8 @@ import getTTMP from './get-ttmp';
 import { CONNECT } from './signals';
 import WSP from './wsp';
 import Record from './record';
-import {RED_REC_LOCALIZATION, RED_REC_SUBORDINATION} from "./red-record";
-import RedWSPSlave from "./rwsp-slave";
+import { RED_REC_SUBORDINATION } from './red-record';
+import RedWSPSlave from './rwsp-slave';
 import RedWSP from './rwsp';
 
 

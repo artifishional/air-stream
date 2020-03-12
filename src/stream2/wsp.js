@@ -174,7 +174,7 @@ export default class WSP {
     }
     this.lastedstoken = token;
     /* </@debug> */
-    this.next(Propagate.burn(new Record(null, this, value, token)));
+    this.next(Propagate.burn(value, token));
   }
 
   map(proJ) {
