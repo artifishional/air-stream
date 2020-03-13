@@ -96,7 +96,8 @@ describe('complicated', () => {
     const _ = async();
     const expected = [
       [0, 10],
-      [3, 6],
+      [-2, 6],
+      [1, 12],
     ];
     const queue1 = expected.values();
     const rc = stream.fromCbFunc((cb) => {
@@ -107,7 +108,6 @@ describe('complicated', () => {
       .reduce(() => (acc, next) => {
         if (next < 0) {
           Propagate.interrupt({ msg: "Don't use unexpected values" });
-          return acc;
         }
         return acc + next;
       }, { local: 0 });
