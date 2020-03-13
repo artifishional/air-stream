@@ -8,7 +8,7 @@ import WSP from './wsp';
 import ReT4, { RET4_TYPES } from './retouch';
 import { EMPTY } from './signals';
 import Record from './record';
-import STTMP from './sync-ttmp-controller';
+import STTMP from './sync-ttmp-ctr';
 import getTTMP from './get-ttmp';
 
 

@@ -96,8 +96,7 @@ describe('complicated', () => {
     const _ = async();
     const expected = [
       [0, 10],
-      [2, 14],
-      [5, 20],
+      [3, 6],
     ];
     const queue1 = expected.values();
     const rc = stream.fromCbFunc((cb) => {

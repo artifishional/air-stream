@@ -2,7 +2,7 @@ import Token from './token';
 
 const boiler = new Map();
 
-export default new class TTMPSyncController {
+export default new class TTMPSyncCTR {
   constructor() {
     this.token = null;
     this.cbs = [];

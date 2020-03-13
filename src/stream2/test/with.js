@@ -7,7 +7,7 @@ import {
   RED_REC_SUBORDINATION,
   RedRecord,
 } from '../red-record';
-import STTMP from '../sync-ttmp-controller';
+import STTMP from '../sync-ttmp-ctr';
 import {RET4_TYPES} from "../retouch";
 import { stream2 } from '../index';
 

@@ -68,13 +68,6 @@ export class RedRecord extends Record {
     this.registered = true;
   }
 
-  /**
-   * Прямая отмена (при обнаружении ошибки, преждевременная, ожидает регистрации)
-   */
-  reject() {
-    this.status = RED_REC_STATUS.FAILURE;
-  }
-
   onRecordStatusUpdate(rec, status) {
     /**
      * При ошибке - создавать новый токен, но с аналогичным ttmp

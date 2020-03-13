@@ -1,5 +1,5 @@
 import { DEFAULT_TOKEN, EMPTY } from './signals';
-import STTMP from './sync-ttmp-controller';
+import STTMP from './sync-ttmp-ctr';
 import Record from './record';
 import Propagate from './propagate';
 
@@ -174,7 +174,7 @@ export default class WSP {
     }
     this.lastedstoken = token;
     /* </@debug> */
-    this.next(Propagate.burn(value, token));
+    this.next(Propagate.burn(value, token, this));
   }
 
   map(proJ) {

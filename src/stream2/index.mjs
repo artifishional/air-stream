@@ -3,6 +3,7 @@ import { CONNECT } from './signals';
 import WSP from './wsp';
 import Record from './record';
 import { RED_REC_SUBORDINATION } from './red-record';
+import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './rwsp-slave';
 import RedWSP from './rwsp';
 
@@ -115,14 +116,29 @@ export class Stream2 {
    * @returns {Stream2}
    */
   reduce(hnProJ, initialValue) {
+    if ('local' in initialValue) {
+      return this.reduceLocal(hnProJ, initialValue.local);
+    }
+    if ('remote' in initialValue) {
+      return this.reduceLocal(hnProJ, initialValue.remote);
+    }
+    throw new TypeError('Unsupported initial value type');
+  }
+
+  reduceLocal(hnProJ, initialValue) {
     return new Stream2((onrdy, control) => {
       this.connect((wsp, hook) => {
-        // здесь если удаленный напокитель, то готовность только после
-        // открытия канала восстановления
         control.to(hook);
-        onrdy(new RedWSP([wsp], hnProJ, {}, initialValue.local));
+        const rwsp = new RedWSP([wsp], hnProJ, {}, initialValue);
+        rwsp.on(LocalRedWSPRecStatusCTR);
+        onrdy(rwsp);
       });
     });
+  }
+
+  reduceRemote() {
+    // здесь если удаленный напокитель, то готовность только после
+    // открытия канала восстановления
   }
 
   static fromPromise(source, project = STATIC_PROJECTS.STRAIGHT) {
@@ -233,16 +249,16 @@ export class Stream2 {
         ctr,
         wsp: null,
       };
-      this.hook = (action = 'disconnect', data = null) => {
+      this.hook = (req = 'disconnect', data = null) => {
         /* <@debug> */
-        if (typeof action !== 'string') {
+        if (typeof req !== 'string') {
           throw new TypeError('Action must be a string only');
         }
         /* </@debug> */
-        if (action === 'disconnect') {
+        if (req === 'disconnect') {
           this.$deactivate(con5ion, ctr);
         } else {
-          ctr.send(action, data);
+          ctr.send(req, data);
         }
       };
       this.$activate(ctr);

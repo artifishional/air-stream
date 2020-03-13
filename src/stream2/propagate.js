@@ -5,8 +5,8 @@ class Propagate {
     this.$lasted.reject();
   }
 
-  burn(value, token) {
-    const rec = new HeadRecord(null, this, value, token);
+  burn(value, token, owner) {
+    const rec = new HeadRecord(null, owner, value, token);
     this.$lasted = rec;
     return rec;
   }

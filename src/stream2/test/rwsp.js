@@ -6,7 +6,7 @@ import {
   RedRecord,
 } from '../red-record';
 import RedWSP from '../rwsp';
-import STTMP from '../sync-ttmp-controller';
+import STTMP from '../sync-ttmp-ctr';
 import { prop } from '../../utils';
 
 // eslint-disable-next-line no-undef
