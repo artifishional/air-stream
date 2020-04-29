@@ -1,8 +1,8 @@
 import Record from './record';
 
 export default class HeadRecord extends Record {
-  constructor(src, owner, value, token, head) {
-    super(src, owner, value, token, head);
+  constructor(prev, owner, value, token, head, src) {
+    super(prev, owner, value, token, head, src);
     this.preRejected = false;
   }
 

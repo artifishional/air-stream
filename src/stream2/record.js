@@ -1,17 +1,18 @@
 import { EMPTY } from './signals';
 
 export default class Record {
-  constructor(src, owner, value, token, head = this) {
-    /* <@debug> */
+  constructor(prev, owner, value, token, head = this, src) {
+    this.prev = prev;
+    /**
+     * Ссылка на поток-создатель
+     */
+    this.src = src;
+    /* <debug> */
     // eslint-disable-next-line no-undef
     if (!(owner instanceof globalThis.WSP)) {
       throw new TypeError('owner must be a WSP');
     }
-    /* </@debug> */
-    // TODO: TypeCheck
-    if (!Number.isInteger(value) && !Array.isArray(value)) {
-      throw new TypeError();
-    }
+    /* </debug> */
     /**
      * Ссылка на головную запись
      * Головная запись сохраняется, даже для редьюсеров
@@ -27,17 +28,17 @@ export default class Record {
     /**
      * @type {RedWSP} Поток-владелец (Мастер)
      */
-    this.owner = owner; // only for owned rec
+    this.owner = owner; // only for owned rec head->src
     if (head === this) {
       this.$token = token;
     }
   }
 
-  map(fn) {
+  map(src, fn) {
     if (this.value === EMPTY) {
       return this;
     }
-    return new Record(this, this.owner, fn(this.value, this), this.token, this.head);
+    return new Record(this, this.owner, fn(this.value, this), this.token, this.head, src);
   }
 
   reject() {
@@ -48,7 +49,7 @@ export default class Record {
     return this.head.$token;
   }
 
-  filter(fn) {
+  filter(src, fn) {
     if (this.value === EMPTY) {
       return this;
     }
@@ -56,11 +57,11 @@ export default class Record {
       return this;
     }
 
-    return new Record(this, this.owner, EMPTY, this.token, this.head);
+    return new Record(this, this.owner, EMPTY, this.token, this.head, src);
   }
 
   // TODO: redic. species set
-  from(value, Species = Record, owner = this.owner, conf) {
-    return new Species(this, owner, value, this.token, this.head, conf);
+  from(value, Species = Record, owner = this.owner, conf, src) {
+    return new Species(this, owner, value, this.token, this.head, conf, src);
   }
 }

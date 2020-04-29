@@ -6,7 +6,7 @@ class Propagate {
   }
 
   burn(value, token, owner) {
-    const rec = new HeadRecord(null, owner, value, token);
+    const rec = new HeadRecord(null, owner, value, token, undefined, owner);
     this.$lasted = rec;
     return rec;
   }

@@ -6,22 +6,25 @@ import Propagate from './propagate';
 let WSP_ID_COUNT = 1;
 
 export default class WSP {
-  constructor(streams = null, hnProJ = null, id = WSP_ID_COUNT += 1) {
+  /**
+   * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
+   * @param {Function|null = null} hnProJ
+   */
+  constructor(wsps = null, hnProJ = null) {
     /* <@debug> */
-    if (streams) {
-      if (streams.some((stream) => !(stream instanceof WSP))) {
+    if (wsps) {
+      if (wsps.some((stream) => !(stream instanceof WSP))) {
         throw new TypeError('Only WSP supported');
       }
     }
     /* </@debug> */
-    this.id = id;
+    WSP_ID_COUNT += 1;
+    this.hnProJ = hnProJ;
+    this.id = WSP_ID_COUNT;
     this.event5tore = null;
     this.lastedstoken = DEFAULT_TOKEN;
     this.curFrameCachedRecord = null;
-    if (hnProJ) {
-      this.hn = hnProJ(this);
-    }
-    this.streams = streams ? new Map(streams.map((stream, idx) => [stream, {
+    this.streams = wsps ? new Map(wsps.map((stream, idx) => [stream, {
       idx,
       stream,
       eventChWSpS: null,
@@ -29,17 +32,17 @@ export default class WSP {
     }])) : null;
     this.slaves = new Set();
     this.neighbourStreamsBySource = new Map();
-    if (!streams) {
+    if (!wsps) {
       this.originWSpS = [this];
     } else {
-      this.originWSpS = [...new Set(streams.map(({ originWSpS }) => originWSpS).flat(1))];
+      this.originWSpS = [...new Set(wsps.map(({ originWSpS }) => originWSpS).flat(1))];
     }
     // TODO: TypeCheck
     if (this.originWSpS.some((wsp) => !(wsp instanceof WSP))) {
       throw new TypeError();
     }
-    if (streams) {
-      streams.forEach((stream) => {
+    if (wsps) {
+      wsps.forEach((stream) => {
         const streamRelatedData = this.streams.get(stream);
         stream.originWSpS.forEach((wsp) => {
           // TODO: TypeCheck
@@ -53,7 +56,7 @@ export default class WSP {
           neighbourStreams.push(streamRelatedData);
         });
       });
-      streams.map((stream) => stream.on(this));
+      wsps.map((stream) => stream.on(this));
     }
   }
 
@@ -64,6 +67,9 @@ export default class WSP {
   }
 
   handleR(stream, cuR) {
+    if (!this.hn && this.hnProJ) {
+      this.hn = this.hnProJ(this);
+    }
     // grouping
     // каждое сообщение (или группу если поддерживается несколько событий
     // в рамках одного sttmp) из солид необходимо разместить в ячейке
@@ -119,7 +125,7 @@ export default class WSP {
       const updates = streams.filter(([, _rec]) => _rec.value !== EMPTY);
       if (updates.length) {
         this.next(this.createRecordFrom(rec, this.hn(
-          updates.map(([_stream, _rec]) => [_rec.value, _stream, _rec]),
+          updates.map(([, _rec]) => _rec),
         )));
       } else {
         this.next(this.createRecordFrom(rec, EMPTY));
@@ -128,7 +134,7 @@ export default class WSP {
   }
 
   createRecordFrom(rec, updates) {
-    return rec.from(updates, Record);
+    return rec.from(updates, Record, undefined, this);
   }
 
   off(slv) {
@@ -138,8 +144,8 @@ export default class WSP {
   on(slv) {
     // TODO: Записи придут одна за другой от разных handler,
     //  но одного controller
-    if (this.curFrameCachedRecord && this.curFrameCachedRecord.token === STTMP.get()) {
-      slv.handleR(this, this.curFrameCachedRecord);
+    if (this.curFrameCachedRecord && this.curFrameCachedRecord[0].token === STTMP.get()) {
+      this.curFrameCachedRecord.map((cuR) => slv.handleR(this, cuR));
     } else {
       this.curFrameCachedRecord = null;
     }
@@ -179,13 +185,13 @@ export default class WSP {
 
   map(proJ) {
     return new WSP([this],
-      () => ([[update]]) => proJ(update));
+      () => ([value]) => proJ(value));
   }
 
   filter(proJ) {
     return new WSP(
       [this],
-      () => ([[update]]) => (proJ(update) ? update : EMPTY),
+      () => ([update]) => (proJ(update) ? update : EMPTY),
     );
   }
 }

@@ -88,16 +88,21 @@ describe('complicated', () => {
     stream
       .with([red1, red2],
         () => (updates, combined) => combined.map(({ value }) => value))
-      .get(({ value }) => expect(value).toEqual(queue1.next().value));
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
     _(() => queue1.next().done && done());
   });
 
   test('Cancel queue event with ret4 from the same source', (done) => {
     const _ = async();
     const expected = [
+      'reT4',
       [0, 10],
       [-2, 6],
-      [1, 12],
+      'reT4',
+      [0, 10],
+      [3, 16],
     ];
     const queue1 = expected.values();
     const rc = stream.fromCbFunc((cb) => {
@@ -107,7 +112,7 @@ describe('complicated', () => {
     const red1 = rc
       .reduce(() => (acc, next) => {
         if (next < 0) {
-          Propagate.interrupt({ msg: "Don't use unexpected values" });
+          Propagate.interrupt({ msg: 'Don\'t use unexpected values' });
         }
         return acc + next;
       }, { local: 0 });
@@ -116,7 +121,13 @@ describe('complicated', () => {
     stream
       .with([red1, red2],
         () => (updates, combined) => combined.map(({ value }) => value))
-      .get(({ value }) => expect(value).toEqual(queue1.next().value));
+      .side(() => {
+        expect('reT4').toEqual(queue1.next().value);
+        return ([{ value }]) => {
+          expect(value).toEqual(queue1.next().value);
+        };
+      })
+      .connect();
     _(() => queue1.next().done && done());
   });
 });

@@ -1,5 +1,4 @@
 import getTTMP from './get-ttmp';
-import { CONNECT } from './signals';
 import WSP from './wsp';
 import Record from './record';
 import { RED_REC_SUBORDINATION } from './red-record';
@@ -7,6 +6,7 @@ import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './rwsp-slave';
 import RedWSP from './rwsp';
 
+const STD_DISCONNECT_REQ = 'ondisconnect';
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
 const EMPTY_FN = () => EMPTY_OBJECT;
@@ -16,7 +16,6 @@ const STATIC_PROJECTS = {
   STRAIGHT: (data) => data,
   AIO: (...args) => args,
 };
-const USER_EVENT = {};
 
 const TYPES = { PIPE: 0, STORE: 1 };
 
@@ -34,11 +33,15 @@ export class Stream2 {
     this.type = new.target.TYPES.PIPE;
   }
 
-  static fromevent(target, event) {
-    return new Stream2([], (e, controller) => {
-      e(CONNECT, USER_EVENT);
-      target.addEventListener(event, e);
-      controller.todisconnect(() => target.removeEventListener(event, e));
+  static fromNodeEvent(target, event, mapFn) {
+    return new Stream2((onrdy, ctr) => {
+      const wsp = new WSP(null, null);
+      function handler(evtData) {
+        wsp.burn(mapFn(evtData));
+      }
+      ctr.todisconnect(() => target.off(event, handler));
+      target.on(event, handler);
+      onrdy(wsp);
     });
   }
 
@@ -48,6 +51,45 @@ export class Stream2 {
         controller.todisconnect(hook);
         return e;
       }));
+    });
+  }
+
+  /**
+   * TODO:
+   *  wsp (primary) -> burn(value, token)
+   *  wsp (secondary) -> handleR(stream, cuR)
+   *  wsp hnProJ? need wsp burn-point
+   */
+  static handle(hnProJ) {
+    return new Stream2((onrdy, control) => {
+      const req = hnProJ();
+      const wsp = new WSP(null, null);
+      control.tocommand(
+        ...Object.keys(req)
+          .map((key) => (request, data) => {
+            if (request === key) {
+              wsp.burn(req[key](request, data));
+            }
+          }),
+      );
+      onrdy(wsp);
+    });
+  }
+
+  requester(proJ) {
+    return new Stream2((onrdy, control) => {
+      this.connect((wsp, hook) => {
+        control.to(hook);
+        proJ((request, data) => {
+          // <if-debug>
+          if (request === STD_DISCONNECT_REQ) {
+            throw new TypeError('Static request cannot disconnect streams');
+          }
+          // </if-debug>
+          control.send(request, data);
+        });
+        onrdy(wsp);
+      });
     });
   }
 
@@ -181,7 +223,13 @@ export class Stream2 {
           wsps.push(wsp);
           notConnectedCounter -= 1;
           if (!notConnectedCounter) {
-            onrdy(new RedWSPSlave(wsps, hnProJ));
+            // TODO: instead of every RedWSP someone use CoWSP
+            if(wsps.every(wsp => wsp instanceof RedWSP)) {
+              onrdy(new RedWSPSlave(wsps, hnProJ));
+            }
+            else {
+              onrdy(new WSP(wsps, hnProJ));
+            }
           }
         });
       });
@@ -191,7 +239,10 @@ export class Stream2 {
   // канал является переходит в состояние включен
   // когда получает ссылку на эмитер при вызове connect
 
-  get(getter = () => {}) {
+  /**
+   * @param {Function} getter
+   */
+  get(getter = EMPTY_FN) {
     return new Stream2((onrdy, control) => {
       this.connect((wsp, hook) => {
         control.to(hook);
@@ -199,12 +250,31 @@ export class Stream2 {
         if (wsp instanceof RedWSP) {
           Species = RedWSPSlave;
         }
-        onrdy(new Species([wsp], () => ([update]) => {
-          getter(update);
-          return [update];
+        onrdy(new Species([wsp], () => (updRecS) => {
+          getter(updRecS[0]);
+          return updRecS;
         }));
       });
     }).connect();
+  }
+
+  side(proJ) {
+    return new Stream2((onrdy, control) => {
+      this.connect((wsp, hook) => {
+        control.to(hook);
+        let Species = WSP;
+        if (wsp instanceof RedWSP) {
+          Species = RedWSPSlave;
+        }
+        onrdy(new Species([wsp], (owner) => {
+          const transform = proJ(owner);
+          return (updates) => {
+            transform(updates);
+            return updates;
+          };
+        }, { reT4able: true }));
+      });
+    });
   }
 
   map(proJ) {
@@ -217,11 +287,10 @@ export class Stream2 {
   }
 
   filter(proJ) {
-    return new Stream2((connect, control) => {
-      this.connect((evtChWSpS, hook, own) => {
-        control.to(hook);
-        const e = connect(evtChWSpS, own);
-        return (rec) => e(rec.filter(proJ));
+    return new Stream2((onrdy, ctr) => {
+      this.connect((wsp, hook) => {
+        ctr.to(hook);
+        onrdy(wsp.filter(proJ));
       });
     });
   }
@@ -233,6 +302,7 @@ export class Stream2 {
         control.to(hook);
         const e = conect(evtChWSpS);
         return (rec) => {
+          // eslint-disable-next-line no-console
           console.log(rec.value);
           e(rec);
         };
@@ -249,13 +319,13 @@ export class Stream2 {
         ctr,
         wsp: null,
       };
-      this.hook = (req = 'disconnect', data = null) => {
+      this.hook = (req = STD_DISCONNECT_REQ, data = null) => {
         /* <@debug> */
         if (typeof req !== 'string') {
           throw new TypeError('Action must be a string only');
         }
         /* </@debug> */
-        if (req === 'disconnect') {
+        if (req === STD_DISCONNECT_REQ) {
           this.$deactivate(con5ion, ctr);
         } else {
           ctr.send(req, data);
@@ -265,6 +335,7 @@ export class Stream2 {
     } else if (this.wsp) {
       con5ion(this.wsp, this.hook);
     }
+    return (req, data) => this.hook(req, data);
   }
 
   distinct(equal) {
@@ -308,7 +379,7 @@ export class Stream2 {
 
   $deactivate(connect, controller) {
     this.con5ions.delete(connect);
-    controller.send('disconnect', null);
+    controller.send(STD_DISCONNECT_REQ, null);
   }
 
   createEmitter(subscriber, evtChWSpS) {
@@ -556,7 +627,7 @@ export class Controller {
       throw new Error(`${this.src.$label}: This controller is already disconnected`);
     }
     /* </@debug> */
-    if (action !== 'disconnect') {
+    if (action !== STD_DISCONNECT_REQ) {
       this.$tocommand.map((connector) => connector(action, data));
     } else {
       this.disconnected = true;

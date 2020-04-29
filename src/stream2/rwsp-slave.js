@@ -4,11 +4,21 @@ import { EMPTY } from './signals';
 
 
 export default class RedWSPSlave extends RedWSP {
-  constructor(wsps, hnProJ) {
-    super(wsps, hnProJ, { subordination: RED_REC_SUBORDINATION.SLAVE });
+  /**
+   * @augments RedWSP
+   * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
+   * @param {Function} hnProJ
+   * @param {Boolean = false} reT4able Reinit getter when reT4
+   */
+  constructor(wsps, hnProJ = null, { reT4able = false } = {}) {
+    super(wsps, hnProJ, { subordination: RED_REC_SUBORDINATION.SLAVE, reT4able });
   }
 
   onReT4Complete(updates) {
+    // TODO: DUPLICATE BASE CH.
+    if (!this.hn || this.reT4able) {
+      this.hn = this.hnProJ(this);
+    }
     const state = [];
     const combined = [];
     updates.forEach((wave) => {

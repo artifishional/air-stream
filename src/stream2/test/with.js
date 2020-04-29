@@ -1,161 +1,148 @@
-import WSP from '../wsp';
-import { async, prop } from '../../utils';
-import RedWSP from '../rwsp';
-import {
-  RED_REC_LOCALIZATION,
-  RED_REC_STATUS,
-  RED_REC_SUBORDINATION,
-  RedRecord,
-} from '../red-record';
-import STTMP from '../sync-ttmp-ctr';
-import {RET4_TYPES} from "../retouch";
-import { stream2 } from '../index';
+import EventEmitter from 'event-emitter';
+import { async } from '../../utils';
+import { stream2 as stream } from '../index';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
 
 describe('with', () => {
-  /*
-    test('simple', (done) => {
-      const _ = async();
-      const expected = [
-        [1], [1, 2],
-      ];
-      const wsp1 = new WSP();
-      _(() => wsp1.rec(1));
-      const wsp2 = new WSP();
-      _(() => wsp2.rec(2));
-      const queue1 = expected.values();
-      new WSP([wsp1, wsp2], () => {
-        const state = new Map();
-        return (updates) => {
-          updates.forEach(([data, stream]) => state.set(stream, data));
-          return [...state.values()];
-        };
-      })
-        .get((e) => {
-          expect(e).toEqual(queue1.next().value);
-        });
-      _(() => queue1.next().done && done());
-    });
+  /*test('example', (done) => {
+    const _ = async();
+    const expected = [
+      [1], [1, 2],
+    ];
+    const ta1 = new EventEmitter();
+    const rc1 = stream.fromNodeEvent(
+      ta1,
+      'test-event',
+      (vl) => vl,
+    );
+    _(() => ta1.emit('test-event', 1));
+    const ta2 = new EventEmitter();
+    const rc2 = stream.fromNodeEvent(
+      ta2,
+      'test-event',
+      (vl) => vl,
+    );
+    _(() => ta2.emit('test-event', 2));
+    const queue1 = expected.values();
+    stream.with([rc1, rc2], () => {
+      const state = new Map();
+      return (updates) => {
+        updates.forEach((rec) => state.set(rec.src, rec.value));
+        return [...state.values()];
+      };
+    })
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
+    _(() => queue1.next().done && done());
+  });
 
-    test('single wsp (sync mode)', (done) => {
-      const _ = async();
-      const expected = [
-        ['a1', 'b1'],
-      ];
-      const wsp = new WSP();
-      _(() => wsp.rec(1));
-      const wsp1 = wsp.map((vl) => `a${vl}`);
-      const wsp2 = wsp.map((vl) => `b${vl}`);
-      const queue1 = expected.values();
-      new WSP([wsp1, wsp2], () => {
-        const state = new Map();
-        return (updates) => {
-          updates.forEach(([data, stream]) => state.set(stream, data));
-          return [...state.values()];
-        };
-      })
-        .get((e) => {
-          expect(e).toEqual(queue1.next().value);
-        });
-      _(() => queue1.next().done && done());
+  test('single wsp (sync mode)', (done) => {
+    const _ = async();
+    const expected = [
+      ['a1', 'b1'],
+    ];
+    const rc = stream.fromCbFunc((cb) => {
+      _(() => cb(1));
     });
+    const rc1 = rc.map(({ value }) => `a${value}`);
+    const rc2 = rc.map(({ value }) => `b${value}`);
+    const queue1 = expected.values();
+    stream.with([rc1, rc2], () => {
+      const state = new Map();
+      return (updates) => {
+        updates.forEach((rec) => state.set(rec.src, rec.value));
+        return [...state.values()];
+      };
+    })
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
+    _(() => queue1.next().done && done());
+  });
 
-    test('single wsp (sync mode) with empty record', (done) => {
-      const _ = async();
-      const expected = [
-        ['a1'], ['a2'],
-      ];
-      const wsp = new WSP();
-      _(() => wsp.rec(1));
-      _(() => wsp.rec(2));
-      const wsp1 = wsp.map((vl) => `a${vl}`);
-      const wsp2 = wsp.filter(() => false);
-      const queue1 = expected.values();
-      new WSP([wsp1, wsp2], () => {
-        const state = new Map();
-        return (updates) => {
-          updates.forEach(([data, stream]) => state.set(stream, data));
-          return [...state.values()];
-        };
-      })
-        .get((e) => expect(e).toEqual(queue1.next().value));
-      _(() => queue1.next().done && done());
+  test('single wsp (sync mode) with empty record', (done) => {
+    const _ = async();
+    const expected = [
+      ['a1'], ['a2'],
+    ];
+    const rc = stream.fromCbFunc((cb) => {
+      _(() => cb(1));
+      _(() => cb(2));
     });
+    const rc1 = rc.map(({ value }) => `a${value}`);
+    const rc2 = rc.filter(() => false);
+    const queue1 = expected.values();
+    stream.with([rc1, rc2], () => {
+      const state = new Map();
+      return (updates) => {
+        updates.forEach((rec) => state.set(rec.src, rec.value));
+        return [...state.values()];
+      };
+    })
+      .get(({ value }) => expect(value).toEqual(queue1.next().value));
+    _(() => queue1.next().done && done());
+  });
 
-    test('single wsp (sync mode) - record retention mex', (done) => {
-      const _ = async();
-      const expected = [
-        ['a1', 'b1'],
-      ];
-      const wsp = new WSP();
-      wsp.rec(1);
-      const wsp1 = wsp.map((vl) => `a${vl}`);
-      const wsp2 = wsp.map((vl) => `b${vl}`);
-      const queue1 = expected.values();
-      new WSP([wsp1, wsp2], () => {
-        const state = new Map();
-        return (updates) => {
-          updates.forEach(([data, stream]) => state.set(stream, data));
-          return [...state.values()];
-        };
-      })
-        .get((e) => expect(e).toEqual(queue1.next().value));
-      _(() => queue1.next().done && done());
+  test('single wsp (sync mode) - record retention mex', (done) => {
+    const _ = async();
+    const expected = [
+      ['a1', 'b1'],
+    ];
+    const rc = stream.fromCbFunc((cb) => {
+      cb(1);
     });
-  */
+    const rc1 = rc.map(({ value }) => `a${value}`);
+    const rc2 = rc.map(({ value }) => `b${value}`);
+    const queue1 = expected.values();
+    const res = stream.with([rc1, rc2], () => {
+      const state = new Map();
+      return (updates) => {
+        updates.forEach((rec) => state.set(rec.src, rec.value));
+        return [...state.values()];
+      };
+    });
+    res.connect();
+    res.get(({ value }) => expect(value).toEqual(queue1.next().value));
+    _(() => queue1.next().done && done());
+  });
+
   // late stream connection on several wspS
 
   // late stream connection on single wsp - is it real?
-  // single wsp DOESN'T supp several events per frame
+  // !~ single (wsp DOESN'T supp several events per frame) - now i'ts supported
   // single wsp is a single wsp - it is always synchronized with itself
   // what about a stream with combined wsp?
-
-  test('slave rwsp reT4', () => {
-    const rwsp1 = new RedWSP(
-      null,
-      () => (count, add) => count + add,
-      { localization: RED_REC_LOCALIZATION.REMOTE },
+*/
+  test('slave rwsp reT4', (done) => {
+    debugger;
+    const _ = async();
+    const expected = [
+      [24, 25],
+    ];
+    const queue1 = expected.values();
+    const rc1 = stream.fromCbFunc((cb) => {
+      cb(1);
+    })
+      .reduce(() => (count, add) => count + add, { local: 23 });
+    const ta2 = new EventEmitter();
+    const rc2 = stream.fromNodeEvent(
+      ta2,
+      'test-event',
+      (vl) => vl,
     );
-    const rwsp2 = new RedWSP(
-      null,
-      () => (count, add) => count + add,
-      { localization: RED_REC_LOCALIZATION.REMOTE },
-    );
-    rwsp1.open([
-      new RedRecord(
-        null,
-        rwsp1,
-        24,
-        STTMP.get(1),
-        undefined,
-        {
-          subordination: RED_REC_SUBORDINATION.MASTER,
-          status: RED_REC_STATUS.PENDING,
-          localization: RED_REC_LOCALIZATION.LOCAL,
-        },
-      ),
-    ]);
-    const res = stream2.with([rwsp1, rwsp2], () => (updates, com) => ({
-      t1: com[0].value,
-      t2: com[1].value,
-    }));
-    rwsp2.open([
-      new RedRecord(
-        null,
-        rwsp2,
-        25,
-        STTMP.get(2),
-        undefined,
-        {
-          subordination: RED_REC_SUBORDINATION.MASTER,
-          status: RED_REC_STATUS.PENDING,
-          localization: RED_REC_LOCALIZATION.LOCAL,
-        },
-      ),
-    ]);
-    expect(res.state.slice(-2).map(prop('value')))
-      .toEqual([{ t1: 24, t2: 25 }]);
+    const rc3 = rc2.reduce(() => (count, add) => count + add, { remote: rc2 });
+    const res = stream.with([rc1, rc3], () => {
+      const state = new Map();
+      return (updates) => {
+        updates.forEach((rec) => state.set(rec.src, rec.value));
+        return [...state.values()];
+      };
+    });
+    res.get(({ value }) => expect(value).toEqual(queue1.next().value));
+    _(() => ta2.emit('test-event', 25));
+    _(() => queue1.next().done && done());
   });
 });

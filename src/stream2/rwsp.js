@@ -17,9 +17,10 @@ const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 
 export default class RedWSP extends WSP {
   /**
-  * @param {[WSP|RedWSP]|null} wsps Массив источников
+  * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
   * Для мастера может быть только один источник
   * null - если это головной узел
+  * @param {Boolean = false} reT4able Reinit getter when reT4
   * @param {Function} hnProJ
   * @param {RED_REC_LOCALIZATION} localization
   * @param {RED_REC_SUBORDINATION} subordination
@@ -33,8 +34,10 @@ export default class RedWSP extends WSP {
   constructor(wsps, hnProJ, {
     subordination = RED_REC_SUBORDINATION.MASTER,
     localization = RED_REC_LOCALIZATION.LOCAL,
+    reT4able = false,
   } = {}, localInitialValue = EMPTY) {
     super(wsps, hnProJ);
+    this.reT4able = reT4able;
     this.localInitialValue = localInitialValue;
     this.incompleteRet4 = null;
     this.opend = false;
@@ -80,11 +83,15 @@ export default class RedWSP extends WSP {
       }
     }
     if (subordination === RED_REC_SUBORDINATION.MASTER) {
+      // TODO: DUPLICATE BASE CH.
+      this.hn = this.hnProJ(this);
       this.open([new RedRecord(
         null,
         this,
         this.localInitialValue,
         STTMP.get(DEFAULT_START_TTMP),
+        undefined,
+        this,
       )]);
     }
   }
@@ -132,6 +139,7 @@ export default class RedWSP extends WSP {
       this.t4queue.push(cuR);
     }
     this.state.push(rec);
+    rec.on(this);
     this.next(rec);
   }
 
@@ -158,6 +166,10 @@ export default class RedWSP extends WSP {
   }
 
   onReT4Complete(updates) {
+    // TODO: DUPLICATE BASE CH.
+    if (!this.hn || this.reT4able) {
+      this.hn = this.hnProJ(this);
+    }
     const state = [];
     const combined = [];
     updates.forEach((wave) => {
@@ -273,7 +285,7 @@ export default class RedWSP extends WSP {
         this.state.push(res);
         return res;
       }, this.reliable.slice(-1)[0]);
+      this.redSlaves.forEach((slv) => slv.handleReT4(this, this.state, RET4_TYPES.ReINIT));
     }
-    this.redSlaves.forEach((slv) => slv.handleReT4(this));
   }
 }
