@@ -2,24 +2,36 @@ import { DEFAULT_TOKEN, EMPTY } from './signals';
 import STTMP from './sync-ttmp-ctr';
 import Record from './record';
 import Propagate from './propagate';
+import { STATIC_CREATOR_KEY } from './defs';
 
 let WSP_ID_COUNT = 1;
 
 export default class WSP {
   /**
    * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
-   * @param {Function|null = null} hnProJ
+   * @param {*} args
+   * @param {STATIC_CREATOR_KEY} creatorKey
    */
-  constructor(wsps = null, hnProJ = null) {
-    /* <@debug> */
+  constructor(
+    wsps = null,
+    args,
+    /* <debug> */ creatorKey, /* </debug> */
+  ) {
+    this.wsps = wsps;
+    /* <debug> */
+    if (creatorKey !== STATIC_CREATOR_KEY) {
+      throw new TypeError('Only static constructor supported');
+    }
+    /* </debug> */
+    /* <debug> */
     if (wsps) {
       if (wsps.some((stream) => !(stream instanceof WSP))) {
         throw new TypeError('Only WSP supported');
       }
     }
-    /* </@debug> */
+    /* </debug> */
     WSP_ID_COUNT += 1;
-    this.hnProJ = hnProJ;
+    this.hnProJ = null;
     this.id = WSP_ID_COUNT;
     this.event5tore = null;
     this.lastedstoken = DEFAULT_TOKEN;
@@ -30,6 +42,9 @@ export default class WSP {
       eventChWSpS: null,
       neighbours: [],
     }])) : null;
+    /**
+     * @property {Set<WSP>}
+     */
     this.slaves = new Set();
     this.neighbourStreamsBySource = new Map();
     if (!wsps) {
@@ -56,20 +71,41 @@ export default class WSP {
           neighbourStreams.push(streamRelatedData);
         });
       });
-      wsps.map((stream) => stream.on(this));
     }
   }
 
+  /**
+   * @param {Function|null = null} hnProJ
+   */
+  initiate(hnProJ = null) {
+    this.hnProJ = hnProJ;
+    if (!this.hn && this.hnProJ) {
+      this.hn = this.hnProJ(this);
+    }
+    if (this.wsps) {
+      this.wsps.map((stream) => stream.on(this));
+    }
+  }
+
+  static create(wsps, hnProJ = null, args = {}) {
+    const res = new this(
+      wsps,
+      args,
+      /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
+    );
+    if (hnProJ) {
+      res.initiate(hnProJ);
+    }
+    return res;
+  }
+
   static fromCbFunc(cb) {
-    const res = new WSP();
+    const res = WSP.create();
     cb((data) => res.burn(data));
     return res;
   }
 
   handleR(stream, cuR) {
-    if (!this.hn && this.hnProJ) {
-      this.hn = this.hnProJ(this);
-    }
     // grouping
     // каждое сообщение (или группу если поддерживается несколько событий
     // в рамках одного sttmp) из солид необходимо разместить в ячейке
@@ -141,6 +177,9 @@ export default class WSP {
     this.slaves.delete(slv);
   }
 
+  /**
+   * @param {WSP} slv
+   */
   on(slv) {
     // TODO: Записи придут одна за другой от разных handler,
     //  но одного controller
@@ -153,7 +192,7 @@ export default class WSP {
   }
 
   get(proJ) {
-    return new WSP([this],
+    return WSP.create([this],
       () => ([[update]]) => {
         proJ(update);
         return update;
@@ -184,12 +223,12 @@ export default class WSP {
   }
 
   map(proJ) {
-    return new WSP([this],
+    return WSP.create([this],
       () => ([value]) => proJ(value));
   }
 
   filter(proJ) {
-    return new WSP(
+    return WSP.create(
       [this],
       () => ([update]) => (proJ(update) ? update : EMPTY),
     );

@@ -1,12 +1,14 @@
 import EventEmitter from 'event-emitter';
 import { async } from '../../utils';
 import { stream2 as stream } from '../index';
+import WSP from '../wsp';
+import { RED_REC_STATUS } from '../red-record';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
 
 describe('with', () => {
-  /*test('example', (done) => {
+  test('example', (done) => {
     const _ = async();
     const expected = [
       [1], [1, 2],
@@ -51,6 +53,7 @@ describe('with', () => {
     const rc2 = rc.map(({ value }) => `b${value}`);
     const queue1 = expected.values();
     stream.with([rc1, rc2], () => {
+      debugger;
       const state = new Map();
       return (updates) => {
         updates.forEach((rec) => state.set(rec.src, rec.value));
@@ -115,34 +118,33 @@ describe('with', () => {
   // !~ single (wsp DOESN'T supp several events per frame) - now i'ts supported
   // single wsp is a single wsp - it is always synchronized with itself
   // what about a stream with combined wsp?
-*/
-  test('slave rwsp reT4', (done) => {
-    debugger;
+
+  test('remote red wsp', (done) => {
     const _ = async();
     const expected = [
-      [24, 25],
+      24,
+      25,
     ];
     const queue1 = expected.values();
-    const rc1 = stream.fromCbFunc((cb) => {
-      cb(1);
-    })
-      .reduce(() => (count, add) => count + add, { local: 23 });
     const ta2 = new EventEmitter();
-    const rc2 = stream.fromNodeEvent(
-      ta2,
-      'test-event',
-      (vl) => vl,
-    );
-    const rc3 = rc2.reduce(() => (count, add) => count + add, { remote: rc2 });
-    const res = stream.with([rc1, rc3], () => {
-      const state = new Map();
-      return (updates) => {
-        updates.forEach((rec) => state.set(rec.src, rec.value));
-        return [...state.values()];
-      };
+    const rc2 = stream.fromNodeEvent(ta2, 'test-event', (vl) => vl);
+    const remote = stream((onrdy, ctr) => {
+      const wsp = WSP.create();
+      ctr.tocommand((request, cuR) => {
+        if (request === 'remote-confirm') {
+          setTimeout(() => {
+            cuR.onRecordStatusUpdate(cuR, RED_REC_STATUS.SUCCESS);
+          });
+        }
+      });
+      onrdy(wsp);
+      _(() => wsp.burn(24));
     });
-    res.get(({ value }) => expect(value).toEqual(queue1.next().value));
-    _(() => ta2.emit('test-event', 25));
+    const rc3 = rc2.reduce(() => (count, add) => count + add, { remote });
+    rc3.get(({ value }) => {
+      expect(value).toEqual(queue1.next().value);
+    });
+    _(() => ta2.emit('test-event', 1));
     _(() => queue1.next().done && done());
   });
 });

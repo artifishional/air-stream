@@ -1,0 +1,1 @@
+export const STATIC_CREATOR_KEY = {};

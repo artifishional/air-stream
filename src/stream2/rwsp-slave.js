@@ -7,18 +7,30 @@ export default class RedWSPSlave extends RedWSP {
   /**
    * @augments RedWSP
    * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
-   * @param {Function} hnProJ
    * @param {Boolean = false} reT4able Reinit getter when reT4
+   * @param {STATIC_CREATOR_KEY} creatorKey
    */
-  constructor(wsps, hnProJ = null, { reT4able = false } = {}) {
-    super(wsps, hnProJ, { subordination: RED_REC_SUBORDINATION.SLAVE, reT4able });
+  constructor(
+    wsps,
+    { reT4able = false } = {},
+    /* <debug> */ creatorKey, /* </debug> */
+  ) {
+    super(
+      wsps,
+      { subordination: RED_REC_SUBORDINATION.SLAVE, reT4able },
+      /* <debug> */ creatorKey, /* </debug> */
+    );
+  }
+
+  initiate(hnProJ) {
+    // TODO: DUPLICATE BASE CH.
+    if (!this.hn || this.reT4able) {
+      super.initiate(hnProJ);
+      // this.hn = this.hnProJ(this);
+    }
   }
 
   onReT4Complete(updates) {
-    // TODO: DUPLICATE BASE CH.
-    if (!this.hn || this.reT4able) {
-      this.hn = this.hnProJ(this);
-    }
     const state = [];
     const combined = [];
     updates.forEach((wave) => {

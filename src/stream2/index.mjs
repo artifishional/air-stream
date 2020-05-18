@@ -1,7 +1,7 @@
 import getTTMP from './get-ttmp';
 import WSP from './wsp';
 import Record from './record';
-import { RED_REC_SUBORDINATION } from './red-record';
+import {RED_REC_STATUS, RED_REC_SUBORDINATION} from './red-record';
 import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './rwsp-slave';
 import RedWSP from './rwsp';
@@ -35,7 +35,7 @@ export class Stream2 {
 
   static fromNodeEvent(target, event, mapFn) {
     return new Stream2((onrdy, ctr) => {
-      const wsp = new WSP(null, null);
+      const wsp = WSP.create();
       function handler(evtData) {
         wsp.burn(mapFn(evtData));
       }
@@ -162,7 +162,7 @@ export class Stream2 {
       return this.reduceLocal(hnProJ, initialValue.local);
     }
     if ('remote' in initialValue) {
-      return this.reduceLocal(hnProJ, initialValue.remote);
+      return this.reduceRemote(hnProJ, initialValue.remote);
     }
     throw new TypeError('Unsupported initial value type');
   }
@@ -171,16 +171,54 @@ export class Stream2 {
     return new Stream2((onrdy, control) => {
       this.connect((wsp, hook) => {
         control.to(hook);
-        const rwsp = new RedWSP([wsp], hnProJ, {}, initialValue);
+        const rwsp = RedWSP.create([wsp], hnProJ, { initialValue });
         rwsp.on(LocalRedWSPRecStatusCTR);
         onrdy(rwsp);
       });
     });
   }
 
-  reduceRemote() {
-    // здесь если удаленный напокитель, то готовность только после
-    // открытия канала восстановления
+  /**
+   * Запись создается
+   * ей передается ссылка на канал согласования
+   * Если запись становится неактуальной, то она должна получить известие об этом
+   * тогда она сможет отключиться от канала согласования
+   */
+  reduceRemote(hnProJ, initialValue) {
+    return new Stream2((onrdy, ctr) => {
+      Stream2.whenAllConnected([initialValue, this], ([[wspR, hookR], [wsp, hook]]) => {
+        ctr.to(hook);
+        let rwsp = null;
+        wspR.on({
+          handleR(src, rec) {
+            if (!rwsp) {
+              rwsp = RedWSP.create([wsp], hnProJ, { initialValue: rec.value });
+              onrdy(rwsp);
+              rwsp.on({
+                handleR(_rec) {
+                  hookR('remote-confirm', _rec);
+                },
+              });
+            } else {
+              rwsp.open(rec.value.data);
+            }
+          },
+        });
+      });
+    });
+  }
+
+  static whenAllConnected(streams, cb) {
+    const states = new Array(streams.length);
+    let rdyCounter = 0;
+    const connections = streams.map((stream, idx) => stream.connect((wsp, hook) => {
+      states[idx] = [wsp, hook];
+      rdyCounter += 1;
+      if (rdyCounter === streams.length) {
+        cb(states);
+      }
+    }));
+    return (req, data) => connections.forEach((cnct) => cnct(req, data));
   }
 
   static fromPromise(source, project = STATIC_PROJECTS.STRAIGHT) {
@@ -224,11 +262,10 @@ export class Stream2 {
           notConnectedCounter -= 1;
           if (!notConnectedCounter) {
             // TODO: instead of every RedWSP someone use CoWSP
-            if(wsps.every(wsp => wsp instanceof RedWSP)) {
-              onrdy(new RedWSPSlave(wsps, hnProJ));
-            }
-            else {
-              onrdy(new WSP(wsps, hnProJ));
+            if (wsps.every((_wsp) => _wsp instanceof RedWSP)) {
+              onrdy(RedWSPSlave.create(wsps, hnProJ));
+            } else {
+              onrdy(WSP.create(wsps, hnProJ));
             }
           }
         });
@@ -250,7 +287,7 @@ export class Stream2 {
         if (wsp instanceof RedWSP) {
           Species = RedWSPSlave;
         }
-        onrdy(new Species([wsp], () => (updRecS) => {
+        onrdy(Species.create([wsp], () => (updRecS) => {
           getter(updRecS[0]);
           return updRecS;
         }));

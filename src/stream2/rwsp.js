@@ -21,24 +21,25 @@ export default class RedWSP extends WSP {
   * Для мастера может быть только один источник
   * null - если это головной узел
   * @param {Boolean = false} reT4able Reinit getter when reT4
-  * @param {Function} hnProJ
   * @param {RED_REC_LOCALIZATION} localization
   * @param {RED_REC_SUBORDINATION} subordination
-  * @param {*} localInitialValue
+  * @param {*} initialValue
   *   Видимо ведет себя по разному:
    *   для зависимых - не создает новое сообщение, а только предоставляет
    *    локальное постоянное обвноялемое значение
    *   и только для местных головных - создает новое значение в момент
    *    инциализации
+   * @param {STATIC_CREATOR_KEY} creatorKey
   */
-  constructor(wsps, hnProJ, {
+  constructor(wsps, {
     subordination = RED_REC_SUBORDINATION.MASTER,
     localization = RED_REC_LOCALIZATION.LOCAL,
     reT4able = false,
-  } = {}, localInitialValue = EMPTY) {
-    super(wsps, hnProJ);
+    initialValue = EMPTY,
+  } = {}, /* <debug> */ creatorKey /* </debug> */) {
+    super(wsps, {}, /* <debug> */ creatorKey /* </debug> */);
     this.reT4able = reT4able;
-    this.localInitialValue = localInitialValue;
+    this.initialValue = initialValue;
     this.incompleteRet4 = null;
     this.opend = false;
     /**
@@ -67,32 +68,35 @@ export default class RedWSP extends WSP {
     this.reliable = null;
     this.t4queue = null;
     this.state = null;
-    if (wsps) {
+  }
+
+  initiate(hnProJ) {
+    if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
+      this.open([new RedRecord(
+        null,
+        this,
+        this.initialValue,
+        STTMP.get(DEFAULT_START_TTMP),
+        undefined,
+        this,
+      )]);
+    }
+    // TODO: DUPLICATE BASE CH.
+    // this.hn = this.hnProJ(this);
+    super.initiate(hnProJ);
+    if (this.wsps) {
       /**
        * Если это мастер, то только один источник, и он
        * рассматривается как контроллер
        */
       /* if (subordination === RED_REC_SUBORDINATION.MASTER) {
-
       } */
       /**
        * Если это слейв, то все источники должны быть накопителями
        */
-      if (subordination === RED_REC_SUBORDINATION.SLAVE) {
-        wsps.forEach((rwsp) => rwsp.onRed(this));
+      if (this.subordination === RED_REC_SUBORDINATION.SLAVE) {
+        this.wsps.forEach((rwsp) => rwsp.onRed(this));
       }
-    }
-    if (subordination === RED_REC_SUBORDINATION.MASTER) {
-      // TODO: DUPLICATE BASE CH.
-      this.hn = this.hnProJ(this);
-      this.open([new RedRecord(
-        null,
-        this,
-        this.localInitialValue,
-        STTMP.get(DEFAULT_START_TTMP),
-        undefined,
-        this,
-      )]);
     }
   }
 
@@ -158,7 +162,7 @@ export default class RedWSP extends WSP {
     }
     this.incompleteRet4.fill(rwsp, reT4data);
     // не требуются дополнительные усилия за контролем над устарешвей очередью
-    // в случае ошибки - головна запись будет иметь соответсвтующий статус
+    // в случае ошибки - головная запись будет иметь соответсвтующий статус
     // в случае восстановления - все предыдущие действия уже должны будут завершиться
     // так как работа идет только в синхронном режиме
     // полное открытие просиходит тогда, когда удается разместить все
@@ -182,8 +186,8 @@ export default class RedWSP extends WSP {
       let acc = null;
       if (state.length > 0) {
         [acc] = state.slice(-1);
-      } else if (this.localInitialValue !== EMPTY) {
-        acc = this.localInitialValue;
+      } else if (this.initialValue !== EMPTY) {
+        acc = this.initialValue;
       }
       state.push(this.createRecordFrom(
         wave[0][1],
