@@ -1,10 +1,11 @@
 import getTTMP from './get-ttmp';
 import WSP from './wsp';
 import Record from './record';
-import {RED_REC_STATUS, RED_REC_SUBORDINATION} from './red-record';
+import { RED_REC_SUBORDINATION } from './red-record';
 import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './rwsp-slave';
 import RedWSP from './rwsp';
+import { EMPTY } from './signals';
 
 const STD_DISCONNECT_REQ = 'ondisconnect';
 
@@ -81,11 +82,11 @@ export class Stream2 {
       this.connect((wsp, hook) => {
         control.to(hook);
         proJ((request, data) => {
-          // <if-debug>
+          /* <debug> */
           if (request === STD_DISCONNECT_REQ) {
             throw new TypeError('Static request cannot disconnect streams');
           }
-          // </if-debug>
+          /* </debug> */
           control.send(request, data);
         });
         onrdy(wsp);
@@ -191,20 +192,58 @@ export class Stream2 {
         let rwsp = null;
         wspR.on({
           handleR(src, rec) {
-            if (!rwsp) {
-              rwsp = RedWSP.create([wsp], hnProJ, { initialValue: rec.value });
-              onrdy(rwsp);
-              rwsp.on({
-                handleR(_rec) {
-                  hookR('remote-confirm', _rec);
-                },
-              });
-            } else {
-              rwsp.open(rec.value.data);
+            if (rec.value !== EMPTY) {
+              if (!rwsp) {
+                rwsp = RedWSP.create([wsp], hnProJ, { initialValue: rec.value });
+                onrdy(rwsp);
+                rwsp.on({
+                  handleR(_rec) {
+                    hookR('remote-confirm', _rec);
+                  },
+                });
+              } else {
+                rwsp.open(rec.value);
+              }
             }
           },
         });
       });
+    });
+  }
+
+  static combine(streams, project = (...streams) => streams) {
+    if (!streams.length) {
+      return new Stream2(null, (e) => {
+        e(project());
+      });
+    }
+    if (streams.length === 1) {
+      return streams[0].map(project);
+    }
+    return new Stream2((onrdy, ctr) => {
+      let reswsp = null;
+      this
+        .with(streams, () => () => {})
+        .connect((wsp, hook) => {
+          ctr.to(hook);
+          if (wsp instanceof RedWSP) {
+            wsp.on({
+              handleReT4() {
+                if (!reswsp) {
+                  reswsp = new RedWSPSlave(wsp, () => {});
+                }
+              },
+            });
+          } else {
+            wsp.on({
+              handleR() {
+                if (!reswsp) {
+                  reswsp = new WSP(wsp, () => {});
+                }
+              },
+            });
+          }
+        });
     });
   }
 
@@ -315,6 +354,10 @@ export class Stream2 {
   }
 
   map(proJ) {
+    return this.mapF(({ value }) => proJ(value));
+  }
+
+  mapF(proJ) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.to(hook);
@@ -324,6 +367,10 @@ export class Stream2 {
   }
 
   filter(proJ) {
+    return this.filterF(({ value }) => proJ(value));
+  }
+
+  filterF(proJ) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.to(hook);
@@ -474,29 +521,6 @@ export class Stream2 {
         return handler(_e, evt);
       };
     }));
-  }
-
-  static combine(sourcestreams, project = (...streams) => streams) {
-    if (!sourcestreams.length) {
-      return new Stream2(null, (e) => {
-        e(project());
-      });
-    }
-    return new Stream2(sourcestreams, (e, controller) => {
-      const sourcestreamsstate = new Array(sourcestreams.length).fill(EMPTY_OBJECT);
-      sourcestreams.map((stream, i) => stream.connect((hook) => {
-        controller.to(hook);
-        return (data, record) => {
-          if (Observable.keys.includes(data)) {
-            return e(data, record);
-          }
-          sourcestreamsstate[i] = data;
-          if (!sourcestreamsstate.includes(EMPTY_OBJECT)) {
-            e(project(...sourcestreamsstate), record);
-          }
-        };
-      }));
-    });
   }
 
   withlatest(sourcestreams = [], project = STATIC_PROJECTS.AIO) {

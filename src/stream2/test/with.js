@@ -8,7 +8,7 @@ import { RED_REC_STATUS } from '../red-record';
 const { describe, test, expect } = globalThis;
 
 describe('with', () => {
-  test('example', (done) => {
+ /* test('example', (done) => {
     const _ = async();
     const expected = [
       [1], [1, 2],
@@ -119,32 +119,73 @@ describe('with', () => {
   // single wsp is a single wsp - it is always synchronized with itself
   // what about a stream with combined wsp?
 
-  test('remote red wsp', (done) => {
+  test('several local RedWSP to local RedSWPSlave', (done) => {
     const _ = async();
     const expected = [
-      24,
-      25,
+      [101, 12],
     ];
+    const rc1 = stream.fromCbFunc((cb) => {
+      cb(1);
+    });
+    const rc2 = stream.fromCbFunc((cb) => {
+      cb(2);
+    });
+    const r1 = rc1.reduce(() => (acc, next) => acc + next, { local: 100 });
+    const r2 = rc2.reduce(() => (acc, next) => acc + next, { local: 10 });
     const queue1 = expected.values();
-    const ta2 = new EventEmitter();
-    const rc2 = stream.fromNodeEvent(ta2, 'test-event', (vl) => vl);
-    const remote = stream((onrdy, ctr) => {
-      const wsp = WSP.create();
-      ctr.tocommand((request, cuR) => {
-        if (request === 'remote-confirm') {
-          setTimeout(() => {
-            cuR.onRecordStatusUpdate(cuR, RED_REC_STATUS.SUCCESS);
-          });
-        }
-      });
-      onrdy(wsp);
-      _(() => wsp.burn(24));
+    const res = stream.with([r1, r2], () => {
+      const state = new Map();
+      return (updates) => {
+        updates.forEach((rec) => state.set(rec.src, rec.value));
+        return [...state.values()];
+      };
     });
-    const rc3 = rc2.reduce(() => (count, add) => count + add, { remote });
-    rc3.get(({ value }) => {
-      expect(value).toEqual(queue1.next().value);
-    });
-    _(() => ta2.emit('test-event', 1));
+    res.connect();
+    res.get(({ value }) => expect(value).toEqual(queue1.next().value));
     _(() => queue1.next().done && done());
+  });
+  */
+
+  test('several remote RedWSP to local RedSWPSlave', (done) => {
+    const _ = async();
+    const expected = [
+      [102],
+      [102, 11],
+    ];
+    const rc1 = stream.fromCbFunc((cb) => {
+      setTimeout(() => {
+        _(() => cb({ type: 'dot', data: 10 }));
+        _(() => cb({ type: 'com', data: 1 }));
+      });
+    });
+    const rc2 = stream.fromCbFunc((cb) => {
+      _(() => cb({ type: 'dot', data: 100 }));
+      _(() => cb({ type: 'com', data: 2 }));
+    });
+    const rm1 = rc1
+      .filter(({ type }) => type === 'dot')
+      .map(({ data }) => data);
+    const rm2 = rc2
+      .filter(({ type }) => type === 'dot')
+      .map(({ data }) => data);
+    const r1 = rc1
+      .filter(({ type }) => type === 'com')
+      .map(({ data }) => data)
+      .reduce(() => (acc, next) => acc + next, { remote: rm1 });
+    const r2 = rc2
+      .filter(({ type }) => type === 'com')
+      .map(({ data }) => data)
+      .reduce(() => (acc, next) => acc + next, { remote: rm2 });
+    const queue1 = expected.values();
+    const res = stream.with([r1, r2], () => {
+      const state = new Map();
+      return (updates) => {
+        updates.forEach((rec) => state.set(rec.src, rec.value));
+        return [...state.values()];
+      };
+    });
+    res.connect();
+    res.get(({ value }) => { debugger; expect(value).toEqual(queue1.next().value)});
+    setTimeout(() => _(() => queue1.next().done && done()));
   });
 });

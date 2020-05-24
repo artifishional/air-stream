@@ -1,50 +1,14 @@
+import EventEmitter from 'event-emitter';
 import { stream2 as stream } from '../index';
 import { async } from '../../utils';
-import { WSP } from '../wsp';
+import WSP from '../wsp';
+import { RED_REC_STATUS } from '../red-record';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
 
 describe('reducer', () => {
-  /* test('clear reducer construct with initialized stream', () => {
-    const dataChStream = stream((connect) => {
-      connect([]);
-    });
-    const reducer = new LocalReducer(
-      dataChStream,
-      () => { },
-      { ready: true },
-    );
-    const expected = [
-      { ready: true },
-    ];
-    const queue1 = expected.values();
-    reducer.get((e) => expect(e).toEqual(queue1.next().value));
-  });
-
-  test('simple1', () => {
-    const wsp = new WSP();
-    const dataCh = stream((connect) => {
-      connect([wsp])([
-        wsp.rec({ kind: 'add', vl: 1 }),
-        wsp.rec({ kind: 'add', vl: 2 }),
-        wsp.rec({ kind: 'del', vl: 3 }),
-      ]);
-    });
-    const expected = [
-      0, 1, 3, 0,
-    ];
-    const reducer = new LocalReducer(dataCh, (acc, { kind, vl }) => {
-      if (kind === 'add') {
-        return acc + vl;
-      }
-      if (kind === 'del') {
-        return acc - vl;
-      }
-    }, 0);
-    const queue1 = expected.values();
-    reducer.get((e) => expect(e).toEqual(queue1.next().value));
-  });
+  test('clear reducer construct with initialized stream', () => {});
 
   test('several subscriptions dissolved - source stream disconnect', (done) => {
     const wsp = new WSP();
@@ -57,25 +21,25 @@ describe('reducer', () => {
     });
     const store = new LocalReducer(
       dataCh,
-      ({ count }, vl) => ({ count: count + vl }),
-      { count: 0 },
+      ({count}, vl) => ({count: count + vl}),
+      {count: 0},
     );
     store.connect((_, hook) => (solid) => {
-      solid.map(({ value: { count } }) => {
+      solid.map(({value: {count}}) => {
         if (count === 3) {
           hook();
         }
       });
     });
     store.connect((_, hook) => (solid) => {
-      solid.map(({ value: { count } }) => {
+      solid.map(({value: {count}}) => {
         if (count === 1) {
           hook();
         }
       });
     });
     store.connect((_, hook) => (solid) => {
-      solid.map(({ value: { count } }) => {
+      solid.map(({value: {count}}) => {
         if (count === 0) {
           hook();
         }
@@ -83,98 +47,56 @@ describe('reducer', () => {
     });
   });
 
-   Подписка к редьюсеру, отписка
-   Повторная подписка - начальное состояние не должно сохраниться
-   так как может использоваться empty object state
-
-   const test = stream2( null, (e) => {
-	e(10);
-	//setTimeout( () => e(10) );
-} ).store();
-
-let hook1 = null;
-test.connect( (hook) => {
-	hook1 = hook;
-	return console.log;
-} );
-
-hook1();
-
-test.connect( (hook) => {
-	hook1 = hook;
-	return console.log;
-} );
-
-hook1();
-/*
-test.connect( (hook) => {
-	hook1 = hook;
-	return console.log;
-} );
-
-hook1(); */
-
-
-  /*
-    it('abort action', (done) => {
-
-        done = series(done, [
-            evt => expect(evt).to.deep.equal( keyF ),
-            evt => expect(evt).to.deep.equal( 0 ),
-            evt => expect(evt).to.deep.equal( 1 ),
-            evt => expect(evt).to.deep.equal( 3 ),
-            evt => expect(evt).to.deep.equal( 6 ),
-            evt => expect(evt).to.deep.equal( keyF ),
-            evt => expect(evt).to.deep.equal( 5 ),
-            evt => expect(evt).to.deep.equal( 9 ),
-        ]);
-
-        const source = new Observable( function (emt) {
-            emt.kf();
-            emt(0, { rid: 0 });
-            emt(1, { rid: 1 });
-            emt(2, { rid: 2 });
-            emt(3, { rid: 3 });
-            setTimeout(() => {
-                emt(keyA, { is: { abort: true }, rid: 1 });
-                emt(4, { rid: 4 });
-            }, 0);
-        } );
-
-        source
-            .reducer( (acc, next) => {
-                return acc + next;
-            } )
-            .on( done );
-
+  it('abort action', (done) => {
+    done = series(done, [
+      evt => expect(evt).to.deep.equal(keyF),
+      evt => expect(evt).to.deep.equal(0),
+      evt => expect(evt).to.deep.equal(1),
+      evt => expect(evt).to.deep.equal(3),
+      evt => expect(evt).to.deep.equal(6),
+      evt => expect(evt).to.deep.equal(keyF),
+      evt => expect(evt).to.deep.equal(5),
+      evt => expect(evt).to.deep.equal(9),
+    ]);
+    const source = new Observable(function (emt) {
+      emt.kf();
+      emt(0, {rid: 0});
+      emt(1, {rid: 1});
+      emt(2, {rid: 2});
+      emt(3, {rid: 3});
+      setTimeout(() => {
+        emt(keyA, {is: {abort: true}, rid: 1});
+        emt(4, {rid: 4});
+      }, 0);
     });
-*/
-  /*
-    it('refresh history', (done) => {
+    source
+      .reducer((acc, next) => {
+        return acc + next;
+      })
+      .on(done);
+  });
+  
+  it('refresh history', (done) => {
+    done = series(done, [
+      evt => expect(evt).to.deep.equal(keyF),
+    ]);
+    const source = new Observable(function (emt) {
+      emt.kf();
+      emt(0, {rid: 0});
+      emt(1, {rid: 1});
+      emt(2, {rid: 2});
+      emt(3, {rid: 3});
+      emt.kf();
+      emt(keyA, {is: {abort: true}, rid: 1});
+    });
+    source
+      .reducer((acc, next) => {
+        return acc + next;
+      })
+      .on(done);
+  });
 
-        done = series(done, [
-            evt => expect(evt).to.deep.equal( keyF ),
-        ]);
-
-        const source = new Observable( function (emt) {
-            emt.kf();
-            emt(0, { rid: 0 });
-            emt(1, { rid: 1 });
-            emt(2, { rid: 2 });
-            emt(3, { rid: 3 });
-            emt.kf();
-            emt(keyA, { is: { abort: true }, rid: 1 });
-        } );
-
-        source
-            .reducer( (acc, next) => {
-                return acc + next;
-            } )
-            .on( done );
-
-    }); */
-
-  test('Single local reducer with default value', (done) => {
+  test('single local red wsp with default value', (done) => {
     const _ = async();
     const expected = [
       0,
@@ -187,8 +109,61 @@ hook1(); */
       _(() => cb(3));
     });
     const red1 = rc
-      .reduce(() => (acc, next) => acc + next, { local: 0 });
-    red1.get(({ value }) => expect(value).toEqual(queue1.next().value));
+      .reduce(() => (acc, next) => acc + next, {local: 0});
+    red1.get(({value}) => expect(value).toEqual(queue1.next().value));
+    _(() => queue1.next().done && done());
+  });
+
+  test('remote red wsp', (done) => {
+    const _ = async();
+    const expected = [
+      24,
+      25,
+    ];
+    const queue1 = expected.values();
+    const ta2 = new EventEmitter();
+    const rc2 = stream.fromNodeEvent(ta2, 'test-event', (vl) => vl);
+    const remote = stream((onrdy, ctr) => {
+      const wsp = WSP.create();
+      ctr.tocommand((request, cuR) => {
+        if (request === 'remote-confirm') {
+          setTimeout(() => {
+            cuR.onRecordStatusUpdate(cuR, RED_REC_STATUS.SUCCESS);
+          });
+        }
+      });
+      onrdy(wsp);
+      _(() => wsp.burn(24));
+    });
+    const rc3 = rc2.reduce(() => (count, add) => count + add, { remote });
+    rc3.get(({ value }) => {
+      expect(value).toEqual(queue1.next().value);
+    });
+    _(() => ta2.emit('test-event', 1));
+    _(() => queue1.next().done && done());
+  });
+
+  test('remote red wsp with reT4 from server', (done) => {
+    const _ = async();
+    const expected = [
+      24,
+      25,
+      30,
+    ];
+    const queue1 = expected.values();
+    const ta2 = new EventEmitter();
+    const rc2 = stream.fromNodeEvent(ta2, 'test-event', (vl) => vl);
+    const remote = stream((onrdy) => {
+      const wsp = WSP.create();
+      onrdy(wsp);
+      _(() => wsp.burn(24));
+      setTimeout(() => wsp.burn(30));
+    });
+    const rc3 = rc2.reduce(() => (count, add) => count + add, { remote });
+    rc3.get(({ value }) => {
+      expect(value).toEqual(queue1.next().value);
+    });
+    _(() => ta2.emit('test-event', 1));
     _(() => queue1.next().done && done());
   });
 });

@@ -128,23 +128,25 @@ export default class RedWSP extends WSP {
       throw new Error('Wsp is not opened');
     }
     /* <@/debug> */
-    const rec = this.createRecordFrom(cuR,
-      this.hn(this.state.slice(-1)[0].value, cuR.value));
-    if (cuR.subordination === RED_REC_SUBORDINATION.MASTER) {
-      if (cuR.status === RED_REC_STATUS.PENDING) {
+    if (cuR.value !== EMPTY) {
+      const rec = this.createRecordFrom(cuR,
+        this.hn(this.state.slice(-1)[0].value, cuR.value));
+      if (cuR.subordination === RED_REC_SUBORDINATION.MASTER) {
+        if (cuR.status === RED_REC_STATUS.PENDING) {
+          this.t4queue.push(cuR);
+        } else {
+          this.t4queue.push(cuR);
+          this.reliable.push(rec);
+        }
+      } else if (cuR.subordination === RED_REC_SUBORDINATION.SLAVE) {
         this.t4queue.push(cuR);
       } else {
         this.t4queue.push(cuR);
-        this.reliable.push(rec);
       }
-    } else if (cuR.subordination === RED_REC_SUBORDINATION.SLAVE) {
-      this.t4queue.push(cuR);
-    } else {
-      this.t4queue.push(cuR);
+      this.state.push(rec);
+      rec.on(this);
+      this.next(rec);
     }
-    this.state.push(rec);
-    rec.on(this);
-    this.next(rec);
   }
 
   next(rec) {

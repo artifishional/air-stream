@@ -230,7 +230,7 @@ export default class WSP {
   filter(proJ) {
     return WSP.create(
       [this],
-      () => ([update]) => (proJ(update) ? update : EMPTY),
+      () => ([update]) => (proJ(update) ? update.value : EMPTY),
     );
   }
 }
