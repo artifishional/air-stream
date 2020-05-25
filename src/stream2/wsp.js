@@ -74,10 +74,20 @@ export default class WSP {
     }
   }
 
+  with(hnProJ) {
+    this.initiate(hnProJ);
+
+  }
+
+  combine(hnProJ) {
+    this.initiate(hnProJ);
+
+  }
+
   /**
    * @param {Function|null = null} hnProJ
    */
-  initiate(hnProJ = null) {
+  initiate(hnProJ) {
     this.hnProJ = hnProJ;
     if (!this.hn && this.hnProJ) {
       this.hn = this.hnProJ(this);
