@@ -79,9 +79,23 @@ export default class WSP {
 
   }
 
-  combine(hnProJ) {
-    this.initiate(hnProJ);
-
+  static combine(hnProJ, wsps) {
+    const wsp = new WSP(wsps, {}, STATIC_CREATOR_KEY);
+    wsp.initiate((src) => {
+      if (!src.state) {
+        src.state = new Map();
+      }
+      const hn = hnProJ(src);
+      this.hn = (src, updates) => {
+        src.state.set(src, updates);
+        if (src.state.size === wsps.length) {
+          return hn([...src.state].map(([_, updates]) => updates));
+        } else {
+          return EMPTY;
+        }
+      };
+    });
+    return wsp;
   }
 
   /**
