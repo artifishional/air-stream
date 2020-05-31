@@ -1,6 +1,7 @@
 import RedWSP from './rwsp';
 import { RED_REC_SUBORDINATION } from './red-record';
 import { EMPTY } from './signals';
+import {STATIC_CREATOR_KEY} from "./defs";
 
 
 export default class RedWSPSlave extends RedWSP {
@@ -31,6 +32,7 @@ export default class RedWSPSlave extends RedWSP {
   }
 
   onReT4Complete(updates) {
+    debugger;
     const state = [];
     const combined = [];
     updates.forEach((wave) => {

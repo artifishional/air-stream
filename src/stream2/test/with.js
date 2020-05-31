@@ -185,7 +185,9 @@ describe('with', () => {
       };
     });
     res.connect();
-    res.get(({ value }) => { debugger; expect(value).toEqual(queue1.next().value)});
+    res.get(({ value }) => {
+      expect(value).toEqual(queue1.next().value);
+    });
     setTimeout(() => _(() => queue1.next().done && done()));
   });
 });

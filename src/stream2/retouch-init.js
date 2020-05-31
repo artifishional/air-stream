@@ -30,6 +30,11 @@ export default class ReT4Init extends ReT4 {
        * произовшли одновременно, то необходим механизм
        * разрешения очередности их срабатывания
        */
+      /**
+       * TODO:
+       *  Очередность должна регулироваться порядком следования
+       *  первоисточников в массиве
+       */
       this.acc.push(reT4Data);
       if (this.acc.length === this.src.streams.size) {
         // TODO: need perf optimization

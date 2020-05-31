@@ -211,39 +211,25 @@ export class Stream2 {
     });
   }
 
-  static combine(streams, project = (...streams) => streams) {
+  static combine(streams, proJ = (upds) => upds) {
     if (!streams.length) {
-      return new Stream2(null, (e) => {
-        e(project());
+      return new Stream2((onrdy) => {
+        onrdy(WSP.fromCbFunc(() => []));
       });
     }
     if (streams.length === 1) {
-      return streams[0].map(project);
+      return streams[0].map((vl) => proJ([vl]));
     }
     return new Stream2((onrdy, ctr) => {
-      let reswsp = null;
-      this
-        .with(streams, () => () => {})
-        .connect((wsp, hook) => {
-          ctr.to(hook);
-          if (wsp instanceof RedWSP) {
-            wsp.on({
-              handleReT4() {
-                if (!reswsp) {
-                  reswsp = new RedWSPSlave(wsp, () => {});
-                }
-              },
-            });
-          } else {
-            wsp.on({
-              handleR() {
-                if (!reswsp) {
-                  reswsp = new WSP(wsp, () => {});
-                }
-              },
-            });
-          }
-        });
+      this.whenAllConnected(streams, (bags) => {
+        ctr.todisconnect(...bags.map(([, hook]) => hook));
+        const wsps = bags.map(([wsp]) => wsp);
+        if (wsps.every((_wsp) => _wsp instanceof RedWSP)) {
+          onrdy(RedWSPSlave.combine(wsps, proJ));
+        } else {
+          onrdy(WSP.combine(wsps, proJ));
+        }
+      });
     });
   }
 
@@ -316,6 +302,7 @@ export class Stream2 {
   // когда получает ссылку на эмитер при вызове connect
 
   /**
+   * !!! Отдает все состояния, в том числе и ReT4
    * @param {Function} getter
    */
   get(getter = EMPTY_FN) {

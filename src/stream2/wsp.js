@@ -10,7 +10,7 @@ export default class WSP {
   /**
    * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
    * @param {*} args
-   * @param {STATIC_CREATOR_KEY} creatorKey
+   * @param {Object = undefined} creatorKey
    */
   constructor(
     wsps = null,
@@ -29,6 +29,7 @@ export default class WSP {
         throw new TypeError('Only WSP supported');
       }
     }
+    this.memory = null;
     /* </debug> */
     WSP_ID_COUNT += 1;
     this.hnProJ = null;
@@ -79,23 +80,26 @@ export default class WSP {
 
   }
 
-  static combine(hnProJ, wsps) {
-    const wsp = new WSP(wsps, {}, STATIC_CREATOR_KEY);
-    wsp.initiate((src) => {
-      if (!src.state) {
-        src.state = new Map();
+  static combine(wsps, proJ) {
+    const res = new this(
+      wsps,
+      {},
+      /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
+    );
+    res.initiate((own) => {
+      if (!own.memory) {
+        // eslint-disable-next-line no-param-reassign
+        own.memory = new Map();
       }
-      const hn = hnProJ(src);
-      this.hn = (src, updates) => {
-        src.state.set(src, updates);
-        if (src.state.size === wsps.length) {
-          return hn([...src.state].map(([_, updates]) => updates));
-        } else {
-          return EMPTY;
+      return (updates) => {
+        updates.forEach(({ src, value }) => own.memory.set(src, value));
+        if (own.memory.size === wsps.length) {
+          return proJ([...own.memory].map(([, upd]) => upd));
         }
+        return EMPTY;
       };
     });
-    return wsp;
+    return res;
   }
 
   /**

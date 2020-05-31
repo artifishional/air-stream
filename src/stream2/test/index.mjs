@@ -1,8 +1,9 @@
 import '../../polyfills';
 
-//import './reducer';
+ import './combine';
+// import './reducer';
 // import "./map";
- import './with';
+// import './with';
 // import './complicated';
 // import './controller';
 
@@ -23,7 +24,7 @@ import '../../utils';
 import './constructor';
 import './controller';
 import './simple';
-import './combine';
+
 import "./complicated";
 import "./connect";
 

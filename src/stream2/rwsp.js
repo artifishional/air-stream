@@ -244,13 +244,21 @@ export default class RedWSP extends WSP {
   }
 
   onRed(slv) {
+    /* <@debug> */
+    if (!this.state) {
+      throw new Error('Unsupported model state');
+    }
+    /* <@/debug> */
     /**
      * TODO: may be duplicate users
      */
-    if (this.state) {
-      this.updateT4status();
-      slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
-    }
+    // Здесь избыточная проверка: состояние будет всегда
+    // опредлено до момента подписки, так как RED подготавливается
+    // в потоке и создается с готовым состоянием
+    // if (this.state) {
+    this.updateT4status();
+    slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
+    // }
     this.redSlaves.add(slv);
   }
 
