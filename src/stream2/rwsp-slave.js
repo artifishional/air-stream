@@ -32,7 +32,6 @@ export default class RedWSPSlave extends RedWSP {
   }
 
   onReT4Complete(updates) {
-    debugger;
     const state = [];
     const combined = [];
     updates.forEach((wave) => {
@@ -53,6 +52,21 @@ export default class RedWSPSlave extends RedWSP {
     });
     this.incompleteRet4 = null;
     return this.open(state);
+  }
+
+  static combine(wsps, proJ) {
+    const res = new this(
+      wsps,
+      {},
+      /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
+    );
+    res.initiate(() => (_, combined) => {
+      if (combined.length < wsps.length || combined.includes()) {
+        return EMPTY;
+      }
+      return proJ(combined.map(({ value }) => value));
+    });
+    return res;
   }
 
   handleR(stream, cuR) {

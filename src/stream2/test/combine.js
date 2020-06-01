@@ -14,7 +14,7 @@ import {
 const { describe, test, expect } = globalThis;
 
 describe('combine', () => {
-  /*test('example', (done) => {
+  test('example', (done) => {
     const _ = async();
     const expected = [
       200,
@@ -90,12 +90,12 @@ describe('combine', () => {
       });
     _(() => queue1.next().done && done());
   });
-  */
+
   test('several remote RedWSP to local RedSWPSlave', (done) => {
     const _ = async();
     const expected = [
-      [102],
-      [102, 11],
+      1020,
+      1122,
     ];
     const rc1 = stream.fromCbFunc((cb) => {
       setTimeout(() => {
@@ -122,31 +122,13 @@ describe('combine', () => {
       .map(({ data }) => data)
       .reduce(() => (acc, next) => acc + next, { remote: rm2 });
     const queue1 = expected.values();
-    const res = stream.combine([r1, r2], ([vl1, vl2]) => {
-      debugger;
-      return vl1 * vl2;
-    });
-    //res.connect();
-    res.connect((wsp) => {
-      wsp.onRed({
-        handleReT4(src, data) {
-          // ReT4 должен быть    [102, 11],
-          debugger;data;
-        },
-      });
-      wsp.on({
-        handleR(src, data) {
-          debugger;data;
-        },
-      });
-    });
+    const res = stream.combine([r1, r2], ([vl1, vl2]) => vl1 * vl2);
     res.get(({ value }) => {
-      debugger;
-      value;
-      queue1.next().value;
+      expect(value).toEqual(queue1.next().value);
     });
     setTimeout(() => _(() => queue1.next().done && done()));
   });
+
    /*
      test('empty source combiner', (done) => {
        const combined = stream.combine([]);
