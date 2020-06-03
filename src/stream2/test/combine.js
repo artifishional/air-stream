@@ -1,4 +1,4 @@
-import { stream2 as stream } from '../index';
+import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
 import RedWSP from "../rwsp";
 import Record from "../record";
@@ -14,7 +14,7 @@ import {
 const { describe, test, expect } = globalThis;
 
 describe('combine', () => {
-  test('example', (done) => {
+  /*test('example', (done) => {
     const _ = async();
     const expected = [
       200,
@@ -128,7 +128,32 @@ describe('combine', () => {
     });
     setTimeout(() => _(() => queue1.next().done && done()));
   });
-
+*/
+  
+  test('head combineAllFirst example', (done) => {
+    const _ = async();
+    const expected = [
+      [10, 20],
+    ];
+    const queue1 = expected.values();
+    stream
+      .fromCbFunc((headCb) => {
+        _(() => headCb([
+          stream.fromCbFunc((cb) => {
+            _(() => cb(10));
+          }),
+          stream.fromCbFunc((cb) => {
+            _(() => cb(20));
+          }),
+        ]));
+      })
+      .combineAllFirst()
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
+    setTimeout(() => queue1.next().done && done());
+  });
+  
    /*
      test('empty source combiner', (done) => {
        const combined = stream.combine([]);

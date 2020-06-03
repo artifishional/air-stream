@@ -3,7 +3,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
 	mode: 'development',
-	entry: './debug/index.mjs',
+	entry: './debug/stream.mjs',
 	output: {
 		path: path.resolve(__dirname, 'dist'),
 		filename: 'main.js'

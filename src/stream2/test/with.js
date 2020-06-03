@@ -1,6 +1,6 @@
 import EventEmitter from 'event-emitter';
 import { async } from '../../utils';
-import { stream2 as stream } from '../index';
+import { stream2 as stream } from '../stream';
 import WSP from '../wsp';
 import { RED_REC_STATUS } from '../red-record';
 

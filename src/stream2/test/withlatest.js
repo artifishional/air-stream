@@ -1,4 +1,4 @@
-import { stream2 as stream } from '../index';
+import { stream2 as stream } from '../stream';
 import { streamEqualStrict } from '../../utils';
 
 describe('withLatest', function () {

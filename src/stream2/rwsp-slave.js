@@ -1,7 +1,7 @@
 import RedWSP from './rwsp';
 import { RED_REC_SUBORDINATION } from './red-record';
 import { EMPTY } from './signals';
-import {STATIC_CREATOR_KEY} from "./defs";
+import { STATIC_CREATOR_KEY } from './defs';
 
 
 export default class RedWSPSlave extends RedWSP {
