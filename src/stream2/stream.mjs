@@ -152,6 +152,12 @@ export class Stream2 {
     });
   }
 
+  static fromFn(cb) {
+    return new Stream2((onrdy) => {
+      onrdy(WSP.fromFn(cb));
+    });
+  }
+
   /**
    *
    * @param hnProJ
@@ -254,14 +260,16 @@ export class Stream2 {
     });
   }
 
-  syncAllFirst() {
+  syncAllFirst(equal, proJ) {
     return new Stream2((onrdy, ctr) => {
       this.connect((headWsp, headHook) => {
         ctr.todisconnect(headHook);
         const handler = WSP.create([headWsp], () => ([{ value }]) => {
           Stream2.whenAllConnected(value, (bags) => {
             ctr.to(...bags.map(([, hook]) => hook));
-            onrdy(WSP.combine(bags.map(([wsp]) => wsp), (combiner) => combiner));
+            onrdy(WSP
+              .combine(bags.map(([wsp]) => wsp), (combiner) => combiner)
+              .sync(equal, proJ));
           });
         });
         headWsp.on(handler);

@@ -133,6 +133,12 @@ export default class WSP {
     return res;
   }
 
+  static fromFn(fn) {
+    const res = WSP.create();
+    res.burn(fn());
+    return res;
+  }
+
   handleR(stream, cuR) {
     // grouping
     // каждое сообщение (или группу если поддерживается несколько событий
