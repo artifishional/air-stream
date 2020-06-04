@@ -147,6 +147,43 @@ export default class Observable {
         }
       });
   }
+  
+  static fromFn(fn) {
+    return new Observable((emt) => {
+      queueMicrotask(() => emt(fn()));
+    });
+  }
+
+  combineAllFirst(getter = null, merge = null) {
+    return new Observable((emt) => {
+      const hooks = [];
+      const synced = [];
+      const ownHook = this.on((data, src) => {
+        if (keys.includes(data)) {
+          emt(data, src);
+        }
+        else {
+          (getter ? getter(data) : data).map((stream, idx, { length }) => {
+            hooks.push(stream.on((innerData, src) => {
+              if (keys.includes(innerData)) {}
+              else {
+                synced[idx] = innerData;
+                if (synced.length === length && !synced.includes(undefined)) {
+                  emt(merge ? merge(data, synced) : synced, src);
+                }
+              }
+            }));
+          });
+        }
+      });
+      return (data = { dissolve: true }) => {
+        hooks.forEach((hook) => hook(data));
+        if (data.dissolve) {
+          ownHook();
+        }
+      }
+    });
+  }
 
   connectable (obs, { full = false } = {}) {
     if (full) obs = (...args) => !keys.includes(args[0]) && obs(...args);
