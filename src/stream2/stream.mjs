@@ -260,28 +260,6 @@ export class Stream2 {
     });
   }
 
-  syncAllFirst(equal, proJ) {
-    return new Stream2((onrdy, ctr) => {
-      this.connect((headWsp, headHook) => {
-        ctr.todisconnect(headHook);
-        const handler = WSP.create([headWsp], () => ([{ value }]) => {
-          Stream2.whenAllConnected(value, (bags) => {
-            ctr.to(...bags.map(([, hook]) => hook));
-            onrdy(WSP
-              .combine(bags.map(([wsp]) => wsp), (combiner) => combiner)
-              .sync(equal, proJ));
-          });
-        });
-        headWsp.on(handler);
-        if (headWsp.onRed) headWsp.onRed(handler);
-        ctr.todisconnect(() => {
-          headWsp.off(handler);
-          if (headWsp.onRed) headWsp.offRed(handler);
-        });
-      });
-    });
-  }
-
   static whenAllConnected(streams, cb) {
     const states = new Array(streams.length);
     let rdyCounter = 0;
