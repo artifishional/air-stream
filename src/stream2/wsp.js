@@ -73,6 +73,30 @@ export default class WSP {
         });
       });
     }
+
+
+    /**
+     * @type {[evtSrcID, [*]]}
+     */
+    this.sncEvtGrpQue = [];
+
+  }
+
+  handleR(src, cuR) {
+    let sncGrp = this.sncEvtGrpQue.find(([{ wsp }]) => wsp === cuR.wsp);
+    if (!sncGrp) {
+      sncGrp = this.sncMan.createGrp(cuR.wsp);
+      this.sncEvtGrpQue.push(sncGrp);
+    }
+    sncGrp.fill(cuR);
+  }
+
+  sncGrpFilledHandler(sncGrp) {
+    this.next(this.createRecordFromUpdates(sncGrp.getUpdates()));
+  }
+
+  createRecordFromUpdates(updates) {
+    return this.createRecordFrom(updates[0], updates);
   }
 
   with(hnProJ) {
