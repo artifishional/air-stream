@@ -7,7 +7,54 @@ import { RED_REC_STATUS } from '../red-record';
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
 
-describe('reducer', () => {
+describe('reduce', () => {
+  test('example', (done) => {
+    const _ = async();
+    const expected = [
+      101,
+      103,
+      106,
+    ];
+    const rc1 = stream.fromCbFunc((cb) => {
+      cb(1);
+      _(() => cb(2));
+      _(() => cb(3));
+    });
+    const r1 = rc1.reduce((acc, next) => acc + next, { local: 100 });
+    const queue1 = expected.values();
+    r1.get(({ value }) => expect(value).toEqual(queue1.next().value));
+    _(() => queue1.next().done && done());
+  });
+
+  test('remote reducer', (done) => {
+    const _ = async();
+    const expected = [
+      100,
+      101,
+      103,
+    ];
+    const rc1 = stream.fromCbFunc((cb) => {
+      _(() => cb({ type: 'dot', data: 100 }));
+      _(() => cb({ type: 'com', data: 1 }));
+      _(() => cb({ type: 'com', data: 2 }));
+    });
+    const rm1 = rc1
+      .filter(({ type }) => type === 'dot')
+      .map(({ data }) => data);
+    const r1 = rc1
+      .filter(({ type }) => type === 'com')
+      .map(({ data }) => data)
+      .reduce((acc, next) => acc + next, { remote: rm1 });
+    const queue1 = expected.values();
+    r1.get(({ value }) => {
+      expect(value).toEqual(queue1.next().value);
+    });
+    _(() => queue1.next().done && done());
+  });
+  
+  
+  /*
+  
   test('clear reducer construct with initialized stream', () => {});
 
   test('several subscriptions dissolved - source stream disconnect', (done) => {
@@ -165,5 +212,5 @@ describe('reducer', () => {
     });
     _(() => ta2.emit('test-event', 1));
     _(() => queue1.next().done && done());
-  });
+  });*/
 });

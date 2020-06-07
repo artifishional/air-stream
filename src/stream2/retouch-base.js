@@ -1,6 +1,6 @@
 
 export default class ReT4Base {
-  constructor(src) {
-    this.src = src;
+  constructor(owner) {
+    this.owner = owner;
   }
 }

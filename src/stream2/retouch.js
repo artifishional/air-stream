@@ -1,15 +1,6 @@
 import ReT4Init from './retouch-init';
 import ReT4Abort from './retouch-abort';
-
-/**
- * @readonly
- * @enum {number}
- */
-export const RET4_TYPES = {
-  ReINIT: 0,
-  RACE: 1,
-  ABORT: 2,
-};
+import { RET4_TYPES } from './retouch-types';
 
 export default class ReT4 {
   static create(src, type) {

@@ -5,9 +5,9 @@ import {
   RedRecord,
 } from './red-record';
 import WSP from './wsp';
-import ReT4, { RET4_TYPES } from './retouch';
+import ReT4 from './retouch';
+import { RET4_TYPES } from './retouch-types';
 import { EMPTY } from './signals';
-import Record from './record';
 import STTMP from './sync-ttmp-ctr';
 import getTTMP from './get-ttmp';
 
@@ -41,13 +41,6 @@ export default class RedWSP extends WSP {
     this.reT4able = reT4able;
     this.initialValue = initialValue;
     this.incompleteRet4 = null;
-    this.opend = false;
-    /**
-     * @property {Map} handleRt4 synced map
-     */
-    this.event5RtoreWaves = null;
-    // Если создается новая запись, то вызываются все слейвы
-    this.slaves = new Set();
     // Если происходит изменение в состоянии то вызываются только реды
     this.redSlaves = new Set();
     this.localization = localization;
@@ -72,32 +65,22 @@ export default class RedWSP extends WSP {
 
   initiate(hnProJ) {
     if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
-      this.open([new RedRecord(
-        null,
+      /*
+        TODO need external reT4 (local/remote master RWSP)
+       */
+      this.t4queue = [];
+      this.reliable = [];
+      this.state = [];
+      this.next(new RedRecord(
+        { id: 0 }, // TODO: LOCAL DEFAULT WSP
         this,
         this.initialValue,
         STTMP.get(DEFAULT_START_TTMP),
         undefined,
         this,
-      )]);
+      ));
     }
-    // TODO: DUPLICATE BASE CH.
-    // this.hn = this.hnProJ(this);
     super.initiate(hnProJ);
-    if (this.wsps) {
-      /**
-       * Если это мастер, то только один источник, и он
-       * рассматривается как контроллер
-       */
-      /* if (subordination === RED_REC_SUBORDINATION.MASTER) {
-      } */
-      /**
-       * Если это слейв, то все источники должны быть накопителями
-       */
-      if (this.subordination === RED_REC_SUBORDINATION.SLAVE) {
-        this.wsps.forEach((rwsp) => rwsp.onRed(this));
-      }
-    }
   }
 
   /**
@@ -122,43 +105,36 @@ export default class RedWSP extends WSP {
   *    - Являются для данного типа аналогом данных от потоков контроллера
   *    Как различать тип хранилища?
   */
+
   handleR(src, cuR) {
-    /* <@debug> */
-    if (!this.opend) {
-      throw new Error('Wsp is not opened');
-    }
-    /* <@/debug> */
     if (cuR.value !== EMPTY) {
-      const rec = this.createRecordFrom(cuR,
-        this.hn(this.state.slice(-1)[0].value, cuR.value));
-      if (cuR.subordination === RED_REC_SUBORDINATION.MASTER) {
-        if (cuR.status === RED_REC_STATUS.PENDING) {
-          this.t4queue.push(cuR);
-        } else {
-          this.t4queue.push(cuR);
-          this.reliable.push(rec);
-        }
-      } else if (cuR.subordination === RED_REC_SUBORDINATION.SLAVE) {
-        this.t4queue.push(cuR);
-      } else {
-        this.t4queue.push(cuR);
-      }
-      this.state.push(rec);
-      rec.on(this);
-      this.next(rec);
+      this.t4queue.push(cuR);
     }
+    super.handleR(src, cuR);
   }
 
   next(rec) {
-    this.slaves.forEach((slv) => slv.handleR(this, rec));
+    if (rec.value !== EMPTY) {
+      if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
+        if (rec.status !== RED_REC_STATUS.PENDING) {
+          this.reliable.push(rec);
+        }
+      }
+      this.state.push(rec);
+      rec.on(this);
+    }
+    if (!this.incompleteRet4) {
+      // TODO: super.next(rec); after curFrameCachedRecord resolution
+      this.slaves.forEach((slv) => slv.handleR(this, rec));
+    }
   }
 
   /**
    * @param rwsp
-   * @param reT4data
+   * @param {Array.<Record>} reT4data
    * @param {RET4_TYPES} type
    */
-  handleReT4(rwsp, reT4data, type) {
+  handleReT4(rwsp, reT4data, type /* , wsps = ? */) {
     if (!this.incompleteRet4) {
       this.incompleteRet4 = ReT4.create(this, type);
     }
@@ -171,12 +147,16 @@ export default class RedWSP extends WSP {
     // данные из смежных состояний
   }
 
-  onReT4Complete(updates) {
-    // TODO: DUPLICATE BASE CH.
-    if (!this.hn || this.reT4able) {
-      this.hn = this.hnProJ(this);
-    }
-    const state = [];
+  onReT4Complete(type, updates) {
+    this.t4queue = [];
+    this.reliable = [];
+    this.state = [];
+    updates.forEach((rec) => this.handleR(rec.src, rec));
+    this.incompleteRet4 = null;
+    this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
+      this, this.state, type,
+    ));
+    /*const state = [];
     const combined = [];
     updates.forEach((wave) => {
       wave.forEach(([idx, rec]) => {
@@ -199,17 +179,10 @@ export default class RedWSP extends WSP {
           combined,
         ),
       ));
-    });
-    this.incompleteRet4 = null;
-    return this.open(state);
+    });*/
   }
-
+/*
   open(state) {
-    // TODO: TypeCheck
-    if (state.some((rec) => !(rec instanceof Record))) {
-      debugger;
-    }
-    this.opend = true;
     this.t4queue = [];
     this.reliable = state;
     this.state = [...state];
@@ -219,7 +192,7 @@ export default class RedWSP extends WSP {
       RET4_TYPES.ReINIT,
     ));
   }
-
+*/
   createRecordFrom(rec, updates) {
     if (this.localization === RED_REC_LOCALIZATION.REMOTE) {
       if (rec.localization === RED_REC_LOCALIZATION.LOCAL) {
@@ -239,27 +212,34 @@ export default class RedWSP extends WSP {
     });
   }
 
-  offRed(slv) {
-    this.redSlaves.delete(slv);
+  /**
+   * @param {RedWSPSlave|RedWSP|WSP} slv
+   */
+  off(slv) {
+    if (slv.subordination === RED_REC_SUBORDINATION.SLAVE) {
+      this.redSlaves.delete(slv);
+    }
+    super.off(slv);
   }
 
-  onRed(slv) {
+  /**
+   * @param {RedWSPSlave|RedWSP|WSP} slv
+   */
+  on(slv) {
     /* <@debug> */
     if (!this.state) {
-      throw new Error('Unsupported model state');
+      throw new Error('Unexpected model state');
     }
     /* <@/debug> */
     /**
      * TODO: may be duplicate users
      */
-    // Здесь избыточная проверка: состояние будет всегда
-    // опредлено до момента подписки, так как RED подготавливается
-    // в потоке и создается с готовым состоянием
-    // if (this.state) {
-    this.updateT4status();
-    slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
-    // }
-    this.redSlaves.add(slv);
+    if (slv.subordination === RED_REC_SUBORDINATION.SLAVE) {
+      this.updateT4status();
+      slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
+      this.redSlaves.add(slv);
+    }
+    super.on(slv);
   }
 
   findIndexOfLastRelUpdate() {
@@ -299,7 +279,7 @@ export default class RedWSP extends WSP {
         this.state.push(res);
         return res;
       }, this.reliable.slice(-1)[0]);
-      this.redSlaves.forEach((slv) => slv.handleReT4(this, this.state, RET4_TYPES.ReINIT));
+      this.redSlaves.forEach((slv) => slv.handleReT4(this, this.state, RET4_TYPES.ABORT));
     }
   }
 }

@@ -160,11 +160,14 @@ export class Stream2 {
 
   /**
    *
-   * @param hnProJ
+   * @param proJ
    * @param {{local}|{remote}} initialValue
    * @returns {Stream2}
    */
-  reduce(hnProJ, initialValue) {
+  reduce(proJ, initialValue) {
+    const hnProJ = (owner) => ([{ value: next }]) => proJ(
+      owner.state.slice(-1)[0].value, next,
+    );
     if ('local' in initialValue) {
       return this.reduceLocal(hnProJ, initialValue.local);
     }

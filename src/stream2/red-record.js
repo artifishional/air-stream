@@ -28,8 +28,6 @@ export const RED_REC_LOCALIZATION = {
   REMOTE: 'REMOTE',
 };
 
-let RedRecordIDCounter = 0;
-
 export class RedRecord extends Record {
   /**
    * @param {WSP} src Source wsp
@@ -55,10 +53,6 @@ export class RedRecord extends Record {
     } = {},
   ) {
     super(src, owner, value, token, head);
-    if (!head) {
-      RedRecordIDCounter += 1;
-      this.id = RedRecordIDCounter;
-    }
     this.subordination = subordination;
     this.src = src;
     this.subscribers = new Set();

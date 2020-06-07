@@ -1,9 +1,10 @@
 import ReT4 from './retouch-base';
+import { RET4_TYPES } from './retouch-types';
 
 
 export default class ReT4Init extends ReT4 {
-  constructor(src) {
-    super(src);
+  constructor(owner) {
+    super(owner);
     /**
      * Данные активации для каждого входного стрима
      * @type {Array.<Array.<RedRecord>>}
@@ -17,8 +18,8 @@ export default class ReT4Init extends ReT4 {
    */
   fill(rwsp, reT4Data) {
     // если данный накопитель - первоисточник
-    if (!this.src.streams) {
-      this.src.onReT4Complete(reT4Data.map((rec) => [rec]));
+    if (!this.owner.streams) {
+      this.owner.onReT4Complete(RET4_TYPES.ReINIT, reT4Data);
       // или все источники заполнены
     } else {
       /**
@@ -36,7 +37,7 @@ export default class ReT4Init extends ReT4 {
        *  первоисточников в массиве
        */
       this.acc.push(reT4Data);
-      if (this.acc.length === this.src.streams.size) {
+      if (this.acc.length === this.owner.streams.size) {
         // TODO: need perf optimization
         const updates = this.acc
           .reduce(
@@ -59,7 +60,7 @@ export default class ReT4Init extends ReT4 {
             return acc;
           }, [[-1, []]])
           .map(([, rec]) => rec);
-        this.src.onReT4Complete(updates.slice(1));
+        this.owner.onReT4Complete(RET4_TYPES.ReINIT, updates.slice(1));
       }
     }
   }

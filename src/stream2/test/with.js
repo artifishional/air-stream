@@ -8,7 +8,7 @@ import { RED_REC_STATUS } from '../red-record';
 const { describe, test, expect } = globalThis;
 
 describe('with', () => {
- /* test('example', (done) => {
+  test('example', (done) => {
     const _ = async();
     const expected = [
       [1], [1, 2],
@@ -49,11 +49,10 @@ describe('with', () => {
     const rc = stream.fromCbFunc((cb) => {
       _(() => cb(1));
     });
-    const rc1 = rc.map(({ value }) => `a${value}`);
-    const rc2 = rc.map(({ value }) => `b${value}`);
+    const rc1 = rc.map((value) => `a${value}`);
+    const rc2 = rc.map((value) => `b${value}`);
     const queue1 = expected.values();
     stream.with([rc1, rc2], () => {
-      debugger;
       const state = new Map();
       return (updates) => {
         updates.forEach((rec) => state.set(rec.src, rec.value));
@@ -75,7 +74,7 @@ describe('with', () => {
       _(() => cb(1));
       _(() => cb(2));
     });
-    const rc1 = rc.map(({ value }) => `a${value}`);
+    const rc1 = rc.map((value) => `a${value}`);
     const rc2 = rc.filter(() => false);
     const queue1 = expected.values();
     stream.with([rc1, rc2], () => {
@@ -97,8 +96,8 @@ describe('with', () => {
     const rc = stream.fromCbFunc((cb) => {
       cb(1);
     });
-    const rc1 = rc.map(({ value }) => `a${value}`);
-    const rc2 = rc.map(({ value }) => `b${value}`);
+    const rc1 = rc.map((value) => `a${value}`);
+    const rc2 = rc.map((value) => `b${value}`);
     const queue1 = expected.values();
     const res = stream.with([rc1, rc2], () => {
       const state = new Map();
@@ -130,8 +129,8 @@ describe('with', () => {
     const rc2 = stream.fromCbFunc((cb) => {
       cb(2);
     });
-    const r1 = rc1.reduce(() => (acc, next) => acc + next, { local: 100 });
-    const r2 = rc2.reduce(() => (acc, next) => acc + next, { local: 10 });
+    const r1 = rc1.reduce((acc, next) => acc + next, { local: 100 });
+    const r2 = rc2.reduce((acc, next) => acc + next, { local: 10 });
     const queue1 = expected.values();
     const res = stream.with([r1, r2], () => {
       const state = new Map();
@@ -144,50 +143,5 @@ describe('with', () => {
     res.get(({ value }) => expect(value).toEqual(queue1.next().value));
     _(() => queue1.next().done && done());
   });
-  */
-
-  test('several remote RedWSP to local RedSWPSlave', (done) => {
-    const _ = async();
-    const expected = [
-      [102],
-      [102, 11],
-    ];
-    const rc1 = stream.fromCbFunc((cb) => {
-      setTimeout(() => {
-        _(() => cb({ type: 'dot', data: 10 }));
-        _(() => cb({ type: 'com', data: 1 }));
-      });
-    });
-    const rc2 = stream.fromCbFunc((cb) => {
-      _(() => cb({ type: 'dot', data: 100 }));
-      _(() => cb({ type: 'com', data: 2 }));
-    });
-    const rm1 = rc1
-      .filter(({ type }) => type === 'dot')
-      .map(({ data }) => data);
-    const rm2 = rc2
-      .filter(({ type }) => type === 'dot')
-      .map(({ data }) => data);
-    const r1 = rc1
-      .filter(({ type }) => type === 'com')
-      .map(({ data }) => data)
-      .reduce(() => (acc, next) => acc + next, { remote: rm1 });
-    const r2 = rc2
-      .filter(({ type }) => type === 'com')
-      .map(({ data }) => data)
-      .reduce(() => (acc, next) => acc + next, { remote: rm2 });
-    const queue1 = expected.values();
-    const res = stream.with([r1, r2], () => {
-      const state = new Map();
-      return (updates) => {
-        updates.forEach((rec) => state.set(rec.src, rec.value));
-        return [...state.values()];
-      };
-    });
-    res.connect();
-    res.get(({ value }) => {
-      expect(value).toEqual(queue1.next().value);
-    });
-    setTimeout(() => _(() => queue1.next().done && done()));
-  });
+  
 });

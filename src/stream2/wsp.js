@@ -3,8 +3,10 @@ import STTMP from './sync-ttmp-ctr';
 import Record from './record';
 import Propagate from './propagate';
 import { STATIC_CREATOR_KEY } from './defs';
+import SyncEventManager from './sync-event-manager';
+import SyncEventManagerSingle from './sync-event-manager-single';
 
-let WSP_ID_COUNT = 1;
+let staticOriginWSPIDCounter = 0;
 
 export default class WSP {
   /**
@@ -17,6 +19,10 @@ export default class WSP {
     args,
     /* <debug> */ creatorKey, /* </debug> */
   ) {
+    if (!wsps) {
+      staticOriginWSPIDCounter += 1;
+      this.id = staticOriginWSPIDCounter;
+    }
     this.wsps = wsps;
     /* <debug> */
     if (creatorKey !== STATIC_CREATOR_KEY) {
@@ -29,79 +35,52 @@ export default class WSP {
         throw new TypeError('Only WSP supported');
       }
     }
-    this.memory = null;
     /* </debug> */
-    WSP_ID_COUNT += 1;
-    this.hnProJ = null;
-    this.id = WSP_ID_COUNT;
-    this.event5tore = null;
-    this.lastedstoken = DEFAULT_TOKEN;
-    this.curFrameCachedRecord = null;
-    this.streams = wsps ? new Map(wsps.map((stream, idx) => [stream, {
-      idx,
-      stream,
-      eventChWSpS: null,
-      neighbours: [],
-    }])) : null;
     /**
      * @property {Set<WSP>}
      */
     this.slaves = new Set();
-    this.neighbourStreamsBySource = new Map();
+    this.hnProJ = null;
+    this.lastedstoken = DEFAULT_TOKEN;
+    this.curFrameCachedRecord = null;
     if (!wsps) {
       this.originWSpS = [this];
     } else {
       this.originWSpS = [...new Set(wsps.map(({ originWSpS }) => originWSpS).flat(1))];
     }
-    // TODO: TypeCheck
+    /* <debug> */
     if (this.originWSpS.some((wsp) => !(wsp instanceof WSP))) {
       throw new TypeError();
     }
-    if (wsps) {
-      wsps.forEach((stream) => {
-        const streamRelatedData = this.streams.get(stream);
-        stream.originWSpS.forEach((wsp) => {
-          // TODO: TypeCheck
-          if (!(wsp instanceof WSP)) {
-            throw new TypeError();
-          }
-          let neighbourStreams = this.neighbourStreamsBySource.get(wsp);
-          if (!neighbourStreams) {
-            this.neighbourStreamsBySource.set(wsp, neighbourStreams = []);
-          }
-          neighbourStreams.push(streamRelatedData);
-        });
-      });
+    /* </debug> */
+    this.sncMan = this.createSyncEventMan();
+  }
+
+  createSyncEventMan() {
+    if (!this.wsps || this.wsps.length < 2) {
+      return new SyncEventManagerSingle(this);
     }
-
-
-    /**
-     * @type {[evtSrcID, [*]]}
-     */
-    this.sncEvtGrpQue = [];
-
+    return new SyncEventManager(this);
   }
 
   handleR(src, cuR) {
-    let sncGrp = this.sncEvtGrpQue.find(([{ wsp }]) => wsp === cuR.wsp);
-    if (!sncGrp) {
-      sncGrp = this.sncMan.createGrp(cuR.wsp);
-      this.sncEvtGrpQue.push(sncGrp);
-    }
-    sncGrp.fill(cuR);
+    this.sncMan.fill(src, cuR);
   }
 
-  sncGrpFilledHandler(sncGrp) {
-    this.next(this.createRecordFromUpdates(sncGrp.getUpdates()));
+  sncGrpFilledHandler(updates) {
+    this.next(this.createRecordFromUpdates(updates));
   }
 
   createRecordFromUpdates(updates) {
-    return this.createRecordFrom(updates[0], updates);
+    const filtered = updates.filter(({ value }) => value !== EMPTY);
+    if (!filtered.length) {
+      return this.createRecordFrom(updates[0], EMPTY);
+    }
+    return this.createRecordFrom(filtered[0], this.hn(filtered));
   }
 
   with(hnProJ) {
     this.initiate(hnProJ);
-
   }
 
   static combine(wsps, proJ) {
@@ -110,15 +89,12 @@ export default class WSP {
       {},
       /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
     );
-    res.initiate((own) => {
-      if (!own.memory) {
-        // eslint-disable-next-line no-param-reassign
-        own.memory = new Map();
-      }
+    res.initiate(() => {
+      const combined = new Map();
       return (updates) => {
-        updates.forEach(({ src, value }) => own.memory.set(src, value));
-        if (own.memory.size === wsps.length) {
-          return proJ([...own.memory].map(([, upd]) => upd));
+        updates.forEach(({ src, value }) => combined.set(src, value));
+        if (combined.size === wsps.length) {
+          return proJ([...combined.values()]);
         }
         return EMPTY;
       };
@@ -162,7 +138,7 @@ export default class WSP {
     res.burn(fn());
     return res;
   }
-
+/*
   handleR(stream, cuR) {
     // grouping
     // каждое сообщение (или группу если поддерживается несколько событий
@@ -186,7 +162,7 @@ export default class WSP {
         streamExist = new Map(
           neighbours
             .map(({ stream: _stream }) => [_stream,
-              null, /* cuR from stream from cur sttmp */
+              null, // cuR from stream from cur sttmp
             ]),
         ),
       );
@@ -226,6 +202,7 @@ export default class WSP {
       }
     }
   }
+*/
 
   createRecordFrom(rec, updates) {
     return rec.from(updates, Record, undefined, this);

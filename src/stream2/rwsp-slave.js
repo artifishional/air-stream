@@ -23,14 +23,7 @@ export default class RedWSPSlave extends RedWSP {
     );
   }
 
-  initiate(hnProJ) {
-    // TODO: DUPLICATE BASE CH.
-    if (!this.hn || this.reT4able) {
-      super.initiate(hnProJ);
-      // this.hn = this.hnProJ(this);
-    }
-  }
-
+/*
   onReT4Complete(updates) {
     const state = [];
     const combined = [];
@@ -52,6 +45,11 @@ export default class RedWSPSlave extends RedWSP {
     });
     this.incompleteRet4 = null;
     return this.open(state);
+  }*/
+  
+  onReT4Complete(type, updates) {
+    debugger;
+    super.onReT4Complete(type, updates);
   }
 
   static combine(wsps, proJ) {
@@ -68,7 +66,7 @@ export default class RedWSPSlave extends RedWSP {
     });
     return res;
   }
-
+/*
   handleR(stream, cuR) {
     // grouping
     // каждое сообщение (или группу если поддерживается несколько событий
@@ -92,7 +90,7 @@ export default class RedWSPSlave extends RedWSP {
         streamExist = new Map(
           neighbours
             .map(({ stream: _stream }) => [_stream,
-              null, /* cuR from stream from cur sttmp */
+              null, // cuR from stream from cur sttmp
             ]),
         ),
       );
@@ -135,5 +133,5 @@ export default class RedWSPSlave extends RedWSP {
         this.next(this.createRecordFrom(rec, EMPTY));
       }
     }
-  }
+  }*/
 }

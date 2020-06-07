@@ -1,7 +1,13 @@
 import { EMPTY } from './signals';
 
+let staticOriginRecIDCounter = 0;
+
 export default class Record {
   constructor(prev, owner, value, token, head = this, src) {
+    if (head === this) {
+      staticOriginRecIDCounter += 1;
+      this.id = staticOriginRecIDCounter;
+    }
     this.prev = prev;
     /**
      * Ссылка на поток-создатель
