@@ -147,7 +147,7 @@ export class Stream2 {
   }
 
   static fromCbFunc(cb) {
-    return new Stream2((onrdy) => {
+    return new Stream2((onrdy, ctr) => {
       onrdy(WSP.fromCbFunc(cb));
     });
   }
