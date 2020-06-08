@@ -220,11 +220,9 @@ export class Stream2 {
     });
   }
 
-  static combine(streams, proJ = (upds) => upds) {
+  static combine(streams, proJ = (upds) => upds, args) {
     if (!streams.length) {
-      return new Stream2((onrdy) => {
-        onrdy(WSP.fromCbFunc(() => []));
-      });
+      return this.fromCbFunc((cb) => cb(proJ([])));
     }
     if (streams.length === 1) {
       return streams[0].map((vl) => proJ([vl]));
@@ -234,9 +232,9 @@ export class Stream2 {
         ctr.todisconnect(...bags.map(([, hook]) => hook));
         const wsps = bags.map(([wsp]) => wsp);
         if (wsps.every((_wsp) => _wsp instanceof RedWSP)) {
-          onrdy(RedWSPSlave.combine(wsps, proJ));
+          onrdy(RedWSPSlave.combine(wsps, proJ, args));
         } else {
-          onrdy(WSP.combine(wsps, proJ));
+          onrdy(WSP.combine(wsps, proJ, args));
         }
       });
     });

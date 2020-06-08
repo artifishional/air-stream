@@ -1,4 +1,4 @@
 if (!globalThis.performance) {
-  const { performance } = require('perf_hooks');
+  const { performance } = require.call(globalThis, 'perf_hooks');
   globalThis.performance = performance;
 }

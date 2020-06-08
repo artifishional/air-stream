@@ -92,10 +92,10 @@ export default class WSP {
     this.initiate(hnProJ);
   }
 
-  static combine(wsps, proJ) {
+  static combine(wsps, proJ, args) {
     const res = new this(
       wsps,
-      {},
+      args,
       /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
     );
     res.initiate(() => {

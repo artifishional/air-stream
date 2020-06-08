@@ -143,6 +143,20 @@ describe('combine', () => {
       });
     setTimeout(() => queue1.next().done && done());
   });
+
+  test('empty queue', (done) => {
+    const _ = async();
+    const expected = [
+      [],
+    ];
+    const queue1 = expected.values();
+    stream
+      .combine([])
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
+    _(() => queue1.next().done && done());
+  });
   /*
      test('empty source combiner', (done) => {
        const combined = stream.combine([]);
