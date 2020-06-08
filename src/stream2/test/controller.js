@@ -9,6 +9,29 @@ const {
 } = globalThis;
 
 describe('controller', () => {
+  test('fromCbFn constructor method', (done) => {
+    const _ = async();
+    const expected = [
+      10,
+      100,
+      1000,
+    ];
+    const queue1 = expected.values();
+    const res = stream
+      .fromCbFunc((cb, ctr) => {
+        ctr.req('change', (data) => {
+          cb(data);
+        });
+        cb(10);
+      });
+    const hook = res.get(({ value }) => {
+      expect(value).toEqual(queue1.next().value);
+    });
+    _(() => hook('change', 100));
+    _(() => hook('change', 1000));
+    _(() => queue1.next().done && done());
+  });
+
   test('simple sync callback', (done) => {
     const _ = async();
     const expected = [
@@ -18,14 +41,14 @@ describe('controller', () => {
     _(() => {
       const res = stream
         .handle(() => ({
-          onchange(request, { value }) {
+          change(request, { value }) {
             return value;
           },
         }))
-        .map(({ value }) => value * 10);
+        .map((value) => value * 10);
       res
         .requester((req) => {
-          req('onchange', { value: 1 });
+          req('change', { value: 1 });
         })
         .connect();
       res.get(({ value }) => {
@@ -51,8 +74,8 @@ describe('controller', () => {
     _(() => target.emit('test-event', 3));
     let hook = null;
     const res = rc
-      .map(({ value }) => value * 10)
-      .map(({ value }) => {
+      .map((value) => value * 10)
+      .map((value) => {
         hook();
         expect(value).toEqual(queue1.next().value);
         return 0;

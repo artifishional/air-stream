@@ -6,8 +6,8 @@ import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './rwsp-slave';
 import RedWSP from './rwsp';
 import { EMPTY } from './signals';
-
-const STD_DISCONNECT_REQ = 'ondisconnect';
+import { STD_DISCONNECT_REQ } from './defs';
+import Controller from './controller';
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
 const EMPTY_FN = () => EMPTY_OBJECT;
@@ -64,7 +64,7 @@ export class Stream2 {
   static handle(hnProJ) {
     return new Stream2((onrdy, control) => {
       const req = hnProJ();
-      const wsp = new WSP(null, null);
+      const wsp = WSP.create(null, null);
       control.tocommand(
         ...Object.keys(req)
           .map((key) => (request, data) => {
@@ -148,7 +148,7 @@ export class Stream2 {
 
   static fromCbFunc(cb) {
     return new Stream2((onrdy, ctr) => {
-      onrdy(WSP.fromCbFunc(cb));
+      onrdy(WSP.fromCbFunc((e) => cb(e, ctr)));
     });
   }
 
@@ -675,42 +675,6 @@ export class RemouteService extends Stream2 {
         websocketconnection.removeEventListener('message', onsocketmessagehandler);
       });
     });
-  }
-}
-
-export class Controller {
-  constructor(src) {
-    this.src = src;
-    this.disconnected = false;
-    this.$todisconnect = [];
-    this.$tocommand = [];
-  }
-
-  todisconnect(...connectors) {
-    this.$todisconnect.push(...connectors);
-  }
-
-  to(...connectors) {
-    this.$todisconnect.push(...connectors);
-    this.$tocommand.push(...connectors);
-  }
-
-  tocommand(...connectors) {
-    this.$tocommand.push(...connectors);
-  }
-
-  send(action, data) {
-    /* <debug> */
-    if (this.disconnected) {
-      throw new Error(`${this.src.$label}: This controller is already disconnected`);
-    }
-    /* </debug> */
-    if (action !== STD_DISCONNECT_REQ) {
-      this.$tocommand.map((connector) => connector(action, data));
-    } else {
-      this.disconnected = true;
-      this.$todisconnect.map((connector) => connector(action, data));
-    }
   }
 }
 
