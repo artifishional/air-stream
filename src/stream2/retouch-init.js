@@ -18,7 +18,7 @@ export default class ReT4Init extends ReT4 {
    */
   fill(rwsp, reT4Data) {
     // если данный накопитель - первоисточник
-    if (!this.owner.streams) {
+    if (!this.owner.wsps) {
       this.owner.onReT4Complete(RET4_TYPES.ReINIT, reT4Data);
       // или все источники заполнены
     } else {
@@ -37,31 +37,17 @@ export default class ReT4Init extends ReT4 {
        *  первоисточников в массиве
        */
       this.acc.push(reT4Data);
-      if (this.acc.length === this.owner.streams.size) {
-        // TODO: need perf optimization
+      if (this.acc.length === this.owner.wsps.length) {
         const updates = this.acc
-          .reduce(
-            (acc, next, idx) =>
-              // eslint-disable-next-line
-              [...acc, ...next.map((rec) => [idx, rec])], [],
-          )
-          .sort(
-            ([idxA, recA], [idxB, recB]) =>
-              // eslint-disable-next-line
-              recA.token.sttmp - recB.token.sttmp || idxA - idxB,
-          )
-          .reduce((acc, [idx, next]) => {
-            const lastAcc = acc[acc.length - 1];
-            if (lastAcc[0] === next.token) {
-              lastAcc[1].push([idx, next]);
-            } else {
-              acc.push([next.token, [[idx, next]]]);
-            }
-            return acc;
-          }, [[-1, []]])
-          .map(([, rec]) => rec);
-        this.owner.onReT4Complete(RET4_TYPES.ReINIT, updates.slice(1));
+          .flat()
+          .sort(({ token: { sttmp: a } }, { token: { sttmp: b } }) => a - b);
+        this.owner.onReT4Complete(RET4_TYPES.ReINIT, updates);
       }
+      /**
+       * Остальную работу сделает WSP -
+       * он синхронизирует записи согласно общим источникам
+       * здесь достаточно соблюсти последовательность событий
+       */
     }
   }
 }

@@ -1,7 +1,7 @@
 import getTTMP from './get-ttmp';
 import WSP from './wsp';
-import Record from './record';
-import { RED_REC_SUBORDINATION } from './red-record';
+import Record from './record/record';
+import { RED_REC_SUBORDINATION } from './record/red-record';
 import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './rwsp-slave';
 import RedWSP from './rwsp';
@@ -26,9 +26,9 @@ export class Stream2 {
 
     this.wsp = null;
 
-    /* <@debug> */
+    /* <debug> */
     this.$label = '';
-    /* </@debug> */
+    /* </debug> */
     this.project = proJ;
     this.ctx = ctx;
     this.type = new.target.TYPES.PIPE;
@@ -116,12 +116,12 @@ export class Stream2 {
     return new Reducer(this, project, state, init);
   }
 
-  /* <@debug> */
+  /* <debug> */
   label(label) {
     this.$label = label;
     return this;
   }
-  /* </@debug> */
+  /* </debug> */
 
   configure({ slave = false, stmp = false } = {}) {
     return new Stream2(null, (e, controller) => {
@@ -286,14 +286,16 @@ export class Stream2 {
     });
   }
 
-  static with(streams, hnProJ, { localization = null, subordination = null } = {}) {
-    /* <@debug> */
+  static with(streams, hnProJ, { localization = null, subordination = null } = {}, args = {}) {
+    // eslint-disable-next-line no-param-reassign
+    /* <debug> */ args = { operator: { name: 'with' }, ...args }; /* </debug> */
+    /* <debug> */
     if (streams.length !== 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
       throw new TypeError(
         'Unsupported configuration type. Master WSP can have no more than one source',
       );
     }
-    /* <@/debug> */
+    /* </debug> */
     const calculableConfig = {
       localization,
       subordination,
@@ -318,9 +320,9 @@ export class Stream2 {
           if (!notConnectedCounter) {
             // TODO: instead of every RedWSP someone use CoWSP
             if (wsps.every((_wsp) => _wsp instanceof RedWSP)) {
-              onrdy(RedWSPSlave.create(wsps, hnProJ));
+              onrdy(RedWSPSlave.create(wsps, hnProJ, args));
             } else {
-              onrdy(WSP.create(wsps, hnProJ));
+              onrdy(WSP.create(wsps, hnProJ, args));
             }
           }
         });
@@ -396,7 +398,7 @@ export class Stream2 {
     });
   }
 
-  /* <@debug> */
+  /* <debug> */
   log() {
     return new Stream2((conect, control) => {
       this.connect((evtChWSpS, hook) => {
@@ -410,7 +412,7 @@ export class Stream2 {
       });
     });
   }
-  /* </@debug> */
+  /* </debug> */
 
   connect(con5ion = () => () => {}) {
     this.con5ions.set(con5ion, null);
@@ -421,11 +423,11 @@ export class Stream2 {
         wsp: null,
       };
       this.hook = (req = STD_DISCONNECT_REQ, data = null) => {
-        /* <@debug> */
+        /* <debug> */
         if (typeof req !== 'string') {
           throw new TypeError('Action must be a string only');
         }
-        /* </@debug> */
+        /* </debug> */
         if (req === STD_DISCONNECT_REQ) {
           this.$deactivate(con5ion, ctr);
         } else {
@@ -484,7 +486,7 @@ export class Stream2 {
   }
 
   createEmitter(subscriber, evtChWSpS) {
-    /* <@debug> */
+    /* <debug> */
     return (rec) => {
       if (!Array.isArray(evtChWSpS)) {
         throw new TypeError('Zero spring chanel produced some data?');
@@ -500,7 +502,7 @@ export class Stream2 {
       }
       subscriber(rec);
     };
-    /* </@debug> */
+    /* </debug> */
     // eslint-disable-next-line no-unreachable
     return subscriber;
   }
@@ -700,11 +702,11 @@ export class Controller {
   }
 
   send(action, data) {
-    /* <@debug> */
+    /* <debug> */
     if (this.disconnected) {
       throw new Error(`${this.src.$label}: This controller is already disconnected`);
     }
-    /* </@debug> */
+    /* </debug> */
     if (action !== STD_DISCONNECT_REQ) {
       this.$tocommand.map((connector) => connector(action, data));
     } else {
@@ -755,9 +757,9 @@ const UPS = new class {
 
   unsubscribe(subscriber) {
     const removed = this.subscribers.indexOf(subscriber);
-    /* <@debug> */
+    /* <debug> */
     if (removed < 0) throw new Error('Attempt to delete an subscriber out of the container');
-    /* </@debug> */
+    /* </debug> */
     this.subscribers.splice(removed, 1);
   }
 }();

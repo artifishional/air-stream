@@ -1,4 +1,4 @@
-import Record from './record';
+import Record from './record/record';
 
 export default class Request {
   constructor(owner) {

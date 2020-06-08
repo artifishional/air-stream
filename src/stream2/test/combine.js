@@ -1,14 +1,14 @@
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
 import RedWSP from "../rwsp";
-import Record from "../record";
+import Record from "../record/record";
 import STTMP from "../sync-ttmp-ctr";
 import {
   RED_REC_LOCALIZATION,
   RED_REC_STATUS,
   RED_REC_SUBORDINATION,
   RedRecord,
-} from '../red-record';
+} from '../record/red-record';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;

@@ -1,4 +1,4 @@
-import HeadRecord from './head-record';
+import HeadRecord from './record/head-record';
 
 class Propagate {
   interrupt() {

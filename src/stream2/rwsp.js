@@ -3,14 +3,15 @@ import {
   RED_REC_LOCALIZATION,
   RED_REC_SUBORDINATION,
   RedRecord,
-} from './red-record';
+} from './record/red-record';
 import WSP from './wsp';
 import ReT4 from './retouch';
 import { RET4_TYPES } from './retouch-types';
 import { EMPTY } from './signals';
 import STTMP from './sync-ttmp-ctr';
 import getTTMP from './get-ttmp';
-
+import Record from './record/record';
+import HeadRecord from "./record/head-record";
 
 const DEFAULT_START_TTMP = -1000000;
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
@@ -30,14 +31,16 @@ export default class RedWSP extends WSP {
    *   и только для местных головных - создает новое значение в момент
    *    инциализации
    * @param {STATIC_CREATOR_KEY} creatorKey
+   * @param args
   */
   constructor(wsps, {
     subordination = RED_REC_SUBORDINATION.MASTER,
     localization = RED_REC_LOCALIZATION.LOCAL,
     reT4able = false,
     initialValue = EMPTY,
+    ...args
   } = {}, /* <debug> */ creatorKey /* </debug> */) {
-    super(wsps, {}, /* <debug> */ creatorKey /* </debug> */);
+    super(wsps, args, /* <debug> */ creatorKey /* </debug> */);
     this.reT4able = reT4able;
     this.initialValue = initialValue;
     this.incompleteRet4 = null;
@@ -65,20 +68,17 @@ export default class RedWSP extends WSP {
 
   initiate(hnProJ) {
     if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
-      /*
-        TODO need external reT4 (local/remote master RWSP)
-       */
       this.t4queue = [];
       this.reliable = [];
       this.state = [];
-      this.next(new RedRecord(
-        { id: 0 }, // TODO: LOCAL DEFAULT WSP
+      this.next(new HeadRecord(
+        null,
         this,
-        this.initialValue,
+        null,
         STTMP.get(DEFAULT_START_TTMP),
         undefined,
-        this,
-      ));
+        this.constructor.STATIC_LOCAL_WSP,
+      ).from(this.initialValue, RedRecord, this, this));
     }
     super.initiate(hnProJ);
   }
@@ -156,43 +156,8 @@ export default class RedWSP extends WSP {
     this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
       this, this.state, type,
     ));
-    /*const state = [];
-    const combined = [];
-    updates.forEach((wave) => {
-      wave.forEach(([idx, rec]) => {
-        combined[idx] = rec;
-      });
-      if (combined.length < this.streams.size || combined.includes()) {
-        return;
-      }
-      let acc = null;
-      if (state.length > 0) {
-        [acc] = state.slice(-1);
-      } else if (this.initialValue !== EMPTY) {
-        acc = this.initialValue;
-      }
-      state.push(this.createRecordFrom(
-        wave[0][1],
-        this.hn(
-          acc,
-          wave.map(([, rec]) => rec),
-          combined,
-        ),
-      ));
-    });*/
   }
-/*
-  open(state) {
-    this.t4queue = [];
-    this.reliable = state;
-    this.state = [...state];
-    this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
-      this,
-      this.state,
-      RET4_TYPES.ReINIT,
-    ));
-  }
-*/
+
   createRecordFrom(rec, updates) {
     if (this.localization === RED_REC_LOCALIZATION.REMOTE) {
       if (rec.localization === RED_REC_LOCALIZATION.LOCAL) {
@@ -206,7 +171,7 @@ export default class RedWSP extends WSP {
         localization: RED_REC_LOCALIZATION.REMOTE,
       });
     }
-    return rec.from(updates, RedRecord, undefined, {
+    return rec.from(updates, RedRecord, undefined, this, {
       subordination: RED_REC_SUBORDINATION.MASTER,
       localization: RED_REC_LOCALIZATION.REMOTE,
     });
@@ -226,11 +191,11 @@ export default class RedWSP extends WSP {
    * @param {RedWSPSlave|RedWSP|WSP} slv
    */
   on(slv) {
-    /* <@debug> */
+    /* <debug> */
     if (!this.state) {
       throw new Error('Unexpected model state');
     }
-    /* <@/debug> */
+    /* </debug> */
     /**
      * TODO: may be duplicate users
      */
@@ -274,7 +239,7 @@ export default class RedWSP extends WSP {
       this.state.splice(this.reliable.length, Infinity);
       this.t4queue.reduce((acc, _rec) => {
         const res = this.createRecordFrom(
-          _rec, this.hn(acc.value, _rec.value),
+          _rec, this.hn(acc.value, _rec.value), this,
         );
         this.state.push(res);
         return res;

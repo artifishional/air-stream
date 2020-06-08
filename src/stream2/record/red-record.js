@@ -35,26 +35,26 @@ export class RedRecord extends Record {
    * @param {*} value
    * @param {{sttmp:Number}} token Unique ttmp token
    * @param {Record} head Link on head wsp
-   * @param {Record} author
+   * @param {Record} prev
    * @param {RED_REC_STATUS} status
    * @param {RED_REC_SUBORDINATION} subordination
    * @param {RED_REC_LOCALIZATION} localization
    */
   constructor(
-    src,
+    prev,
     owner,
     value,
     token,
     head,
+    src,
     {
       subordination = RED_REC_SUBORDINATION.MASTER,
       status = RED_REC_STATUS.PENDING,
       localization = RED_REC_LOCALIZATION.LOCAL,
     } = {},
   ) {
-    super(src, owner, value, token, head);
+    super(prev, owner, value, token, head, src);
     this.subordination = subordination;
-    this.src = src;
     this.subscribers = new Set();
     this.status = status;
     this.localization = localization;

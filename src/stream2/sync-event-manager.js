@@ -9,28 +9,46 @@ export default class SyncEventManager {
         (wsp) => wsp.originWSpS.includes(originWSP),
       ).length : 1,
     ]));
-    this.sncEvtGrpQueue = [];
+    this.sncEvtGrpSchema.set(owner.constructor.STATIC_LOCAL_WSP.id, owner.wsps.length);
+    /**
+     * На текущий момент считается что не может существовать более одной
+     * синхронизируемой группы, так как записи всегда придерживаются очереднсти
+     * по времени появления
+     */
+    this.sncLastEvtGrp = null;
   }
 
   fill(src, cuR) {
-    let sncGrp = this.sncEvtGrpQueue.find(
-      ({ headRecID, originWSPID }) => headRecID === cuR.head.id && originWSPID === cuR.head.src.id,
-    );
-    if (!sncGrp) {
-      sncGrp = this.createGrp(cuR.head.id, cuR.head.src.id);
-      this.sncEvtGrpQueue.push(sncGrp);
+    /* <debug> */
+    if (this.sncLastEvtGrp && cuR.head.token.sttmp < this.sncLastEvtGrp.headRec.token.sttmp) {
+      throw new TypeError('Unexpected sync state');
     }
-    sncGrp.fill(src, cuR);
+    /* </debug> */
+    const sncGrp = this.sncLastEvtGrp;
+    /**
+     * С учетом что уже была сортировка для RWSP Slave
+     * здесь могла оказаться только более свежая запись и
+     * предыдущая группа уже не может быть синхронизирована
+     * по причните того, что устаревшие записи в накопителях
+     * были обновлены
+     */
+    if (sncGrp && sncGrp.headRec !== cuR.head) {
+      this.sncLastEvtGrp = null;
+      this.owner.sncGrpFilledHandler(sncGrp.getUpdates());
+    }
+    if (!this.sncLastEvtGrp) {
+      this.sncLastEvtGrp = this.createGrp(cuR.head, cuR.head.src.id);
+    }
+    this.sncLastEvtGrp.fill(src, cuR);
   }
 
-  sncGrpFilledHandler() {
-    while (this.sncEvtGrpQueue.length && this.sncEvtGrpQueue[0].filled) {
-      this.owner.sncGrpFilledHandler(this.sncEvtGrpQueue.shift().getUpdates());
-    }
+  sncGrpFilledHandler(src) {
+    this.sncLastEvtGrp = null;
+    this.owner.sncGrpFilledHandler(src.getUpdates());
   }
 
-  createGrp(headRecID, originWSPID) {
+  createGrp(headRec, originWSPID) {
     const neighbourWSPCount = this.sncEvtGrpSchema.get(originWSPID);
-    return new SyncEventGroup(this, headRecID, neighbourWSPCount, originWSPID);
+    return new SyncEventGroup(this, headRec, neighbourWSPCount);
   }
 }

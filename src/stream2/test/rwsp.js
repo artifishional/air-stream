@@ -1,10 +1,10 @@
-import Record from '../record';
+import Record from '../record/record';
 import {
   RED_REC_LOCALIZATION,
   RED_REC_STATUS,
   RED_REC_SUBORDINATION,
   RedRecord,
-} from '../red-record';
+} from '../record/red-record';
 import RedWSP from '../rwsp';
 import STTMP from '../sync-ttmp-ctr';
 import { prop } from '../../utils';

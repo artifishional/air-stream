@@ -1,9 +1,12 @@
-import { EMPTY } from './signals';
+import { EMPTY } from '../signals';
 
 let staticOriginRecIDCounter = 0;
 
 export default class Record {
   constructor(prev, owner, value, token, head = this, src) {
+    if (!(src instanceof globalThis.WSP)) {
+      debugger;
+    }
     if (head === this) {
       staticOriginRecIDCounter += 1;
       this.id = staticOriginRecIDCounter;
@@ -67,7 +70,7 @@ export default class Record {
   }
 
   // TODO: redic. species set
-  from(value, Species = Record, owner = this.owner, conf, src) {
-    return new Species(this, owner, value, this.token, this.head, conf, src);
+  from(value, Species = Record, owner = this.owner, src, conf) {
+    return new Species(this, owner, value, this.token, this.head, src, conf);
   }
 }

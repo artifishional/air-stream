@@ -14,6 +14,7 @@ module.exports = {
     '@babel/plugin-proposal-export-namespace-from',
     '@babel/plugin-proposal-numeric-separator',
     '@babel/plugin-proposal-throw-expressions',
-    '@babel/plugin-transform-modules-commonjs'
+    '@babel/plugin-transform-modules-commonjs',
+    "@babel/plugin-proposal-optional-chaining",
   ]
 };

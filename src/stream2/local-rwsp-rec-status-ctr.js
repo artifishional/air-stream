@@ -1,4 +1,4 @@
-import { RED_REC_STATUS } from './red-record';
+import { RED_REC_STATUS } from './record/red-record';
 
 export default class LocalRedWSPRecStatusCTR {
   static handleR(stream, cuR) {

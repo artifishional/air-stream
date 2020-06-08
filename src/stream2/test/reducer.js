@@ -2,7 +2,7 @@ import EventEmitter from 'event-emitter';
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
 import WSP from '../wsp';
-import { RED_REC_STATUS } from '../red-record';
+import { RED_REC_STATUS } from '../record/red-record';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;

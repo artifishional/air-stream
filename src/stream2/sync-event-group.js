@@ -1,8 +1,7 @@
 export default class SyncEventGroup {
-  constructor(owner, headRecID, neighbourWSPCount, originWSPID) {
+  constructor(owner, headRec, neighbourWSPCount) {
     this.owner = owner;
-    this.originWSPID = originWSPID;
-    this.headRecID = headRecID;
+    this.headRec = headRec;
     this.neighbourWSPCount = neighbourWSPCount;
     this.store = new Map();
   }
@@ -19,11 +18,6 @@ export default class SyncEventGroup {
   }
 
   getUpdates() {
-    /* <debug> */
-    if (!this.filled) {
-      throw new TypeError('Getting access to non filled group.');
-    }
-    /* </debug> */
     return [...this.store.values()];
   }
 }
