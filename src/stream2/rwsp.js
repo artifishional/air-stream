@@ -10,8 +10,7 @@ import { RET4_TYPES } from './retouch-types';
 import { EMPTY } from './signals';
 import STTMP from './sync-ttmp-ctr';
 import getTTMP from './get-ttmp';
-import Record from './record/record';
-import HeadRecord from "./record/head-record";
+import HeadRecord from './record/head-record';
 
 const DEFAULT_START_TTMP = -1000000;
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
@@ -64,6 +63,7 @@ export default class RedWSP extends WSP {
     this.reliable = null;
     this.t4queue = null;
     this.state = null;
+    this.hnProJReT4 = null;
   }
 
   initiate(hnProJ) {
@@ -80,6 +80,7 @@ export default class RedWSP extends WSP {
         this.constructor.STATIC_LOCAL_WSP,
       ).from(this.initialValue, RedRecord, this, this));
     }
+    this.hnProJReT4 = hnProJ;
     super.initiate(hnProJ);
   }
 
@@ -136,6 +137,7 @@ export default class RedWSP extends WSP {
    */
   handleReT4(rwsp, reT4data, type /* , wsps = ? */) {
     if (!this.incompleteRet4) {
+      this.hn = this.hnProJReT4(this);
       this.incompleteRet4 = ReT4.create(this, type);
     }
     this.incompleteRet4.fill(rwsp, reT4data);

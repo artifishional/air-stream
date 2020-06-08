@@ -19,6 +19,10 @@ export default class WSP {
     args = {},
     /* <debug> */ creatorKey, /* </debug> */
   ) {
+    /**
+     * @type {Function}
+     */
+    this.hn = null;
     this.args = args;
     if (!wsps) {
       staticOriginWSPIDCounter += 1;
@@ -41,7 +45,6 @@ export default class WSP {
      * @property {Set<WSP>}
      */
     this.slaves = new Set();
-    this.hnProJ = null;
     this.lastedstoken = DEFAULT_TOKEN;
     this.curFrameCachedRecord = null;
     if (!wsps) {
@@ -112,9 +115,8 @@ export default class WSP {
    * @param {Function|null = null} hnProJ
    */
   initiate(hnProJ) {
-    this.hnProJ = hnProJ;
-    if (!this.hn && this.hnProJ) {
-      this.hn = this.hnProJ(this);
+    if (hnProJ) {
+      this.hn = hnProJ(this);
     }
     if (this.wsps) {
       this.wsps.map((stream) => stream.on(this));

@@ -1,20 +1,11 @@
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
-import RedWSP from "../rwsp";
-import Record from "../record/record";
-import STTMP from "../sync-ttmp-ctr";
-import {
-  RED_REC_LOCALIZATION,
-  RED_REC_STATUS,
-  RED_REC_SUBORDINATION,
-  RedRecord,
-} from '../record/red-record';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
 
 describe('combine', () => {
-  /*test('example', (done) => {
+  test('example', (done) => {
     const _ = async();
     const expected = [
       200,
@@ -116,11 +107,11 @@ describe('combine', () => {
     const r1 = rc1
       .filter(({ type }) => type === 'com')
       .map(({ data }) => data)
-      .reduce(() => (acc, next) => acc + next, { remote: rm1 });
+      .reduce((acc, next) => acc + next, { remote: rm1 });
     const r2 = rc2
       .filter(({ type }) => type === 'com')
       .map(({ data }) => data)
-      .reduce(() => (acc, next) => acc + next, { remote: rm2 });
+      .reduce((acc, next) => acc + next, { remote: rm2 });
     const queue1 = expected.values();
     const res = stream.combine([r1, r2], ([vl1, vl2]) => vl1 * vl2);
     res.get(({ value }) => {
@@ -128,8 +119,7 @@ describe('combine', () => {
     });
     setTimeout(() => _(() => queue1.next().done && done()));
   });
-*/
-  
+
   test('head combineAllFirst example', (done) => {
     const _ = async();
     const expected = [
@@ -153,13 +143,12 @@ describe('combine', () => {
       });
     setTimeout(() => queue1.next().done && done());
   });
-  
-   /*
+  /*
      test('empty source combiner', (done) => {
        const combined = stream.combine([]);
        streamEqualStrict(done, combined, [ { data: [] } ]);
      });
-   
+
        test('to many streams', (done) => {
            const a = stream(null, function (emt) {
                emt("a");
@@ -187,7 +176,7 @@ describe('combine', () => {
                [{data: ["d", "d", "d", "d"]}],
            );
        });
-   
+
        test('loop', (done) => {
            const assertions = [
                // {data: ["b1", "b", "b"]},
@@ -203,21 +192,5 @@ describe('combine', () => {
            const b = source.filter( evt => evt === "b");
            streamEqualStrict(done, stream.combine([a, b, source] ), assertions);
        });
-   
-       // test('combine key', (done) => {
-       //
-       //     done = series(done, [
-       //         evt => expect(evt).to.deep.equal(keyF),
-       //     ]);
-       //
-       //     const source = stream(function (emt) {
-       //         emt.kf();
-       //     });
-       //
-       //     const a = source.filter( ({path}) => path === "a" );
-       //     const b = source.filter( ({path}) => path === "b" );
-       //
-       //     combine([a, b], ({count: a}, {count: b}) => [a, b] ).on( done );
-       //
-       // });*/
+   */
 });
