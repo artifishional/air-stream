@@ -240,23 +240,22 @@ export class Stream2 {
     });
   }
 
-  combineAllFirst() {
+  combineAllFirst(get = null, set = null) {
     // TODO: not completed solution
     return new Stream2((onrdy, ctr) => {
       this.connect((headWsp, headHook) => {
         ctr.todisconnect(headHook);
         const handler = WSP.create([headWsp], () => ([{ value }]) => {
-          Stream2.whenAllConnected(value, (bags) => {
+          Stream2.whenAllConnected(get ? get(value) : value, (bags) => {
             ctr.to(...bags.map(([, hook]) => hook));
-            onrdy(WSP.combine(bags.map(([wsp]) => wsp), (combiner) => combiner));
+            onrdy(WSP.combine(
+              bags.map(([wsp]) => wsp),
+              (combiner) => set ? set(value, combiner) : combiner
+            ));
           });
         });
         headWsp.on(handler);
-        if (headWsp.onRed) headWsp.onRed(handler);
-        ctr.todisconnect(() => {
-          headWsp.off(handler);
-          if (headWsp.onRed) headWsp.offRed(handler);
-        });
+        ctr.todisconnect(() => headWsp.off(handler));
       });
     });
   }
