@@ -157,6 +157,34 @@ describe('combine', () => {
       });
     _(() => queue1.next().done && done());
   });
+
+  test('combine series', (done) => {
+    const _ = async();
+    const expected = [
+      [30, [10, 20]],
+    ];
+    const queue1 = expected.values();
+    const a = stream
+      .fromCbFunc((headCb) => {
+        _(() => headCb([
+          stream.fromCbFunc((cb) => {
+            _(() => cb(10));
+          }),
+          stream.fromCbFunc((cb) => {
+            _(() => cb(20));
+          }),
+        ]));
+      })
+      .combineAllFirst();
+    const b = stream.fromCbFunc((cb) => {
+      cb(30);
+    });
+    stream.combine([a, b])
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
+    setTimeout(() => queue1.next().done && done());
+  });
   /*
      test('empty source combiner', (done) => {
        const combined = stream.combine([]);
