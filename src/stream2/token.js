@@ -1,3 +1,5 @@
+import { DEFAULT_START_TTMP } from './defs';
+
 export default class Token {
   constructor(sttmp) {
     /**
@@ -11,3 +13,5 @@ export default class Token {
     return new Token(this.sttmp);
   }
 }
+
+Token.INITIAL_TOKEN = new Token(DEFAULT_START_TTMP);

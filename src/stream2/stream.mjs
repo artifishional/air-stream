@@ -220,7 +220,7 @@ export class Stream2 {
     });
   }
 
-  static combine(streams, proJ = (upds) => upds, args) {
+  static combine(streams, proJ = (upds) => upds, conf = {}) {
     if (!streams.length) {
       return this.fromCbFunc((cb) => cb(proJ([])));
     }
@@ -232,12 +232,16 @@ export class Stream2 {
         ctr.todisconnect(...bags.map(([, hook]) => hook));
         const wsps = bags.map(([wsp]) => wsp);
         if (wsps.every((_wsp) => _wsp instanceof RedWSP)) {
-          onrdy(RedWSPSlave.combine(wsps, proJ, args));
+          onrdy(RedWSPSlave.combine(wsps, proJ, conf));
         } else {
-          onrdy(WSP.combine(wsps, proJ, args));
+          onrdy(WSP.combine(wsps, proJ, conf));
         }
       });
     });
+  }
+
+  static $instance(wsp) {
+    return wsp instanceof RedWSP ? RedWSPSlave : WSP;
   }
 
   combineAllFirst(get = null, set = null, conf = {}) {
@@ -246,7 +250,7 @@ export class Stream2 {
       this.connect((headWsp, headHook) => {
         ctr.todisconnect(headHook);
         ctr.todisconnect(() => headWsp.kill());
-        WSP.create([headWsp], () => ([{ value }]) => {
+        Stream2.$instance(headWsp).create([headWsp], () => ([{ value }]) => {
           Stream2.whenAllRedConnected(get ? get(value) : value, (bags) => {
             ctr.to(...bags.map(([, hook]) => hook));
             onrdy(RedWSPSlave.combine(

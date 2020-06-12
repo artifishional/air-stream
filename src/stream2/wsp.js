@@ -11,19 +11,19 @@ let staticOriginWSPIDCounter = 0;
 export default class WSP {
   /**
    * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
-   * @param {*} args
+   * @param {*} conf
    * @param {Object = undefined} creatorKey
    */
   constructor(
     wsps = null,
-    args = {},
+    conf = {},
     /* <debug> */ creatorKey, /* </debug> */
   ) {
     /**
      * @type {Function}
      */
     this.hn = null;
-    this.args = args;
+    this.conf = conf;
     if (!wsps) {
       staticOriginWSPIDCounter += 1;
       this.id = staticOriginWSPIDCounter;

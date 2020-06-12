@@ -1,4 +1,5 @@
 import SyncEventGroup from './sync-event-group';
+import Token from './token';
 
 export default class SyncEventManager {
   constructor(owner) {
@@ -32,9 +33,14 @@ export default class SyncEventManager {
      * по причните того, что устаревшие записи в накопителях
      * были обновлены
      */
-    if (sncGrp && sncGrp.headRec !== cuR.head) {
-      this.sncLastEvtGrp = null;
-      this.owner.sncGrpFilledHandler(sncGrp.getUpdates());
+    if (sncGrp) {
+      if (sncGrp.headRec !== cuR.head
+        && (sncGrp.headRec.token !== Token.INITIAL_TOKEN
+        || cuR.head.token !== Token.INITIAL_TOKEN)
+      ) {
+        this.sncLastEvtGrp = null;
+        this.owner.sncGrpFilledHandler(sncGrp.getUpdates());
+      }
     }
     if (!this.sncLastEvtGrp) {
       this.sncLastEvtGrp = this.createGrp(cuR.head, cuR.head.src.id);

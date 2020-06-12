@@ -8,11 +8,11 @@ import WSP from './wsp';
 import ReT4 from './retouch';
 import { RET4_TYPES } from './retouch-types';
 import { EMPTY } from './signals';
-import STTMP from './sync-ttmp-ctr';
 import getTTMP from './get-ttmp';
 import HeadRecord from './record/head-record';
+import Token from './token';
+import RedWSPSlave from './rwsp-slave';
 
-const DEFAULT_START_TTMP = -1000000;
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 
 export default class RedWSP extends WSP {
@@ -75,7 +75,7 @@ export default class RedWSP extends WSP {
         null,
         this,
         null,
-        STTMP.get(DEFAULT_START_TTMP),
+        Token.INITIAL_TOKEN,
         undefined,
         this.constructor.STATIC_LOCAL_WSP,
       ).from(this.initialValue, RedRecord, this, this));
@@ -232,6 +232,11 @@ export default class RedWSP extends WSP {
   updateT4status() {
     const lastRelUpdateIdx = this.findIndexOfLastRelUpdate();
     this.state = this.state.slice(lastRelUpdateIdx);
+  }
+
+  map(proJ) {
+    return RedWSPSlave.create([this],
+      () => ([value]) => proJ(value));
   }
 
   onRecordStatusUpdate(rec, status) {
