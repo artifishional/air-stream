@@ -228,7 +228,7 @@ export class Stream2 {
       return streams[0].map((vl) => proJ([vl]));
     }
     return new Stream2((onrdy, ctr) => {
-      this.whenAllConnected(streams, (bags) => {
+      this.whenAllRedConnected(streams, (bags) => {
         ctr.todisconnect(...bags.map(([, hook]) => hook));
         const wsps = bags.map(([wsp]) => wsp);
         if (wsps.every((_wsp) => _wsp instanceof RedWSP)) {
@@ -240,24 +240,67 @@ export class Stream2 {
     });
   }
 
-  combineAllFirst(get = null, set = null) {
+  combineAllFirst(get = null, set = null, conf = {}) {
     // TODO: not completed solution
     return new Stream2((onrdy, ctr) => {
       this.connect((headWsp, headHook) => {
         ctr.todisconnect(headHook);
-        const handler = WSP.create([headWsp], () => ([{ value }]) => {
-          Stream2.whenAllConnected(get ? get(value) : value, (bags) => {
+        ctr.todisconnect(() => headWsp.kill());
+        WSP.create([headWsp], () => ([{ value }]) => {
+          Stream2.whenAllRedConnected(get ? get(value) : value, (bags) => {
             ctr.to(...bags.map(([, hook]) => hook));
-            onrdy(WSP.combine(
+            onrdy(RedWSPSlave.combine(
               bags.map(([wsp]) => wsp),
-              (combiner) => set ? set(value, combiner) : combiner
+              (combiner) => (set ? set(value, combiner) : combiner),
+              conf,
             ));
           });
-        });
-        headWsp.on(handler);
-        ctr.todisconnect(() => headWsp.off(handler));
+        }, conf);
       });
     });
+  }
+
+  store() {
+    return new Stream2((onrdy, ctr) => {
+      this.connect((wsp, hook) => {
+        ctr.to(hook);
+        let init = false;
+        wsp.on({
+          handleR(src, cuR) {
+            if (!init) {
+              init = true;
+              const rwsp = RedWSP.create(
+                [wsp.cut(1)], () => ([{ value }]) => value, { initialValue: cuR.value },
+              );
+              rwsp.on(LocalRedWSPRecStatusCTR);
+              onrdy(rwsp);
+            }
+          },
+        });
+      });
+    });
+  }
+
+  static whenAllRedConnected(streams, cb) {
+    const states = new Array(streams.length);
+    let rdyCounter = 0;
+    function handler(wsp, hook, idx) {
+      states[idx] = [wsp, hook];
+      rdyCounter += 1;
+      if (rdyCounter === streams.length) {
+        cb(states);
+      }
+    }
+    streams.map((stream, idx) => stream.connect((wsp, hook) => {
+      if (wsp instanceof RedWSP) {
+        handler(wsp, hook, idx);
+      } else {
+        stream.store().connect((_wsp, _hook) => {
+          handler(_wsp, _hook, idx);
+        });
+        hook();
+      }
+    }));
   }
 
   static whenAllConnected(streams, cb) {
@@ -396,18 +439,8 @@ export class Stream2 {
   }
 
   /* <debug> */
-  log() {
-    return new Stream2((conect, control) => {
-      this.connect((evtChWSpS, hook) => {
-        control.to(hook);
-        const e = conect(evtChWSpS);
-        return (rec) => {
-          // eslint-disable-next-line no-console
-          console.log(rec.value);
-          e(rec);
-        };
-      });
-    });
+  log(proJ = (vl) => vl) {
+    return this.mapF(({ value }) => (console.log(proJ(value)), value));
   }
   /* </debug> */
 
@@ -479,7 +512,9 @@ export class Stream2 {
 
   $deactivate(connect, controller) {
     this.con5ions.delete(connect);
-    controller.send(STD_DISCONNECT_REQ, null);
+    if (!this.con5ions.size) {
+      controller.send(STD_DISCONNECT_REQ, null);
+    }
   }
 
   createEmitter(subscriber, evtChWSpS) {

@@ -206,6 +206,10 @@ export default class RedWSP extends WSP {
       slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
       this.redSlaves.add(slv);
     }
+    /**
+     * TODO: опустошение очереди
+     */
+    this.curFrameCachedRecord = null;
     super.on(slv);
   }
 

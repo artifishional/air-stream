@@ -92,10 +92,23 @@ export default class WSP {
     this.initiate(hnProJ);
   }
 
-  static combine(wsps, proJ, args) {
+  cut(count) {
+    return WSP.create([this], () => {
+      let ct = count;
+      return ([{ value }]) => {
+        if (ct > 0) {
+          ct -= 1;
+          return EMPTY;
+        }
+        return value;
+      };
+    });
+  }
+
+  static combine(wsps, proJ, conf = {}) {
     const res = new this(
       wsps,
-      args,
+      conf,
       /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
     );
     res.initiate(() => {
@@ -119,14 +132,21 @@ export default class WSP {
       this.hn = hnProJ(this);
     }
     if (this.wsps) {
-      this.wsps.map((stream) => stream.on(this));
+      this.wsps.forEach((wsp) => wsp.on(this));
     }
   }
 
-  static create(wsps, hnProJ = null, args = {}) {
+  kill() {
+    // TODO: mb debug only func?
+    if (this.wsps) {
+      this.wsps.forEach((wsp) => wsp.off(this));
+    }
+  }
+
+  static create(wsps, hnProJ = null, conf = {}) {
     const res = new this(
       wsps,
-      args,
+      conf,
       /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
     );
     if (hnProJ) {
@@ -178,11 +198,17 @@ export default class WSP {
   }
 
   next(rec) {
+    /**
+     * Сначала должна произойти рассылка сообщений
+     * так как иначе, добавленный во время рассылки уезел
+     * получит сообщение из рассылки и из потоврителя curFrameCachedRecord
+     * TODO: требуется тест подписка на узел во время рассылки
+     */
+    this.slaves.forEach((slv) => slv.handleR(this, rec));
     if (!this.curFrameCachedRecord) {
       this.curFrameCachedRecord = [];
     }
     this.curFrameCachedRecord.push(rec);
-    this.slaves.forEach((slv) => slv.handleR(this, rec));
   }
 
   /**
