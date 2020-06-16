@@ -40,8 +40,66 @@ stream.with( [rwsp1, rwsp2],
   // updates - массив записей
   // combined - массив последних записей, разобранных
   //  по индексам в соответсвии с каждым входным потоком
-  (/* owner */) => (updates, combined) => ({
+  (/* owner */) => (updates) => ({
     propA: combined[0],
     propB: combined[1],
   })
+);
+
+
+stream.extended.combine([
+    stream1,
+    [stream2, { name: 'some', sync: false }],
+    [stream3, { name: 0 }],
+],
+  // updates - массив записей
+  // combined - массив последних записей, разобранных
+  //  по индексам в соответсвии с каждым входным потоком
+  
+
+  ({ $ }) => (combined, updates) => {
+    // combined - состояние с уже примененными обновлениями
+    // updates - последние примененные обновления
+    
+    // updates
+    // массив / хэш с обновлениями
+
+    // дождаться результата, и если были изменения
+    // то провеизвести reT4
+  
+    return {}; // активное состояние
+    //return $({}) //пассивное состояние
+  },
+  
+  {
+    // хэндлер не выполняется каждый раз, когда вызывается
+    // текущий combiner, вместо этого он вызывает один раз
+    // когда будет расчитано полное состояние (reT4)
+    // handler
+    handler(boxes) {
+      // boxes структура потоков (object)
+      // streamBox.value - текущее значение
+      // streamBox.src - ссылка на поток
+      // streamBox.hook - доступ к контроллеру (контроллер асинхронный)
+      // streamBox.name - имя, если доступно, или индекс
+      boxes.setup(
+        // add if not exist
+        stream1,
+        // add if not exist
+        [stream2, { on: true }],
+        // add with name if not exist
+        // setup name if exist
+        [stream2, { on: true, name: 'some' }],
+        // del at instance if exist
+        [stream2, { on: false }],
+        // del at name if exist
+        [, { name: 'some', on: false }],
+      );
+    }
+  }
+  
+  
+  // по умолчанию дистинкт по ссылке?
+  // по умолчанию дистинкт первого уровня?
+  
 );
