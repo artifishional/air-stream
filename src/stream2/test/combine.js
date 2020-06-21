@@ -5,6 +5,7 @@ import { async } from '../../utils';
 const { describe, test, expect } = globalThis;
 
 describe('combine', () => {
+  /*
   test('example', (done) => {
     const _ = async();
     const expected = [
@@ -185,6 +186,46 @@ describe('combine', () => {
       });
     setTimeout(() => queue1.next().done && done());
   });
+  */
+
+  test('extendedCombine dyn add stream', (done) => {
+    const _ = async();
+    const expected = [
+      [1, 10],
+      [2, 20],
+      // TODO: need revision
+      //  store eats the first meaning
+      [2, 20, 22],
+      [3, 30, 33],
+    ];
+    const queue1 = expected.values();
+    const src = stream
+      .fromCbFunc((cb) => {
+        cb(1);
+        _(() => cb(2));
+        _(() => cb(3));
+      })
+      .store();
+    const a = src.map((vl) => vl);
+    const b = src.map((vl) => vl * 10);
+    const c = src.map((vl) => vl * 11);
+    stream
+      .extendedCombine(
+        [a, b],
+        (vl) => vl, {
+          tuner(tuner) {
+            if (tuner.get(0).value > 1) {
+              tuner.add([c]);
+            }
+          },
+        },
+      )
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
+    setTimeout(() => queue1.next().done && done());
+  });
+
   /*
      test('empty source combiner', (done) => {
        const combined = stream.combine([]);

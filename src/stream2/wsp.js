@@ -8,6 +8,12 @@ import SyncEventManagerSingle from './sync-event-manager-single';
 
 let staticOriginWSPIDCounter = 0;
 
+const UNIQUE_MINOR_VALUE = Object.freeze({
+  /* <debug> */
+  UNIQUE_MINOR_VALUE: 'UNIQUE_MINOR_VALUE',
+  /* </debug> */
+});
+
 export default class WSP {
   /**
    * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
@@ -28,6 +34,7 @@ export default class WSP {
       staticOriginWSPIDCounter += 1;
       this.id = staticOriginWSPIDCounter;
     }
+    this.$after5FullUpdateHn = null;
     this.wsps = wsps;
     /* <debug> */
     if (creatorKey !== STATIC_CREATOR_KEY) {
@@ -58,6 +65,7 @@ export default class WSP {
     }
     /* </debug> */
     this.sncMan = this.createSyncEventMan();
+    this.$lastedMinorValue = UNIQUE_MINOR_VALUE;
   }
 
   static get STATIC_LOCAL_WSP() {
@@ -124,13 +132,69 @@ export default class WSP {
     return res;
   }
 
+  static extendedCombine(wsps, hnProJ, after5FullUpdateHn, conf = {}) {
+    const res = new this(
+      wsps,
+      conf,
+      /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
+    );
+    res.initiate((own) => {
+      const combined = new Map();
+      const proJ = hnProJ(own);
+      return (updates) => {
+        updates.forEach(({ src, value }) => combined.set(src, value));
+        if (combined.size === res.wsps.length) {
+          return proJ([...combined.values()], updates);
+        }
+        return EMPTY;
+      };
+    }, after5FullUpdateHn);
+    return res;
+  }
+
+  setup(wsps) {
+    // обновить список текущих потоков
+    this.wsps = wsps;
+    /*
+    // пересчитать список источников
+    // список источников не может меняться в синхронной версии
+    let originWSpS = null;
+    if (!wsps) {
+      originWSpS = [this];
+    } else {
+      originWSpS = [...new Set(wsps.map(({ originWSpS }) => originWSpS).flat(1))];
+    }
+    */
+    // выполнить reT4
+
+    this.subscription();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  $(data) {
+    this.$lastedMinorValue = data;
+    return data;
+  }
+
+  after5FullUpdateHn() {
+    if (this.$after5FullUpdateHn) {
+      this.$after5FullUpdateHn(this);
+    }
+  }
+
   /**
    * @param {Function|null = null} hnProJ
+   * @param {Function|null = null} after5FullUpdateHn
    */
-  initiate(hnProJ) {
+  initiate(hnProJ, after5FullUpdateHn = null) {
     if (hnProJ) {
       this.hn = hnProJ(this);
     }
+    this.$after5FullUpdateHn = after5FullUpdateHn;
+    this.subscription();
+  }
+
+  subscription() {
     if (this.wsps) {
       this.wsps.forEach((wsp) => wsp.on(this));
     }
@@ -209,6 +273,7 @@ export default class WSP {
       this.curFrameCachedRecord = [];
     }
     this.curFrameCachedRecord.push(rec);
+    this.after5FullUpdateHn();
   }
 
   /**

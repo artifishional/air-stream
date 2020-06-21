@@ -47,7 +47,7 @@ stream.with( [rwsp1, rwsp2],
 );
 
 
-stream.extended.combine([
+stream.extV1.combine([
     stream1,
     [stream2, { name: 'some', sync: false }],
     [stream3, { name: 0 }],
@@ -76,25 +76,25 @@ stream.extended.combine([
     // текущий combiner, вместо этого он вызывает один раз
     // когда будет расчитано полное состояние (reT4)
     // handler
-    handler(boxes) {
+    tuner(tuner) {
       // boxes структура потоков (object)
       // streamBox.value - текущее значение
       // streamBox.src - ссылка на поток
       // streamBox.hook - доступ к контроллеру (контроллер асинхронный)
       // streamBox.name - имя, если доступно, или индекс
-      boxes.setup(
+      tuner.setup([
         // add if not exist
         stream1,
         // add if not exist
         [stream2, { on: true }],
         // add with name if not exist
         // setup name if exist
-        [stream2, { on: true, name: 'some' }],
+        [stream2, { on: true, key: 'some' }],
         // del at instance if exist
         [stream2, { on: false }],
         // del at name if exist
-        [, { name: 'some', on: false }],
-      );
+        [, { key: 'some', on: false }],
+      ]);
     }
   }
   

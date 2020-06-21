@@ -8,6 +8,7 @@ import RedWSP from './rwsp';
 import { EMPTY } from './signals';
 import { STD_DISCONNECT_REQ } from './defs';
 import Controller from './controller';
+import WSPSchemaTuner from './wsp-chema-tuner';
 
 const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
 const EMPTY_FN = () => EMPTY_OBJECT;
@@ -23,9 +24,7 @@ const TYPES = { PIPE: 0, STORE: 1 };
 export class Stream2 {
   constructor(proJ, ctx = null) {
     this.con5ions = new Map();
-
     this.wsp = null;
-
     /* <debug> */
     this.$label = '';
     /* </debug> */
@@ -237,6 +236,13 @@ export class Stream2 {
           onrdy(WSP.combine(wsps, proJ, conf));
         }
       });
+    });
+  }
+
+  static extendedCombine(streams, proJ, { tuner = null } = {}) {
+    return new Stream2((onrdy, ctr) => {
+      new WSPSchemaTuner(this, onrdy, ctr, proJ, tuner)
+        .add(streams);
     });
   }
 

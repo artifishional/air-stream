@@ -66,7 +66,7 @@ export default class RedWSP extends WSP {
     this.hnProJReT4 = null;
   }
 
-  initiate(hnProJ) {
+  initiate(hnProJ, after5FullUpdateHn) {
     if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
       this.t4queue = [];
       this.reliable = [];
@@ -81,7 +81,13 @@ export default class RedWSP extends WSP {
       ).from(this.initialValue, RedRecord, this, this));
     }
     this.hnProJReT4 = hnProJ;
-    super.initiate(hnProJ);
+    super.initiate(hnProJ, after5FullUpdateHn);
+  }
+
+  after5FullUpdateHn() {
+    if (!this.incompleteRet4) {
+      super.after5FullUpdateHn();
+    }
   }
 
   /**
@@ -128,6 +134,7 @@ export default class RedWSP extends WSP {
       // TODO: super.next(rec); after curFrameCachedRecord resolution
       this.slaves.forEach((slv) => slv.handleR(this, rec));
     }
+    this.after5FullUpdateHn();
   }
 
   /**
@@ -158,6 +165,7 @@ export default class RedWSP extends WSP {
     this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
       this, this.state, type,
     ));
+    this.after5FullUpdateHn();
   }
 
   createRecordFrom(rec, updates) {
