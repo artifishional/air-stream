@@ -60,18 +60,22 @@ export class Stream2 {
    *  wsp (secondary) -> handleR(stream, cuR)
    *  wsp hnProJ? need wsp burn-point
    */
-  static handle(hnProJ) {
+  static handle(hnProJ = null) {
     return new Stream2((onrdy, control) => {
-      const req = hnProJ();
       const wsp = WSP.create(null, null);
-      control.tocommand(
-        ...Object.keys(req)
-          .map((key) => (request, data) => {
-            if (request === key) {
-              wsp.burn(req[key](request, data));
-            }
-          }),
-      );
+      if (hnProJ) {
+        const hn = hnProJ();
+        control.tocommand(
+          ...Object.keys(hn)
+            .map((key) => (request, data) => {
+              if (request === key) {
+                wsp.burn(hn[key](request, data));
+              }
+            }),
+        );
+      } else {
+        control.tocommand((req, data) => ({ req, data }));
+      }
       onrdy(wsp);
     });
   }
@@ -93,15 +97,14 @@ export class Stream2 {
     });
   }
 
-  controller(connection) {
-    return new Stream2(null, (e, controller) => {
-      this.connect((hook) => {
-        connection.connect((_hook) => {
-          controller.to(_hook);
-          return EMPTY_FN;
+  controller(stream) {
+    return new Stream2((onrdy, ctr) => {
+      this.connect((wsp, hook) => {
+        ctr.todisconnect(hook);
+        stream.connect((_hook) => {
+          ctr.to(_hook);
+          onrdy(wsp);
         });
-        controller.to(hook);
-        return e;
       });
     });
   }

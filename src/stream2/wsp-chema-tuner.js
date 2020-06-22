@@ -66,7 +66,7 @@ export default class WSPSchemaTuner {
           this.wsp = RedWSPSlave.extendedCombine(
             bags.map(([wsp]) => wsp),
             () => this.proJ,
-            () => this.tuner(this),
+            (wsp) => this.tuner(this, wsp.state.slice(-1)[0].value),
           );
           this.onrdy(this.wsp);
         } else {
