@@ -1,8 +1,9 @@
 import RedWSPSlave from './rwsp-slave';
 
 export default class WSPSchemaTuner {
-  constructor({ whenAllRedConnected }, onrdy, ctr, proJ, tuner) {
+  constructor({ whenAllRedConnected }, onrdy, ctr, proJ, tuner, conf) {
     this.tuner = tuner;
+    this.conf = conf;
     this.proJ = proJ;
     this.ctr = ctr;
     this.onrdy = onrdy;
@@ -67,6 +68,7 @@ export default class WSPSchemaTuner {
             bags.map(([wsp]) => wsp),
             () => this.proJ,
             (wsp) => this.tuner(this, wsp.state.slice(-1)[0].value),
+            this.conf,
           );
           this.onrdy(this.wsp);
         } else {
@@ -100,7 +102,10 @@ export default class WSPSchemaTuner {
         return own.bags[key][0];
       },
       get hook() {
-        return own.bags[key][1].hook;
+        // TODO: may be unsubscribe checks is needed
+        return (req, data) => queueMicrotask(
+          () => own.bags[key][1].hook(req, data)
+        )
       },
     };
   }

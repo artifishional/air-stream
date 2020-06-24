@@ -242,9 +242,9 @@ export default class RedWSP extends WSP {
     this.state = this.state.slice(lastRelUpdateIdx);
   }
 
-  map(proJ) {
+  map(proJ, conf) {
     return RedWSPSlave.create([this],
-      () => ([value]) => proJ(value));
+      () => ([value]) => proJ(value), conf);
   }
 
   onRecordStatusUpdate(rec, status) {

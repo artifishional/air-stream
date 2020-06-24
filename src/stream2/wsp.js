@@ -291,9 +291,10 @@ export default class WSP {
     this.next(Propagate.burn(value, token, this));
   }
 
-  map(proJ) {
-    return WSP.create([this],
-      () => ([value]) => proJ(value));
+  map(proJ, conf) {
+    return WSP.create(
+      [this], () => ([value]) => proJ(value), conf
+    );
   }
 
   filter(proJ) {

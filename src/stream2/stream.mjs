@@ -242,9 +242,9 @@ export class Stream2 {
     });
   }
 
-  static extendedCombine(streams, proJ, { tuner = null } = {}) {
+  static extendedCombine(streams, proJ, { tuner = null } = {}, conf = {}) {
     return new Stream2((onrdy, ctr) => {
-      new WSPSchemaTuner(this, onrdy, ctr, proJ, tuner)
+      new WSPSchemaTuner(this, onrdy, ctr, proJ, tuner, conf)
         .add(streams);
     });
   }
@@ -429,11 +429,11 @@ export class Stream2 {
     return this.mapF(({ value }) => proJ(value));
   }
 
-  mapF(proJ) {
+  mapF(proJ, conf) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.to(hook);
-        onrdy(wsp.map(proJ));
+        onrdy(wsp.map(proJ, conf));
       });
     });
   }
@@ -452,8 +452,8 @@ export class Stream2 {
   }
 
   /* <debug> */
-  log(proJ = (vl) => vl) {
-    return this.mapF(({ value }) => (console.log(proJ(value)), value));
+  log(proJ = (vl) => vl, conf = {}) {
+    return this.mapF(({ value }) => (console.log(proJ(value)), value), conf);
   }
   /* </debug> */
 
