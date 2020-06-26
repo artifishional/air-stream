@@ -242,9 +242,9 @@ export class Stream2 {
     });
   }
 
-  static extendedCombine(streams, proJ, { tuner = null } = {}, conf = {}) {
+  static extendedCombine(streams, proJ, { tuner = null, async = false } = {}, conf = {}) {
     return new Stream2((onrdy, ctr) => {
-      new WSPSchemaTuner(this, onrdy, ctr, proJ, tuner, conf)
+      new WSPSchemaTuner(this, onrdy, ctr, proJ, tuner, async, conf)
         .add(streams);
     });
   }
@@ -451,11 +451,13 @@ export class Stream2 {
     });
   }
 
-  /* <debug> */
   log(proJ = (vl) => vl, conf = {}) {
-    return this.mapF(({ value }) => (console.log(proJ(value)), value), conf);
+    return this.mapF(({ value }) => {
+      // eslint-disable-next-line no-console
+      console.log(proJ(value));
+      return value;
+    }, conf);
   }
-  /* </debug> */
 
   connect(con5ion = () => () => {}) {
     this.con5ions.set(con5ion, null);

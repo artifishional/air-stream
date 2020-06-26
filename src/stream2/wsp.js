@@ -5,6 +5,7 @@ import Propagate from './propagate';
 import { STATIC_CREATOR_KEY } from './defs';
 import SyncEventManager from './sync-event-manager';
 import SyncEventManagerSingle from './sync-event-manager-single';
+/* <debug> */ import Debug from './debug';/* </debug> */
 
 let staticOriginWSPIDCounter = 0;
 
@@ -14,7 +15,7 @@ const UNIQUE_MINOR_VALUE = Object.freeze({
   /* </debug> */
 });
 
-export default class WSP {
+export default class WSP extends Debug {
   /**
    * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
    * @param {*} conf
@@ -25,6 +26,7 @@ export default class WSP {
     conf = {},
     /* <debug> */ creatorKey, /* </debug> */
   ) {
+    /* <debug> */ super(); /* </debug> */
     /**
      * @type {Function}
      */
@@ -55,16 +57,16 @@ export default class WSP {
     this.lastedstoken = DEFAULT_TOKEN;
     this.curFrameCachedRecord = null;
     if (!wsps) {
-      this.originWSpS = [this];
+      this.$originWSpS = [this];
     } else {
-      this.originWSpS = [...new Set(wsps.map(({ originWSpS }) => originWSpS).flat(1))];
+      this.$originWSpS = [...new Set(wsps.map(({ originWSpS }) => originWSpS).flat(1))];
     }
     /* <debug> */
     if (this.originWSpS.some((wsp) => !(wsp instanceof WSP))) {
       throw new TypeError();
     }
     /* </debug> */
-    this.sncMan = this.createSyncEventMan();
+    this.$sncMan = null;
     this.$lastedMinorValue = UNIQUE_MINOR_VALUE;
   }
 
@@ -139,11 +141,20 @@ export default class WSP {
       /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
     );
     res.initiate((own) => {
-      const combined = new Map();
+      // To keep the order of output
+      let filled = 0;
+      const combined = new Map(own.wsps.map((wsp) => [wsp, EMPTY]));
       const proJ = hnProJ(own);
       return (updates) => {
-        updates.forEach(({ src, value }) => combined.set(src, value));
-        if (combined.size === res.wsps.length) {
+        updates.forEach(({ src, value }) => {
+          if (filled !== own.wsps.length) {
+            if (combined.get(src) === EMPTY) {
+              filled += 1;
+            }
+          }
+          combined.set(src, value);
+        });
+        if (filled === own.wsps.length) {
           return proJ([...combined.values()], updates);
         }
         return EMPTY;
@@ -152,21 +163,32 @@ export default class WSP {
     return res;
   }
 
-  setup(wsps) {
-    // обновить список текущих потоков
-    this.wsps = wsps;
-    /*
-    // пересчитать список источников
-    // список источников не может меняться в синхронной версии
-    let originWSpS = null;
-    if (!wsps) {
-      originWSpS = [this];
-    } else {
-      originWSpS = [...new Set(wsps.map(({ originWSpS }) => originWSpS).flat(1))];
+  get sncMan() {
+    if (!this.$sncMan) {
+      this.$sncMan = this.createSyncEventMan();
     }
-    */
-    // выполнить reT4
+    return this.$sncMan;
+  }
 
+  get originWSpS() {
+    if (!this.$originWSpS) {
+      this.$originWSpS = [...new Set(this.wsps.map(({ originWSpS }) => originWSpS).flat(1))];
+    }
+    return this.$originWSpS;
+  }
+
+  reconstruct() {
+    this.$originWSpS = null;
+    this.$sncMan = null;
+    this.slaves.forEach((slave) => slave.reconstruct());
+  }
+
+  setup(wsps) {
+    this.wsps = wsps;
+    if (!wsps || !wsps.length) {
+      throw new Error('Unsupported configuration');
+    }
+    this.reconstruct();
     this.subscription();
   }
 
@@ -268,7 +290,7 @@ export default class WSP {
      * получит сообщение из рассылки и из потоврителя curFrameCachedRecord
      * TODO: требуется тест подписка на узел во время рассылки
      */
-    this.slaves.forEach((slv) => slv.handleR(this, rec));
+    [...this.slaves].forEach((slv) => slv.handleR(this, rec));
     if (!this.curFrameCachedRecord) {
       this.curFrameCachedRecord = [];
     }

@@ -1,9 +1,9 @@
 export default class SyncEventManagerSingle {
-  constructor(owner) {
-    this.owner = owner;
+  constructor(own) {
+    this.own = own;
   }
 
   fill(src, cuR) {
-    this.owner.sncGrpFilledHandler([cuR]);
+    this.own.sncGrpFilledHandler([cuR]);
   }
 }

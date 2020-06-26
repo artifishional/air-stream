@@ -132,7 +132,8 @@ export default class RedWSP extends WSP {
     }
     if (!this.incompleteRet4) {
       // TODO: super.next(rec); after curFrameCachedRecord resolution
-      this.slaves.forEach((slv) => slv.handleR(this, rec));
+      // To prevent adding a subscriber while broadcasting
+      [...this.slaves].forEach((slv) => slv.handleR(this, rec));
     }
     this.after5FullUpdateHn();
   }

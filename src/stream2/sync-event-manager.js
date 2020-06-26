@@ -2,15 +2,15 @@ import SyncEventGroup from './sync-event-group';
 import Token from './token';
 
 export default class SyncEventManager {
-  constructor(owner) {
-    this.owner = owner;
-    this.sncEvtGrpSchema = new Map(owner.originWSpS.map((originWSP) => [
+  constructor(own) {
+    this.own = own;
+    this.sncEvtGrpSchema = new Map(own.originWSpS.map((originWSP) => [
       originWSP.id,
-      owner.wsps ? owner.wsps.filter(
+      own.wsps ? own.wsps.filter(
         (wsp) => wsp.originWSpS.includes(originWSP),
       ).length : 1,
     ]));
-    this.sncEvtGrpSchema.set(owner.constructor.STATIC_LOCAL_WSP.id, owner.wsps.length);
+    this.sncEvtGrpSchema.set(own.constructor.STATIC_LOCAL_WSP.id, own.wsps.length);
     /**
      * На текущий момент считается что не может существовать более одной
      * синхронизируемой группы, так как записи всегда придерживаются очереднсти
@@ -39,7 +39,7 @@ export default class SyncEventManager {
         || cuR.head.token !== Token.INITIAL_TOKEN)
       ) {
         this.sncLastEvtGrp = null;
-        this.owner.sncGrpFilledHandler(sncGrp.getUpdates());
+        this.own.sncGrpFilledHandler(sncGrp.getUpdates());
       }
     }
     if (!this.sncLastEvtGrp) {
@@ -50,7 +50,7 @@ export default class SyncEventManager {
 
   sncGrpFilledHandler(src) {
     this.sncLastEvtGrp = null;
-    this.owner.sncGrpFilledHandler(src.getUpdates());
+    this.own.sncGrpFilledHandler(src.getUpdates());
   }
 
   createGrp(headRec, originWSPID) {
