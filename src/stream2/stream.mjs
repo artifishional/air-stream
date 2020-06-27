@@ -224,20 +224,13 @@ export class Stream2 {
 
   static combine(streams, proJ = (upds) => upds, conf = {}) {
     if (!streams.length) {
-      return this.fromCbFunc((cb) => cb(proJ([])));
-    }
-    if (streams.length === 1) {
-      return streams[0].map((vl) => proJ([vl]));
+      return this.fromCbFunc((cb) => cb(proJ([]))).store();
     }
     return new Stream2((onrdy, ctr) => {
       this.whenAllRedConnected(streams, (bags) => {
         ctr.todisconnect(...bags.map(([, hook]) => hook));
         const wsps = bags.map(([wsp]) => wsp);
-        if (wsps.every((_wsp) => _wsp instanceof RedWSP)) {
-          onrdy(RedWSPSlave.combine(wsps, proJ, conf));
-        } else {
-          onrdy(WSP.combine(wsps, proJ, conf));
-        }
+        onrdy(RedWSPSlave.combine(wsps, proJ, conf));
       });
     });
   }
@@ -425,11 +418,11 @@ export class Stream2 {
     });
   }
 
-  map(proJ) {
-    return this.mapF(({ value }) => proJ(value));
+  map(proJ, conf = {}) {
+    return this.mapF(({ value }) => proJ(value), conf);
   }
 
-  mapF(proJ, conf) {
+  mapF(proJ, conf = {}) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.to(hook);

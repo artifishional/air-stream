@@ -68,7 +68,12 @@ export default class WSPSchemaTuner {
           this.wsp = RedWSPSlave.extendedCombine(
             bags.map(([wsp]) => wsp),
             () => this.proJ,
-            (wsp) => this.tuner(this, wsp.state.slice(-1)[0].value),
+            (wsp) => {
+              // To prevent infinity setup recreate
+              //  when setup sync executed
+              this.wsp = wsp;
+              this.tuner(this, wsp.state.slice(-1)[0].value);
+            },
             this.conf,
           );
           this.onrdy(this.wsp);
