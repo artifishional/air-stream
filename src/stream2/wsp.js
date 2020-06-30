@@ -1,4 +1,4 @@
-import { DEFAULT_TOKEN, EMPTY } from './signals';
+import { EMPTY } from './signals';
 import STTMP from './sync-ttmp-ctr';
 import Record from './record/record';
 import Propagate from './propagate';
@@ -15,7 +15,8 @@ const UNIQUE_MINOR_VALUE = Object.freeze({
   /* </debug> */
 });
 
-export default class WSP extends Debug {
+export default class WSP
+  /* <debug> */extends Debug/* </debug> */ {
   /**
    * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
    * @param {*} conf
@@ -26,7 +27,9 @@ export default class WSP extends Debug {
     conf = {},
     /* <debug> */ creatorKey, /* </debug> */
   ) {
-    /* <debug> */ super(); /* </debug> */
+    /* <debug> */
+    super({ type: 'wsp' });
+    /* </debug> */
     /**
      * @type {Function}
      */
@@ -54,7 +57,7 @@ export default class WSP extends Debug {
      * @property {Set<WSP>}
      */
     this.slaves = new Set();
-    this.lastedstoken = DEFAULT_TOKEN;
+    this.$lastedRec = null;
     this.curFrameCachedRecord = null;
     if (!wsps) {
       this.$originWSpS = [this];
@@ -102,36 +105,20 @@ export default class WSP extends Debug {
     this.initiate(hnProJ);
   }
 
-  cut(count) {
+  cut(count, conf) {
     return WSP.create([this], () => {
       let ct = count;
       return ([{ value }]) => {
+        if (value === EMPTY) {
+          return EMPTY;
+        }
         if (ct > 0) {
           ct -= 1;
           return EMPTY;
         }
         return value;
       };
-    });
-  }
-
-  static combine(wsps, proJ, conf = {}) {
-    const res = new this(
-      wsps,
-      conf,
-      /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
-    );
-    res.initiate(() => {
-      const combined = new Map();
-      return (updates) => {
-        updates.forEach(({ src, value }) => combined.set(src, value));
-        if (combined.size === wsps.length) {
-          return proJ([...combined.values()]);
-        }
-        return EMPTY;
-      };
-    });
-    return res;
+    }, conf);
   }
 
   static extendedCombine(wsps, hnProJ, after5FullUpdateHn, conf = {}) {
@@ -285,17 +272,29 @@ export default class WSP extends Debug {
 
   next(rec) {
     /**
-     * Сначала должна произойти рассылка сообщений
-     * так как иначе, добавленный во время рассылки уезел
-     * получит сообщение из рассылки и из потоврителя curFrameCachedRecord
-     * TODO: требуется тест подписка на узел во время рассылки
+     * Следующее не совсем верно
+     *   Сначала должна произойти рассылка сообщений
+     *   так как иначе, добавленный во время рассылки уезел
+     *   получит сообщение из рассылки и из потоврителя curFrameCachedRecord
+     *  так как узел может начать подписку уже после завершения подписки, но до того
+     *  как закончится рассылка
+     *  Здесь важным является только защита от накопления подписчиков
+     *   во время дейстующей рассылки
+     *
      */
-    [...this.slaves].forEach((slv) => slv.handleR(this, rec));
     if (!this.curFrameCachedRecord) {
       this.curFrameCachedRecord = [];
     }
     this.curFrameCachedRecord.push(rec);
+    [...this.slaves].forEach((slv) => {
+      // Если подписчик удяляется во время подписки
+      if (this.slaves.has(slv)) {
+        slv.handleR(this, rec);
+      }
+    });
     this.after5FullUpdateHn();
+    // При необходимости оптимизации можно перенять механику от
+    // Event с жестко контролируемой через idx рассылкой
   }
 
   /**
@@ -305,12 +304,21 @@ export default class WSP extends Debug {
    */
   burn(value, token = STTMP.get()) {
     /* <debug> */
-    if (token === this.lastedstoken || this.lastedstoken.sttmp >= token.sttmp) {
-      throw new Error('More than one event at a time for the current source');
+    if (this.$lastedRec) {
+      if (token === this.$lastedRec.token || this.$lastedRec.token.sttmp >= token.sttmp) {
+        throw new Error(`
+        More than one event at a time for the current source
+        current value is: ${value}
+        lasted value is: ${this.$lastedRec.value}
+      `);
+      }
     }
-    this.lastedstoken = token;
     /* </debug> */
-    this.next(Propagate.burn(value, token, this));
+    const rec = Propagate.burn(value, token, this);
+    /* <debug> */
+    this.$lastedRec = rec;
+    /* </debug> */
+    this.next(rec);
   }
 
   map(proJ, conf) {

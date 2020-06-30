@@ -11,6 +11,7 @@ import { EMPTY } from './signals';
 import getTTMP from './get-ttmp';
 import HeadRecord from './record/head-record';
 import Token from './token';
+// eslint-disable-next-line import/no-cycle
 import RedWSPSlave from './rwsp-slave';
 
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
@@ -246,6 +247,23 @@ export default class RedWSP extends WSP {
   map(proJ, conf) {
     return RedWSPSlave.create([this],
       () => ([value]) => proJ(value), conf);
+  }
+
+  distinct(equal, conf) {
+    return RedWSPSlave.create([this],
+      () => {
+        let state = EMPTY;
+        return ([{ value }]) => {
+          if (value === EMPTY) {
+            return EMPTY;
+          }
+          if (state !== EMPTY && equal(state, value)) {
+            return EMPTY;
+          }
+          state = value;
+          return state;
+        };
+      }, conf);
   }
 
   onRecordStatusUpdate(rec, status) {

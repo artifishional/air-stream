@@ -4,7 +4,7 @@ import { async } from '../../utils';
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
 
-describe('combine', () => {
+describe('constructor', () => {
   test('reconnect', (done) => {
     const _ = async();
     const expected = [

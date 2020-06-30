@@ -1,11 +1,12 @@
 import '../../polyfills';
 
- import './combine';
-// import './reducer';
+import './combine';
+import './reducer';
 // import "./map";
 // import './with';
 // import './complicated';
-// import './controller';
+import './controller';
+import './constructor';
 
 // import './rwsp';
 
@@ -21,8 +22,6 @@ import "./with";
 */
 /*
 import '../../utils';
-import './constructor';
-import './controller';
 import './simple';
 
 import "./complicated";
@@ -34,7 +33,6 @@ import "./merge";
 import "./reducer";
 import "./withlatest"; */
 /* import "./service.mjs"
-import "./combine"
 import "./first"
 /*
 import "./simple"

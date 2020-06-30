@@ -1,7 +1,12 @@
 import { STD_DISCONNECT_REQ } from './defs';
+import Debug from './debug';
 
-export default class Controller {
+export default class Controller
+  /* <debug> */extends Debug/* </debug> */ {
   constructor(src) {
+    /* <debug> */
+    super({ type: 'controller' });
+    /* </debug> */
     this.src = src;
     this.disconnected = false;
     this.$todisconnect = [];

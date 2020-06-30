@@ -230,7 +230,7 @@ export class Stream2 {
       this.whenAllRedConnected(streams, (bags) => {
         ctr.todisconnect(...bags.map(([, hook]) => hook));
         const wsps = bags.map(([wsp]) => wsp);
-        onrdy(RedWSPSlave.combine(wsps, proJ, conf));
+        onrdy(RedWSPSlave.extendedCombine(wsps, () => proJ, null, conf));
       });
     });
   }
@@ -255,9 +255,10 @@ export class Stream2 {
         Stream2.$instance(headWsp).create([headWsp], () => ([{ value }]) => {
           Stream2.whenAllRedConnected(get ? get(value) : value, (bags) => {
             ctr.to(...bags.map(([, hook]) => hook));
-            onrdy(RedWSPSlave.combine(
+            onrdy(RedWSPSlave.extendedCombine(
               bags.map(([wsp]) => wsp),
-              (combiner) => (set ? set(value, combiner) : combiner),
+              () => (combiner) => (set ? set(value, combiner) : combiner),
+              null,
               conf,
             ));
           });
@@ -266,17 +267,21 @@ export class Stream2 {
     });
   }
 
-  store() {
+  store(conf = EMPTY_OBJECT) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.to(hook);
+        if (wsp instanceof RedWSP) {
+          onrdy(wsp);
+          return;
+        }
         let init = false;
         wsp.on({
           handleR(src, cuR) {
             if (!init) {
               init = true;
               const rwsp = RedWSP.create(
-                [wsp.cut(1)], () => ([{ value }]) => value, { initialValue: cuR.value },
+                [wsp.cut(1, conf)], () => ([{ value }]) => value, { initialValue: cuR.value },
               );
               rwsp.on(LocalRedWSPRecStatusCTR);
               onrdy(rwsp);
@@ -322,11 +327,11 @@ export class Stream2 {
     return (req, data) => connections.forEach((cnct) => cnct(req, data));
   }
 
-  static fromPromise(source, project = STATIC_PROJECTS.STRAIGHT) {
-    return new Stream2(null, (e, controller) => {
-      source.then((data) => {
-        if (!controller.disconnected) {
-          e(project(data));
+  static fromPromise(source, proJ = STATIC_PROJECTS.STRAIGHT) {
+    return new Stream2((onrdy, ctr) => {
+      source.then((value) => {
+        if (!ctr.disconnected) {
+          onrdy(RedWSP.create(null, EMPTY_FN, { initialValue: proJ(value) }));
         }
       });
     });
@@ -480,25 +485,13 @@ export class Stream2 {
   }
 
   distinct(equal) {
-    return new Stream2(null, (e, controller) => {
-      let state = EMPTY_OBJECT;
-      this.connect((hook) => {
-        controller.to(hook);
-        return (data, record) => {
-          if (isKeySignal(data)) {
-            if (data === keyA) {
-              state = EMPTY_OBJECT;
-            }
-            return e(data, record);
-          }
-          if (state === EMPTY_OBJECT) {
-            state = data;
-            e(data, record);
-          } else if (!equal(state, data)) {
-            state = data;
-            e(data, record);
-          }
-        };
+    return new Stream2((onrdy, ctr) => {
+      this.connect((wsp, hook) => {
+        if (!(wsp instanceof RedWSP)) {
+          throw new Error('Unsupported mode');
+        }
+        ctr.to(hook);
+        onrdy(wsp.distinct(equal));
       });
     });
   }
