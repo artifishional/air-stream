@@ -222,13 +222,19 @@ export class Stream2 {
     });
   }
 
-  static combine(streams, proJ = (upds) => upds, conf = {}) {
+  static combine(streams, proJ = (upds) => upds, { ctrMode = 'none', ...conf } = { }) {
     if (!streams.length) {
       return this.fromCbFunc((cb) => cb(proJ([]))).store();
     }
     return new Stream2((onrdy, ctr) => {
       this.whenAllRedConnected(streams, (bags) => {
-        ctr.todisconnect(...bags.map(([, hook]) => hook));
+        if (ctrMode === 'all') {
+          ctr.to(...bags.map(([, hook]) => hook));
+        } else if (ctrMode === 'none') {
+          ctr.todisconnect(...bags.map(([, hook]) => hook));
+        } else {
+          throw new Error('Unsupported controller mode');
+        }
         const wsps = bags.map(([wsp]) => wsp);
         onrdy(RedWSPSlave.extendedCombine(wsps, () => proJ, null, conf));
       });
@@ -263,6 +269,26 @@ export class Stream2 {
             ));
           });
         }, conf);
+      });
+    });
+  }
+
+  gripFirst(getter) {
+    return new Stream2((onrdy, ctr) => {
+      this.connect((headWSP, headHook) => {
+        ctr.todisconnect(headHook);
+        let init = false;
+        headWSP.get(({ value }) => {
+          if (value !== EMPTY) {
+            if (!init) {
+              init = true;
+              getter(value).connect((wsp, hook) => {
+                ctr.to(hook);
+                onrdy(wsp);
+              });
+            }
+          }
+        });
       });
     });
   }

@@ -91,6 +91,14 @@ export default class RedWSP extends WSP {
     }
   }
 
+  get(proJ) {
+    return RedWSPSlave.create([this],
+      () => ([update]) => {
+        proJ(update);
+        return update;
+      });
+  }
+
   /**
    * Обработчик нового события от внешнего источника
   * Источники:
@@ -136,7 +144,12 @@ export default class RedWSP extends WSP {
       // To prevent adding a subscriber while broadcasting
       [...this.slaves].forEach((slv) => slv.handleR(this, rec));
     }
-    this.after5FullUpdateHn();
+    // TODO: не полное решение
+    // есть ли необходисоть дергать апдейтер до того как заврешился тач?
+    // и если нет, то как избежать пустых сообщений
+    if (rec.value !== EMPTY) {
+      this.after5FullUpdateHn();
+    }
   }
 
   /**
