@@ -123,3 +123,13 @@ export const streamEqualStrict = (done, source, data = [], options = {}) => {
     }
   });
 };
+
+export function microtask(cb) {
+  let active = true;
+  queueMicrotask(() => {
+    if (active) {
+      cb();
+    }
+  });
+  return () => { active = false; }
+}

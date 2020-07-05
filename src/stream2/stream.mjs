@@ -6,20 +6,19 @@ import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './rwsp-slave';
 import RedWSP from './rwsp';
 import { EMPTY } from './signals';
-import { STD_DISCONNECT_REQ } from './defs';
+import {
+  FROM_OWNER_STREAM,
+  STD_DISCONNECT_REQ,
+  EMPTY_FUNCTION,
+  STATIC_PROJECTS,
+  EMPTY_OBJECT,
+} from './defs';
 import Controller from './controller';
 import WSPSchemaTuner from './wsp-chema-tuner';
 
-const EMPTY_OBJECT = Object.freeze({ empty: 'empty' });
-const EMPTY_FN = () => EMPTY_OBJECT;
-const FROM_OWNER_STREAM = Object.freeze({ fromOwnerStream: 'fromOwnerStream' });
 let GLOBAL_CONNECTIONS_ID_COUNTER = 1;
-const STATIC_PROJECTS = {
-  STRAIGHT: (data) => data,
-  AIO: (...args) => args,
-};
-
 const TYPES = { PIPE: 0, STORE: 1 };
+const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue: null });
 
 export class Stream2 {
   constructor(proJ, ctx = null) {
@@ -31,6 +30,10 @@ export class Stream2 {
     this.project = proJ;
     this.ctx = ctx;
     this.type = new.target.TYPES.PIPE;
+  }
+
+  static get TYPES() {
+    return TYPES;
   }
 
   static fromNodeEvent(target, event, mapFn) {
@@ -150,14 +153,30 @@ export class Stream2 {
 
   static fromCbFunc(cb) {
     return new Stream2((onrdy, ctr) => {
-      onrdy(WSP.fromCbFunc((e) => cb(e, ctr)));
+      onrdy(RedWSP.fromCbFunc((e) => cb(e, ctr)));
     });
   }
 
   static fromFn(cb) {
     return new Stream2((onrdy) => {
-      onrdy(WSP.fromFn(cb));
+      const initialValue = cb();
+      const res = RedWSP.create(null, EMPTY_FUNCTION, { initialValue });
+      onrdy(res);
     });
+  }
+
+  static get EMPTY() {
+    if (!this.$EMPTY) {
+      this.$EMPTY = this.fromFn(() => null);
+    }
+    return this.$EMPTY;
+  }
+
+  static get EMPTY_ARR() {
+    if (!this.$EMPTY_ARR) {
+      this.$EMPTY_ARR = this.fromFn(() => []);
+    }
+    return this.$EMPTY_ARR;
   }
 
   /**
@@ -222,9 +241,47 @@ export class Stream2 {
     });
   }
 
-  static combine(streams, proJ = (upds) => upds, { ctrMode = 'none', ...conf } = { }) {
+  /**
+   * Attaches additional streams to the master but never uses them
+   * @param {Array.<Stream>} streams
+   * @returns {Stream2}
+   */
+  abuse(streams) {
     if (!streams.length) {
-      return this.fromCbFunc((cb) => cb(proJ([]))).store();
+      return this;
+    }
+    return new Stream2((onrdy, ctr) => {
+      this.whenAllRedConnected([this, ...streams] , ([master, ...bags]) => {
+        ctr.to(master.hook);
+        ctr.todisconnect(...bags.map(([, hook]) => hook));
+        onrdy(master.wsp);
+      });
+    });
+  }
+
+  /**
+   * Create connection to additional streams but never uses them
+   * @param {Array.<Stream>} streams
+   * @returns {Stream2}
+   */
+  static abuse(streams) {
+    if (!streams.length) {
+      return Stream2.EMPTY;
+    }
+    return new Stream2((onrdy, ctr) => {
+      this.whenAllRedConnected(streams, (bags) => {
+        ctr.todisconnect(...bags.map(([, hook]) => hook));
+        onrdy(STATIC_LOCAL_RED_WSP);
+      });
+    });
+  }
+
+  static combine(streams, proJ = STATIC_PROJECTS.STRAIGHT, { ctrMode = 'none', ...conf } = { }) {
+    if (!streams.length) {
+      if (proJ === STATIC_PROJECTS.STRAIGHT) {
+        return Stream2.$EMPTY_ARR;
+      }
+      return this.fromFn(() => proJ([]));
     }
     return new Stream2((onrdy, ctr) => {
       this.whenAllRedConnected(streams, (bags) => {
@@ -293,7 +350,7 @@ export class Stream2 {
     });
   }
 
-  store(conf = EMPTY_OBJECT) {
+  store() {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.to(hook);
@@ -303,11 +360,11 @@ export class Stream2 {
         }
         let init = false;
         wsp.on({
-          handleR(src, cuR) {
+          handleR() {
             if (!init) {
               init = true;
               const rwsp = RedWSP.create(
-                [wsp.cut(1, conf)], () => ([{ value }]) => value, { initialValue: cuR.value },
+                [wsp], () => ([{ value }]) => value,
               );
               rwsp.on(LocalRedWSPRecStatusCTR);
               onrdy(rwsp);
@@ -510,7 +567,7 @@ export class Stream2 {
     return (req, data) => this.hook(req, data);
   }
 
-  distinct(equal) {
+  distinct(equal = STATIC_PROJECTS.SURFACE_EQUAL) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         if (!(wsp instanceof RedWSP)) {
@@ -740,7 +797,6 @@ export class RemouteService extends Stream2 {
 }
 
 Stream2.FROM_OWNER_STREAM = FROM_OWNER_STREAM;
-Stream2.TYPES = TYPES;
 const { isKeySignal } = Stream2;
 
 const UPS = new class {

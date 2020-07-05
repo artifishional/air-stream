@@ -4,13 +4,6 @@ import Token from './token';
 export default class SyncEventManager {
   constructor(own) {
     this.own = own;
-    this.sncEvtGrpSchema = new Map(own.originWSpS.map((originWSP) => [
-      originWSP.id,
-      own.wsps ? own.wsps.filter(
-        (wsp) => wsp.originWSpS.includes(originWSP),
-      ).length : 1,
-    ]));
-    this.sncEvtGrpSchema.set(own.constructor.STATIC_LOCAL_WSP.id, own.wsps.length);
     /**
      * На текущий момент считается что не может существовать более одной
      * синхронизируемой группы, так как записи всегда придерживаются очереднсти
@@ -43,7 +36,7 @@ export default class SyncEventManager {
       }
     }
     if (!this.sncLastEvtGrp) {
-      this.sncLastEvtGrp = this.createGrp(cuR.head, cuR.head.src.id);
+      this.sncLastEvtGrp = this.createGrp(cuR);
     }
     this.sncLastEvtGrp.fill(src, cuR);
   }
@@ -53,8 +46,13 @@ export default class SyncEventManager {
     this.own.sncGrpFilledHandler(src.getUpdates());
   }
 
-  createGrp(headRec, originWSPID) {
-    const neighbourWSPCount = this.sncEvtGrpSchema.get(originWSPID);
-    return new SyncEventGroup(this, headRec, neighbourWSPCount);
+  createGrp(rec) {
+    const neighbourWSPCount = this.own.originWSPs.get(rec.head.src);
+    /* <debug> */
+    if (neighbourWSPCount === undefined) {
+      throw new Error('Unexpected model state');
+    }
+    /* </debug> */
+    return new SyncEventGroup(this, rec.head, neighbourWSPCount);
   }
 }

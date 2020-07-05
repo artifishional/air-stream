@@ -67,6 +67,16 @@ export default class RedWSP extends WSP {
     this.hnProJReT4 = null;
   }
 
+  /* <debug> */
+  get originWSPs() {
+    const res = super.originWSPs;
+    if (this.state && this.state.some((rec) => !res.has(rec.head.src))) {
+      throw new Error();
+    }
+    return res;
+  }
+  /* </debug> */
+
   initiate(hnProJ, after5FullUpdateHn) {
     if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
       this.t4queue = [];
@@ -158,6 +168,9 @@ export default class RedWSP extends WSP {
    * @param {RET4_TYPES} type
    */
   handleReT4(rwsp, reT4data, type /* , wsps = ? */) {
+    /* <debug> */
+    this.state = null;
+    /* </debug> */
     if (!this.incompleteRet4) {
       this.hn = this.hnProJReT4(this);
       this.incompleteRet4 = ReT4.create(this, type);
@@ -171,11 +184,16 @@ export default class RedWSP extends WSP {
     // данные из смежных состояний
   }
 
-  onReT4Complete(type, updates) {
+  onReT4Complete({ type }, updates) {
     this.t4queue = [];
     this.reliable = [];
     this.state = [];
     updates.forEach((rec) => this.handleR(rec.src, rec));
+    /* <debug> */
+    if (!this.state.length) {
+      throw new Error('Unexpected model state');
+    }
+    /* </debug> */
     this.incompleteRet4 = null;
     this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
       this, this.state, type,
@@ -254,7 +272,9 @@ export default class RedWSP extends WSP {
 
   updateT4status() {
     const lastRelUpdateIdx = this.findIndexOfLastRelUpdate();
-    this.state = this.state.slice(lastRelUpdateIdx);
+    if (lastRelUpdateIdx) {
+      this.state = this.state.slice(lastRelUpdateIdx);
+    }
   }
 
   map(proJ, conf) {

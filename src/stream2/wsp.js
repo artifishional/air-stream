@@ -1,19 +1,14 @@
+import { microtask } from '../utils';
 import { EMPTY } from './signals';
 import STTMP from './sync-ttmp-ctr';
 import Record from './record/record';
 import Propagate from './propagate';
-import { STATIC_CREATOR_KEY } from './defs';
+import { STATIC_CREATOR_KEY, UNIQUE_MINOR_VALUE } from './defs';
 import SyncEventManager from './sync-event-manager';
 import SyncEventManagerSingle from './sync-event-manager-single';
-/* <debug> */ import Debug from './debug';/* </debug> */
+/* <debug> */ import Debug from './debug'; /* </debug> */
 
 let staticOriginWSPIDCounter = 0;
-
-const UNIQUE_MINOR_VALUE = Object.freeze({
-  /* <debug> */
-  UNIQUE_MINOR_VALUE: 'UNIQUE_MINOR_VALUE',
-  /* </debug> */
-});
 
 export default class WSP
   /* <debug> */extends Debug/* </debug> */ {
@@ -59,16 +54,7 @@ export default class WSP
     this.slaves = new Set();
     this.$lastedRec = null;
     this.curFrameCachedRecord = null;
-    if (!wsps) {
-      this.$originWSpS = [this];
-    } else {
-      this.$originWSpS = [...new Set(wsps.map(({ originWSpS }) => originWSpS).flat(1))];
-    }
-    /* <debug> */
-    if (this.originWSpS.some((wsp) => !(wsp instanceof WSP))) {
-      throw new TypeError();
-    }
-    /* </debug> */
+    this.$originWSPs = null;
     this.$sncMan = null;
     this.$lastedMinorValue = UNIQUE_MINOR_VALUE;
   }
@@ -76,6 +62,26 @@ export default class WSP
   static get STATIC_LOCAL_WSP() {
     // eslint-disable-next-line no-use-before-define
     return STATIC_LOCAL_WSP;
+  }
+
+  reCalcOriginWSPs() {
+    if (!this.wsps) {
+      return new Map([
+        [this, 1],
+        [WSP.STATIC_LOCAL_WSP, 1],
+      ]);
+    }
+    if (this.wsps.length === 1) {
+      return this.wsps[0].originWSPs;
+    }
+    return this.wsps
+      .reduce((acc, { originWSPs }) => {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const [key] of originWSPs) {
+          acc.set(key, (acc.get(key) || 0) + 1);
+        }
+        return acc;
+      }, new Map());
   }
 
   createSyncEventMan() {
@@ -86,6 +92,11 @@ export default class WSP
   }
 
   handleR(src, cuR) {
+    /* <debug> */
+    if (!this.originWSPs.has(cuR.head.src)) {
+      throw new Error('Original source not found for current record');
+    }
+    /* </debug> */
     this.sncMan.fill(src, cuR);
   }
 
@@ -157,24 +168,42 @@ export default class WSP
     return this.$sncMan;
   }
 
-  get originWSpS() {
-    if (!this.$originWSpS) {
-      this.$originWSpS = [...new Set(this.wsps.map(({ originWSpS }) => originWSpS).flat(1))];
+  /**
+   * @returns {Map<WSP,Number>}
+   * https://jsbench.me/79kc96qzol/1
+   */
+  get originWSPs() {
+    if (!this.$originWSPs) {
+      this.$originWSPs = this.reCalcOriginWSPs();
     }
-    return this.$originWSpS;
+    return this.$originWSPs;
   }
 
   reconstruct() {
-    this.$originWSpS = null;
+    /* <debug> */
+    if (this.$sncMan && this.$sncMan.sncLastEvtGrp) {
+      throw new Error('Unexpected model state');
+    }
+    /* </debug> */
+    this.$originWSPs = null;
     this.$sncMan = null;
     this.slaves.forEach((slave) => slave.reconstruct());
   }
 
   setup(wsps) {
-    this.wsps = wsps;
+    /* <debug> */
     if (!wsps || !wsps.length) {
       throw new Error('Unsupported configuration');
     }
+    /* </debug> */
+    if (this.updateCounterMicrotask) {
+      this.updateCounterMicrotask();
+      this.updateCounterMicrotask = null;
+    }
+    this.wsps
+      .filter((wsp) => !wsps.includes(wsp))
+      .forEach((wsp) => wsp.off(this));
+    this.wsps = wsps;
     this.reconstruct();
     this.subscription();
   }
@@ -187,7 +216,12 @@ export default class WSP
 
   after5FullUpdateHn() {
     if (this.$after5FullUpdateHn) {
-      this.$after5FullUpdateHn(this);
+      if (this.updateCounterMicrotask) {
+        this.updateCounterMicrotask();
+      }
+      this.updateCounterMicrotask = microtask(() => {
+        this.$after5FullUpdateHn(this);
+      });
     }
   }
 
@@ -323,7 +357,7 @@ export default class WSP
 
   map(proJ, conf) {
     return WSP.create(
-      [this], () => ([value]) => proJ(value), conf
+      [this], () => ([value]) => proJ(value), conf,
     );
   }
 

@@ -20,8 +20,8 @@ export default class WSPSchemaTuner {
     for (let i = 0; i < cnf.length; i += 1) {
       let box = cnf[i];
       if (!Array.isArray(box)) {
-        // eslint-disable-next-line no-param-reassign
-        box = [box, { on: true, key: -1 }];
+        // eslint-disable-next-line
+        box = [box, { on: true, key: -1, src: null, hook: null }];
       }
       const idx = this.bags.findIndex(([x]) => x === box[0]);
       if (idx > -1) {
@@ -31,15 +31,12 @@ export default class WSPSchemaTuner {
           this.bags[idx][1].key = idx;
         }
         if (!box[1].on) {
-          this.bags.splice(idx);
+          this.bags.splice(idx, 1);
           isChanged = true;
         }
-      } else {
-        // eslint-disable-next-line no-lonely-if
-        if (box[1].on) {
-          this.bags.push(box);
-          isChanged = true;
-        }
+      } else if (box[1].on) {
+        this.bags.push(box);
+        isChanged = true;
       }
     }
     return isChanged;
@@ -58,13 +55,13 @@ export default class WSPSchemaTuner {
     this.whenAllRedConnected(
       this.bags.map(([stream]) => stream),
       (bags) => {
+        if (tunedVer !== this.tunedVer) { return; }
         bags.forEach(([wsp, hook], idx) => {
           this.bags[idx][1].wsp = wsp;
           this.bags[idx][1].hook = hook;
         });
-        if (tunedVer !== this.tunedVer) { return; }
-        this.ctr.link(this);
         if (!this.wsp) {
+          this.ctr.link(this);
           this.wsp = RedWSPSlave.extendedCombine(
             bags.map(([wsp]) => wsp),
             () => this.proJ,
@@ -109,9 +106,7 @@ export default class WSPSchemaTuner {
       },
       get hook() {
         // TODO: may be unsubscribe checks is needed
-        return (req, data) => queueMicrotask(
-          () => own.bags[key][1].hook(req, data),
-        );
+        return own.bags[key][1].hook;
       },
     };
   }

@@ -191,9 +191,8 @@ describe('combine', () => {
     const expected = [
       [1, 10],
       [2, 20],
-      // TODO: need revision
-      //  store eats the first meaning
       // reconstruct here and rebase
+      [1, 10, 11],
       [2, 20, 22],
       [3, 30, 33],
     ];
@@ -273,54 +272,41 @@ describe('combine', () => {
     setTimeout(() => queue1.next().done && done());
   });
 
-  /*
-     test('empty source combiner', (done) => {
-       const combined = stream.combine([]);
-       streamEqualStrict(done, combined, [ { data: [] } ]);
-     });
+  test('empty source combiner', (done) => {
+    const expected = [
+      0,
+    ];
+    const queue1 = expected.values();
+    stream
+      .combine([], ({ length }) => length)
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
+    setTimeout(() => queue1.next().done && done());
+  });
 
-       test('to many streams', (done) => {
-           const a = stream(null, function (emt) {
-               emt("a");
-               emt("b");
-               emt("c");
-               setTimeout(() => emt("d"), 10);
-           });
-           const b = stream(null, function (emt) {
-               emt("c");
-               emt("d");
-               setTimeout(() => emt("e"), 10);
-           });
-           const c = stream(null, function (emt) {
-               emt("c");
-               setTimeout(() => emt("d"), 10);
-           });
-           const d = stream(null, function (emt) {
-               emt("a");
-               emt("b");
-               emt("d");
-           });
-           streamEqualStrict(
-               done,
-               stream.combine([a, b, c, d].map(obs => obs.filter(v => v === "d"))),
-               [{data: ["d", "d", "d", "d"]}],
-           );
-       });
-
-       test('loop', (done) => {
-           const assertions = [
-               // {data: ["b1", "b", "b"]},
-               {data: ["b1", "b", "c"]},
-               {data: ["c1", "b", "c"]},
-           ];
-           const source = stream(null, function (emt) {
-               emt("a");
-               emt("b");
-               emt("c");
-           });
-           const a = source.map( evt => evt + "1");
-           const b = source.filter( evt => evt === "b");
-           streamEqualStrict(done, stream.combine([a, b, source] ), assertions);
-       });
-   */
+  test('loop', (done) => {
+    const _ = async();
+    const expected = [
+      ['a1', 'a', 'a'],
+      ['b1', 'b', 'b'],
+      ['c1', 'c', 'c'],
+    ];
+    const queue1 = expected.values();
+    const s1 = stream
+      .fromCbFunc((cb) => {
+        cb('a');
+        _(() => cb('b'));
+        _(() => cb('c'));
+      })
+      .store();
+    const a = s1.map((vl) => `${vl}1`);
+    const b = s1.distinct();
+    stream
+      .combine([a, b, s1])
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
+    setTimeout(() => queue1.next().done && done());
+  });
 });

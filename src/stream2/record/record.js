@@ -4,9 +4,6 @@ let staticOriginRecIDCounter = 0;
 
 export default class Record {
   constructor(prev, owner, value, token, head = this, src) {
-    if (!(src instanceof globalThis.WSP)) {
-      debugger;
-    }
     if (head === this) {
       staticOriginRecIDCounter += 1;
       this.id = staticOriginRecIDCounter;
@@ -37,7 +34,7 @@ export default class Record {
     /**
      * @type {RedWSP} Поток-владелец (Мастер)
      */
-    this.owner = owner; // only for owned rec head->src
+    this.owner = owner; // only for owned RedWSP rec !!! not head->src
     if (head === this) {
       this.$token = token;
     }
