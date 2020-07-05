@@ -15,15 +15,17 @@ export default class WSP
   /**
    * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
    * @param {*} conf
+   * @param {Boolean} configurable
    * @param {Object = undefined} creatorKey
    */
   constructor(
     wsps = null,
-    conf = {},
+    { configurable = false, ...conf } = { },
     /* <debug> */ creatorKey, /* </debug> */
   ) {
     /* <debug> */
     super({ type: 'wsp' });
+    this.configurable = configurable;
     /* </debug> */
     /**
      * @type {Function}
@@ -71,7 +73,13 @@ export default class WSP
         [WSP.STATIC_LOCAL_WSP, 1],
       ]);
     }
-    if (this.wsps.length === 1) {
+    // Optimization for similar slaves
+    if (
+      this.wsps.length === 1
+      && this.wsps[0].wsps
+      && this.wsps[0].wsps.length === 1
+      && !this.configurable
+    ) {
       return this.wsps[0].originWSPs;
     }
     return this.wsps
@@ -81,7 +89,7 @@ export default class WSP
           acc.set(key, (acc.get(key) || 0) + 1);
         }
         return acc;
-      }, new Map());
+      }, this.configurable ? new Map([[this, 0]]) : new Map());
   }
 
   createSyncEventMan() {
@@ -135,24 +143,24 @@ export default class WSP
   static extendedCombine(wsps, hnProJ, after5FullUpdateHn, conf = {}) {
     const res = new this(
       wsps,
-      conf,
+      { ...conf, configurable: true },
       /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
     );
     res.initiate((own) => {
       // To keep the order of output
-      let filled = 0;
+      let awaitingFilling = own.wsps.length;
       const combined = new Map(own.wsps.map((wsp) => [wsp, EMPTY]));
       const proJ = hnProJ(own);
       return (updates) => {
         updates.forEach(({ src, value }) => {
-          if (filled !== own.wsps.length) {
+          if (awaitingFilling) {
             if (combined.get(src) === EMPTY) {
-              filled += 1;
+              awaitingFilling -= 1;
             }
           }
           combined.set(src, value);
         });
-        if (filled === own.wsps.length) {
+        if (!awaitingFilling) {
           return proJ([...combined.values()], updates);
         }
         return EMPTY;
@@ -192,6 +200,11 @@ export default class WSP
 
   setup(wsps) {
     /* <debug> */
+    if (!this.configurable) {
+      throw new Error('Only configurable stream are supported for setup');
+    }
+    /* </debug> */
+    /* <debug> */
     if (!wsps || !wsps.length) {
       throw new Error('Unsupported configuration');
     }
@@ -203,9 +216,17 @@ export default class WSP
     this.wsps
       .filter((wsp) => !wsps.includes(wsp))
       .forEach((wsp) => wsp.off(this));
-    this.wsps = wsps;
+    // reconstruct по сути только для WSP узлов
+    // RED сделают это на базе reT4 reconstruct
+    // TODO: Temporary solution
+    this.updateWSPs(wsps);
+    // TODO: Temporary solution
     this.reconstruct();
     this.subscription();
+  }
+
+  updateWSPs(wsps) {
+    this.wsps = wsps;
   }
 
   // eslint-disable-next-line class-methods-use-this

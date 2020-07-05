@@ -470,8 +470,9 @@ export class Stream2 {
   /**
    * !!! Отдает все состояния, в том числе и ReT4
    * @param {Function} getter
+   * @param {*} conf
    */
-  get(getter = EMPTY_FN) {
+  get(getter = EMPTY_FUNCTION, conf = {}) {
     return new Stream2((onrdy, control) => {
       this.connect((wsp, hook) => {
         control.to(hook);
@@ -482,7 +483,7 @@ export class Stream2 {
         onrdy(Species.create([wsp], () => (updRecS) => {
           getter(updRecS[0]);
           return updRecS;
-        }));
+        }, conf));
       });
     }).connect();
   }

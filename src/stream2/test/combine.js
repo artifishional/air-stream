@@ -272,6 +272,48 @@ describe('combine', () => {
     setTimeout(() => queue1.next().done && done());
   });
 
+  test('nested extendedCombine dyn add stream', (done) => {
+    const _ = async();
+    const expected = [
+      [[1, 10], 11],
+      [[2, 20], 22],
+      // reconstruct here and rebase
+      // TODO: need revision
+      //  store eats the first meaning
+      [[1, 10, 11], 11],
+      [[2, 20, 22], 22],
+      [[3, 30, 33], 33],
+    ];
+    const queue1 = expected.values();
+    const s1 = stream
+      .fromCbFunc((cb) => {
+        cb(1);
+        _(() => cb(2));
+        _(() => cb(3));
+      })
+      .store();
+    const a = s1.map((vl) => vl);
+    const b = s1.map((vl) => vl * 10);
+    const c = s1.map((vl) => vl * 11);
+    const com1 = stream
+      .extendedCombine(
+        [a, b],
+        (vl) => vl, {
+          tuner(tuner) {
+            if (tuner.get(0).value > 1) {
+              tuner.add([c]);
+            }
+          },
+        },
+      );
+    stream
+      .combine([com1, c])
+      .get(({ value }) => {
+        expect(value).toEqual(queue1.next().value);
+      });
+    setTimeout(() => queue1.next().done && done());
+  });
+
   test('empty source combiner', (done) => {
     const expected = [
       0,

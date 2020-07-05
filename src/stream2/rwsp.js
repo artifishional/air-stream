@@ -5,8 +5,8 @@ import {
   RedRecord,
 } from './record/red-record';
 import WSP from './wsp';
-import ReT4 from './retouch';
-import { RET4_TYPES } from './retouch-types';
+import ReT4 from './retouch/retouch';
+import { RET4_TYPES } from './retouch/retouch-types';
 import { EMPTY } from './signals';
 import getTTMP from './get-ttmp';
 import HeadRecord from './record/head-record';
@@ -109,6 +109,21 @@ export default class RedWSP extends WSP {
       });
   }
 
+  setup(wsps) {
+    /* <debug> */
+    if (this.incompleteRet4) {
+      throw new Error('Unexpected model state');
+    }
+    /* </debug> */
+    super.setup(wsps);
+  }
+
+  // TODO: Temporary solution
+  updateWSPs(wsps) {
+    super.updateWSPs(wsps);
+    this.beginReT4(RET4_TYPES.ReCONSTRUCT, { origin: this, wsps });
+  }
+
   /**
    * Обработчик нового события от внешнего источника
   * Источники:
@@ -162,18 +177,24 @@ export default class RedWSP extends WSP {
     }
   }
 
+  beginReT4(type, data) {
+    // TODO: W reconstruct hn when init
+    this.hn = this.hnProJReT4(this);
+    this.incompleteRet4 = ReT4.create(this, type, data);
+  }
+
   /**
    * @param rwsp
    * @param {Array.<Record>} reT4data
    * @param {RET4_TYPES} type
+   * @param {RET4_TYPES} data abstract config
    */
-  handleReT4(rwsp, reT4data, type /* , wsps = ? */) {
+  handleReT4(rwsp, reT4data, type, data) {
     /* <debug> */
     this.state = null;
     /* </debug> */
     if (!this.incompleteRet4) {
-      this.hn = this.hnProJReT4(this);
-      this.incompleteRet4 = ReT4.create(this, type);
+      this.beginReT4(type, data);
     }
     this.incompleteRet4.fill(rwsp, reT4data);
     // не требуются дополнительные усилия за контролем над устарешвей очередью
@@ -184,7 +205,11 @@ export default class RedWSP extends WSP {
     // данные из смежных состояний
   }
 
-  onReT4Complete({ type }, updates) {
+  onReT4Complete({ type }, _, data) {
+    const updates = this.wsps
+      .map(({ state }) => state)
+      .flat()
+      .sort(({ token: { sttmp: a } }, { token: { sttmp: b } }) => a - b);
     this.t4queue = [];
     this.reliable = [];
     this.state = [];
@@ -196,7 +221,7 @@ export default class RedWSP extends WSP {
     /* </debug> */
     this.incompleteRet4 = null;
     this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
-      this, this.state, type,
+      this, this.state, type, data,
     ));
     this.after5FullUpdateHn();
   }
