@@ -414,7 +414,7 @@ export class Stream2 {
     return new Stream2((onrdy, ctr) => {
       source.then((value) => {
         if (!ctr.disconnected) {
-          onrdy(RedWSP.create(null, EMPTY_FN, { initialValue: proJ(value) }));
+          onrdy(RedWSP.create(null, EMPTY_FUNCTION, { initialValue: proJ(value) }));
         }
       });
     });
