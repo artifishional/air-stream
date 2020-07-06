@@ -14,4 +14,4 @@ export default class Token {
   }
 }
 
-Token.INITIAL_TOKEN = new Token(DEFAULT_START_TTMP);
+Token.INITIAL_TOKEN = { token: new Token(DEFAULT_START_TTMP), order: 0 };

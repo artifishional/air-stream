@@ -73,7 +73,7 @@ export class RedRecord extends Record {
      * При ошибке - создавать новый токен, но с аналогичным ttmp
      */
     if (status === RED_REC_STATUS.FAILURE) {
-      this.$token = this.token.compromised();
+      this.$token = this.token.token.compromised();
     }
     this.status = status;
     this.subscribers.forEach((rwsp) => rwsp.onRecordStatusUpdate(this, status));

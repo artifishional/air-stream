@@ -205,11 +205,21 @@ export default class RedWSP extends WSP {
     // данные из смежных состояний
   }
 
-  onReT4Complete({ type }, _, data) {
-    const updates = this.wsps
+  getUpdates() {
+    if (this.wsps.length === 1) {
+      return this.wsps[0].state;
+    }
+    return this.wsps
       .map(({ state }) => state)
       .flat()
-      .sort(({ token: { sttmp: a } }, { token: { sttmp: b } }) => a - b);
+      .sort((
+        { token: { order: x, token: { sttmp: a } } },
+        { token: { order: y, token: { sttmp: b } } },
+      ) => a - b || x - y);
+  }
+
+  onReT4Complete({ type }, _, data) {
+    const updates = this.getUpdates();
     this.t4queue = [];
     this.reliable = [];
     this.state = [];
@@ -285,7 +295,7 @@ export default class RedWSP extends WSP {
     // eslint-disable-next-line no-plusplus
     for (i = this.state.length; i--;) {
       const state = this.state[i];
-      if (state.token.sttmp < relTTMP) {
+      if (state.token.token.sttmp < relTTMP) {
         if (i === this.state.length - 1) {
           return i;
         }

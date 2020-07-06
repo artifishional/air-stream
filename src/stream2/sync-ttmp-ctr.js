@@ -4,6 +4,7 @@ const boiler = new Map();
 
 export default new class TTMPSyncCTR {
   constructor() {
+    this.order = 0;
     this.token = null;
     this.cbs = [];
   }
@@ -19,11 +20,13 @@ export default new class TTMPSyncCTR {
       ttmp = globalThis.performance.now();
       this.token = new Token(ttmp);
       queueMicrotask(() => {
+        this.order = 0;
         this.token = null;
         this.cbs.map((cb) => cb());
       });
     }
-    return this.token;
+    this.order += 1;
+    return { token: this.token, order: this.order };
   }
 
   async(cb) {

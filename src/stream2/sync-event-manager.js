@@ -14,7 +14,9 @@ export default class SyncEventManager {
 
   fill(src, cuR) {
     /* <debug> */
-    if (this.sncLastEvtGrp && cuR.head.token.sttmp < this.sncLastEvtGrp.headRec.token.sttmp) {
+    if (this.sncLastEvtGrp
+      && cuR.head.token.token.sttmp < this.sncLastEvtGrp.headRec.token.token.sttmp
+    ) {
       throw new TypeError('Unexpected sync state');
     }
     /* </debug> */
@@ -28,8 +30,8 @@ export default class SyncEventManager {
      */
     if (sncGrp) {
       if (sncGrp.headRec !== cuR.head
-        && (sncGrp.headRec.token !== Token.INITIAL_TOKEN
-        || cuR.head.token !== Token.INITIAL_TOKEN)
+        && (sncGrp.headRec.token.token !== Token.INITIAL_TOKEN.token
+        || cuR.head.token.token !== Token.INITIAL_TOKEN.token)
       ) {
         this.sncLastEvtGrp = null;
         this.own.sncGrpFilledHandler(sncGrp.getUpdates());

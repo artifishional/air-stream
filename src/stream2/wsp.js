@@ -309,7 +309,9 @@ export default class WSP
   on(slv) {
     // TODO: Записи придут одна за другой от разных handler,
     //  но одного controller
-    if (this.curFrameCachedRecord && this.curFrameCachedRecord[0].token === STTMP.get()) {
+    if (this.curFrameCachedRecord
+      && this.curFrameCachedRecord[0].token.token === STTMP.get().token
+    ) {
       this.curFrameCachedRecord.map((cuR) => slv.handleR(this, cuR));
     } else {
       this.curFrameCachedRecord = null;
@@ -360,7 +362,9 @@ export default class WSP
   burn(value, token = STTMP.get()) {
     /* <debug> */
     if (this.$lastedRec) {
-      if (token === this.$lastedRec.token || this.$lastedRec.token.sttmp >= token.sttmp) {
+      if (token.token === this.$lastedRec.token.token
+        || this.$lastedRec.token.token.sttmp >= token.token.sttmp
+      ) {
         throw new Error(`
         More than one event at a time for the current source
         current value is: ${value}
