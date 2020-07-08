@@ -187,7 +187,7 @@ export class Stream2 {
    */
   reduce(proJ, initialValue) {
     const hnProJ = (owner) => ([{ value: next }]) => proJ(
-      owner.state.slice(-1)[0].value, next,
+      owner.getLastStateValue(), next,
     );
     if ('local' in initialValue) {
       return this.reduceLocal(hnProJ, initialValue.local);

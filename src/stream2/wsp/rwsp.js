@@ -152,7 +152,7 @@ export default class RedWSP extends WSP {
   */
 
   next(rec) {
-    this.state.push(rec);
+    this.pushToState(rec);
     /* <debug> */
     this.recHistory.push(rec);
     /* </debug> */
@@ -209,8 +209,6 @@ export default class RedWSP extends WSP {
 
   onReT4Complete({ type }, _, data) {
     const updates = this.getUpdates();
-    this.t4queue = [];
-    this.reliable = [];
     this.state = [];
     updates.forEach((rec) => this.handleR(rec.src, rec));
     /* <debug> */
@@ -302,6 +300,23 @@ export default class RedWSP extends WSP {
       }
     }
     return 0;
+  }
+
+  pushToState(rec) {
+    const lastStateIDX = this.state.length - 1;
+    if (lastStateIDX > -1 && this.state[lastStateIDX].value === EMPTY) {
+      this.state[lastStateIDX] = rec;
+      return;
+    }
+    this.state.push(rec);
+  }
+
+  getLastStateValue() {
+    const lastStateIDX = this.state.length - 1;
+    if (this.state[lastStateIDX].value === EMPTY) {
+      return this.state[lastStateIDX - 1].value;
+    }
+    return this.state[lastStateIDX].value;
   }
 
   updateT4status() {

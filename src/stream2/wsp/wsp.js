@@ -245,10 +245,11 @@ export default class WSP
   }
 
   setup(wsps) {
-    if (!this.setupCTD) {
+    /*if (!this.setupCTD) {
       this.setupCTD = new AsyncTask(this.setupCTDrdy, this);
     }
-    this.setupCTD.update(wsps);
+    this.setupCTD.update(wsps);*/
+    this.setupCTDrdy(wsps);
   }
 
   updateWSPs(wsps) {
