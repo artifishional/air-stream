@@ -3,14 +3,14 @@ import {
   RED_REC_LOCALIZATION,
   RED_REC_SUBORDINATION,
   RedRecord,
-} from './record/red-record';
+} from '../record/red-record';
 import WSP from './wsp';
-import ReT4 from './retouch/retouch';
-import { RET4_TYPES } from './retouch/retouch-types';
-import { EMPTY } from './signals';
-import getTTMP from './get-ttmp';
-import HeadRecord from './record/head-record';
-import Token from './token';
+import ReT4 from '../retouch/retouch';
+import { RET4_TYPES } from '../retouch/retouch-types';
+import { EMPTY } from '../signals';
+import getTTMP from '../get-ttmp';
+import HeadRecord from '../record/head-record';
+import Token from '../token';
 // eslint-disable-next-line import/no-cycle
 import RedWSPSlave from './rwsp-slave';
 
@@ -48,33 +48,24 @@ export default class RedWSP extends WSP {
     this.redSlaves = new Set();
     this.localization = localization;
     this.subordination = subordination;
-    // если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
-    // мастер редьюсер должен получить начальное состояние извне
-    // в ином случае состояние создается на базе мастер стримов
-
-    // В первой хранится текущее (надежное) состояние
-    // Во второй очереди хранятся события в исходном виде
-    // Второая очередь является дополнением к первой
-
-    // В третьей очереди хранится результирующее состояние
-    // Причем первый элемент является бессрочным
-
-    // действия могут быть отменены в результате исключения
-    // это значит что для любого действия требуется короткое ожидание
-    this.reliable = null;
-    this.t4queue = null;
     this.state = null;
     this.hnProJReT4 = null;
+    /* <debug> */
+    this.recHistory = [];
+    /* </debug> */
+    /* <debug> */
+    this.debug.reT4SpreadInProgress = false;
+    /* </debug> */
   }
 
   /* <debug> */
-  get originWSPs() {
+  /*get originWSPs() {
     const res = super.originWSPs;
     if (this.state && this.state.some((rec) => !res.has(rec.head.src))) {
       throw new Error();
     }
     return res;
-  }
+  }*/
   /* </debug> */
 
   initiate(hnProJ, after5FullUpdateHn) {
@@ -95,6 +86,16 @@ export default class RedWSP extends WSP {
     super.initiate(hnProJ, after5FullUpdateHn);
   }
 
+  toJSON() {
+    return {
+      id: this.debug.id,
+      species: this.constructor.name,
+      configurable: this.configurable,
+      state: this.state.map((rec) => rec.toJSON()),
+      children: [...this.redSlaves].map((slave) => slave.toJSON()),
+    };
+  }
+
   after5FullUpdateHn() {
     if (!this.incompleteRet4) {
       super.after5FullUpdateHn();
@@ -109,14 +110,17 @@ export default class RedWSP extends WSP {
       });
   }
 
-  setup(wsps) {
-    /* <debug> */
+  /* <debug> */
+  setupCTDrdy(wsps) {
+    if (this.debug.reT4SpreadInProgress) {
+      throw new Error('Unexpected model state');
+    }
     if (this.incompleteRet4) {
       throw new Error('Unexpected model state');
     }
-    /* </debug> */
-    super.setup(wsps);
+    super.setupCTDrdy(wsps);
   }
+  /* </debug> */
 
   // TODO: Temporary solution
   updateWSPs(wsps) {
@@ -147,23 +151,11 @@ export default class RedWSP extends WSP {
   *    Как различать тип хранилища?
   */
 
-  handleR(src, cuR) {
-    if (cuR.value !== EMPTY) {
-      this.t4queue.push(cuR);
-    }
-    super.handleR(src, cuR);
-  }
-
   next(rec) {
-    if (rec.value !== EMPTY) {
-      if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
-        if (rec.status !== RED_REC_STATUS.PENDING) {
-          this.reliable.push(rec);
-        }
-      }
-      this.state.push(rec);
-      rec.on(this);
-    }
+    this.state.push(rec);
+    /* <debug> */
+    this.recHistory.push(rec);
+    /* </debug> */
     if (!this.incompleteRet4) {
       // TODO: super.next(rec); after curFrameCachedRecord resolution
       // To prevent adding a subscriber while broadcasting
@@ -190,9 +182,6 @@ export default class RedWSP extends WSP {
    * @param {RET4_TYPES} data abstract config
    */
   handleReT4(rwsp, reT4data, type, data) {
-    /* <debug> */
-    this.state = null;
-    /* </debug> */
     if (!this.incompleteRet4) {
       this.beginReT4(type, data);
     }
@@ -225,14 +214,25 @@ export default class RedWSP extends WSP {
     this.state = [];
     updates.forEach((rec) => this.handleR(rec.src, rec));
     /* <debug> */
+    if (this.sncMan.sncLastEvtGrp) {
+      throw new Error('Unexpected model state');
+    }
+    /* </debug> */
+    /* <debug> */
     if (!this.state.length) {
       throw new Error('Unexpected model state');
     }
     /* </debug> */
     this.incompleteRet4 = null;
+    /* <debug> */
+    this.debug.reT4SpreadInProgress = true;
+    /* </debug> */
     this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
       this, this.state, type, data,
     ));
+    /* <debug> */
+    this.debug.reT4SpreadInProgress = false;
+    /* </debug> */
     this.after5FullUpdateHn();
   }
 
@@ -291,11 +291,10 @@ export default class RedWSP extends WSP {
 
   findIndexOfLastRelUpdate() {
     const relTTMP = getTTMP() - DEFAULT_MSG_ALIVE_TIME_MS;
-    let i;
     // eslint-disable-next-line no-plusplus
-    for (i = this.state.length; i--;) {
-      const state = this.state[i];
-      if (state.token.token.sttmp < relTTMP) {
+    for (let i = this.state.length; i--;) {
+      const rec = this.state[i];
+      if (rec.token.token.sttmp < relTTMP && rec.value !== EMPTY) {
         if (i === this.state.length - 1) {
           return i;
         }

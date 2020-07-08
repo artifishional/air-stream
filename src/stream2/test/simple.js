@@ -1,5 +1,5 @@
 import { stream2 as stream } from '../stream.mjs';
-import {WSP} from "../wsp";
+import {WSP} from "../wsp/wsp";
 
 describe('one stream', () => {
     

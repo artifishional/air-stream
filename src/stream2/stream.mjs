@@ -1,10 +1,10 @@
 import getTTMP from './get-ttmp';
-import WSP from './wsp';
+import WSP from './wsp/wsp';
 import Record from './record/record';
 import { RED_REC_SUBORDINATION } from './record/red-record';
 import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
-import RedWSPSlave from './rwsp-slave';
-import RedWSP from './rwsp';
+import RedWSPSlave from './wsp/rwsp-slave';
+import RedWSP from './wsp/rwsp';
 import { EMPTY } from './signals';
 import {
   FROM_OWNER_STREAM,

@@ -40,6 +40,38 @@ export default class Record {
     }
   }
 
+  serializeValue(value = this.value, deep = 2) {
+    if (deep < 0) {
+      return value ? value.toString() : null;
+    }
+    if (value && value.toJSON) {
+      return value.toJSON();
+    }
+    if (value instanceof Node) {
+      return value.nodeName;
+    }
+    if (Array.isArray(value)) {
+      return value.map((elm) => this.serializeValue(elm, deep - 1));
+    }
+    if (typeof value === 'object') {
+      const res = {};
+      // eslint-disable-next-line
+      for (const key in value) {
+        res[key] = this.serializeValue(value[key], deep - 1);
+      }
+      return res;
+    }
+    return value;
+  }
+
+  toJSON() {
+    return {
+      value: this.serializeValue(),
+      order: this.token.order,
+      sttmp: this.token.token.sttmp,
+    };
+  }
+
   map(src, fn) {
     if (this.value === EMPTY) {
       return this;

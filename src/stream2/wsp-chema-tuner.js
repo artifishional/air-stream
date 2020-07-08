@@ -1,4 +1,4 @@
-import RedWSPSlave from './rwsp-slave';
+import RedWSPSlave from './wsp/rwsp-slave';
 
 export default class WSPSchemaTuner {
   constructor({ whenAllRedConnected }, onrdy, ctr, proJ, tuner, async, conf) {

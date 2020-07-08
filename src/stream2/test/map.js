@@ -1,5 +1,5 @@
 import { stream2 as ch } from "../../index.mjs";
-import {WSP} from "../wsp";
+import {WSP} from "../wsp/wsp";
 import {async} from "../../utils";
 
 describe('map', function () {

@@ -1,5 +1,5 @@
 import RedWSP from './rwsp';
-import { RED_REC_SUBORDINATION } from './record/red-record';
+import { RED_REC_SUBORDINATION } from '../record/red-record';
 
 export default class RedWSPSlave extends RedWSP {
   /**

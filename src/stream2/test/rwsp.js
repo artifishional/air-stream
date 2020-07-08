@@ -5,7 +5,7 @@ import {
   RED_REC_SUBORDINATION,
   RedRecord,
 } from '../record/red-record';
-import RedWSP from '../rwsp';
+import RedWSP from '../wsp/rwsp';
 import STTMP from '../sync-ttmp-ctr';
 import { prop } from '../../utils';
 

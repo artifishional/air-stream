@@ -1,12 +1,12 @@
-import { microtask } from '../utils';
-import { EMPTY } from './signals';
-import STTMP from './sync-ttmp-ctr';
-import Record from './record/record';
-import Propagate from './propagate';
-import { STATIC_CREATOR_KEY, UNIQUE_MINOR_VALUE } from './defs';
-import SyncEventManager from './sync-event-manager';
-import SyncEventManagerSingle from './sync-event-manager-single';
-/* <debug> */ import Debug from './debug'; /* </debug> */
+import { EMPTY } from '../signals';
+import STTMP from '../sync-ttmp-ctr';
+import Record from '../record/record';
+import Propagate from '../propagate';
+import { STATIC_CREATOR_KEY, UNIQUE_MINOR_VALUE } from '../defs';
+import SyncEventManager from '../sync-event-manager';
+import SyncEventManagerSingle from '../sync-event-manager-single';
+/* <debug> */ import Debug from '../debug'; /* </debug> */
+import AsyncTask from '../async-task';
 
 let staticOriginWSPIDCounter = 0;
 
@@ -25,8 +25,11 @@ export default class WSP
   ) {
     /* <debug> */
     super({ type: 'wsp' });
-    this.configurable = configurable;
     /* </debug> */
+    /* <debug> */
+    this.debug.spreadInProgress = false;
+    /* </debug> */
+    this.configurable = configurable;
     /**
      * @type {Function}
      */
@@ -59,6 +62,8 @@ export default class WSP
     this.$originWSPs = null;
     this.$sncMan = null;
     this.$lastedMinorValue = UNIQUE_MINOR_VALUE;
+    this.setupCTD = null;
+    this.after5fullUpdateCTD = null;
   }
 
   static get STATIC_LOCAL_WSP() {
@@ -66,6 +71,10 @@ export default class WSP
     return STATIC_LOCAL_WSP;
   }
 
+  /**
+   * @returns {Map<WSP,Number>}
+   * https://jsbench.me/79kc96qzol/1
+   */
   reCalcOriginWSPs() {
     if (!this.wsps) {
       return new Map([
@@ -176,10 +185,6 @@ export default class WSP
     return this.$sncMan;
   }
 
-  /**
-   * @returns {Map<WSP,Number>}
-   * https://jsbench.me/79kc96qzol/1
-   */
   get originWSPs() {
     if (!this.$originWSPs) {
       this.$originWSPs = this.reCalcOriginWSPs();
@@ -195,10 +200,22 @@ export default class WSP
     /* </debug> */
     this.$originWSPs = null;
     this.$sncMan = null;
+    /* <debug> */
+    this.debug.spreadInProgress = true;
+    /* </debug> */
     this.slaves.forEach((slave) => slave.reconstruct());
+    /* <debug> */
+    this.debug.spreadInProgress = false;
+    /* </debug> */
   }
 
-  setup(wsps) {
+  setupCTDrdy(wsps) {
+    this.setupCTD = null;
+    /* <debug> */
+    if (this.debug.spreadInProgress) {
+      throw new Error('Unexpected model state');
+    }
+    /* </debug> */
     /* <debug> */
     if (!this.configurable) {
       throw new Error('Only configurable stream are supported for setup');
@@ -209,9 +226,9 @@ export default class WSP
       throw new Error('Unsupported configuration');
     }
     /* </debug> */
-    if (this.updateCounterMicrotask) {
-      this.updateCounterMicrotask();
-      this.updateCounterMicrotask = null;
+    if (this.after5fullUpdateCTD) {
+      this.after5fullUpdateCTD.cancel();
+      this.after5fullUpdateCTD = null;
     }
     this.wsps
       .filter((wsp) => !wsps.includes(wsp))
@@ -219,10 +236,19 @@ export default class WSP
     // reconstruct по сути только для WSP узлов
     // RED сделают это на базе reT4 reconstruct
     // TODO: Temporary solution
+    this.$originWSPs = null;
+    // TODO: Temporary solution
     this.updateWSPs(wsps);
     // TODO: Temporary solution
     this.reconstruct();
     this.subscription();
+  }
+
+  setup(wsps) {
+    if (!this.setupCTD) {
+      this.setupCTD = new AsyncTask(this.setupCTDrdy, this);
+    }
+    this.setupCTD.update(wsps);
   }
 
   updateWSPs(wsps) {
@@ -235,14 +261,16 @@ export default class WSP
     return data;
   }
 
+  after5fullUpdateCTDrdy() {
+    this.after5fullUpdateCTD = null;
+    this.$after5FullUpdateHn(this);
+  }
+
   after5FullUpdateHn() {
     if (this.$after5FullUpdateHn) {
-      if (this.updateCounterMicrotask) {
-        this.updateCounterMicrotask();
+      if (!this.after5fullUpdateCTD) {
+        this.after5fullUpdateCTD = new AsyncTask(this.after5fullUpdateCTDrdy, this);
       }
-      this.updateCounterMicrotask = microtask(() => {
-        this.$after5FullUpdateHn(this);
-      });
     }
   }
 
