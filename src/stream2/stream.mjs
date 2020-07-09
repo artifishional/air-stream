@@ -112,15 +112,6 @@ export class Stream2 {
     });
   }
 
-  reduceF(state, project, init) {
-    if (state instanceof Function) {
-      init = project;
-      project = state;
-      state = FROM_OWNER_STREAM;
-    }
-    return new Reducer(this, project, state, init);
-  }
-
   /* <debug> */
   label(label) {
     this.$label = label;
@@ -198,12 +189,14 @@ export class Stream2 {
     throw new TypeError('Unsupported initial value type');
   }
 
-  reduceLocal(hnProJ, initialValue) {
-    return new Stream2((onrdy, control) => {
+  reduceLocal(hnProJ, initialValue, { rejectable = false } = {}) {
+    return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
-        control.to(hook);
+        ctr.to(hook);
         const rwsp = RedWSP.create([wsp], hnProJ, { initialValue });
-        rwsp.on(LocalRedWSPRecStatusCTR);
+        if (rejectable) {
+          rwsp.on(LocalRedWSPRecStatusCTR);
+        }
         onrdy(rwsp);
       });
     });
@@ -251,7 +244,7 @@ export class Stream2 {
       return this;
     }
     return new Stream2((onrdy, ctr) => {
-      this.whenAllRedConnected([this, ...streams] , ([master, ...bags]) => {
+      this.whenAllRedConnected([this, ...streams], ([master, ...bags]) => {
         ctr.to(master.hook);
         ctr.todisconnect(...bags.map(([, hook]) => hook));
         onrdy(master.wsp);
@@ -309,18 +302,18 @@ export class Stream2 {
     return wsp instanceof RedWSP ? RedWSPSlave : WSP;
   }
 
-  combineAllFirst(get = null, set = null, conf = {}) {
+  combineAllFirst(conf) {
     // TODO: not completed solution
     return new Stream2((onrdy, ctr) => {
       this.connect((headWsp, headHook) => {
         ctr.todisconnect(headHook);
         ctr.todisconnect(() => headWsp.kill());
         Stream2.$instance(headWsp).create([headWsp], () => ([{ value }]) => {
-          Stream2.whenAllRedConnected(get ? get(value) : value, (bags) => {
+          Stream2.whenAllRedConnected(value, (bags) => {
             ctr.to(...bags.map(([, hook]) => hook));
             onrdy(RedWSPSlave.extendedCombine(
               bags.map(([wsp]) => wsp),
-              () => (combiner) => (set ? set(value, combiner) : combiner),
+              () => (combiner) => combiner,
               null,
               conf,
             ));
@@ -366,7 +359,6 @@ export class Stream2 {
               const rwsp = RedWSP.create(
                 [wsp], () => ([{ value }]) => value,
               );
-              rwsp.on(LocalRedWSPRecStatusCTR);
               onrdy(rwsp);
             }
           },
@@ -626,37 +618,6 @@ export class Stream2 {
 
   createController() {
     return new Controller(this);
-  }
-
-  static sync(sourcestreams, equal, poject = STATIC_PROJECTS.AIO) {
-    return this
-      .combine(sourcestreams)
-      .withHandler((e, streams) => {
-        if (streams.length > 1) {
-          if (streams.every((stream) => equal(streams[0], stream))) {
-            e(poject(...streams));
-          }
-        } else if (streams.length > 0) {
-          if (equal(streams[0], streams[0])) {
-            e(poject(...streams));
-          }
-        } else {
-          e(poject());
-        }
-      });
-  }
-
-  withHandler(handler) {
-    return new Stream2(null, (e, controller) => this.connect((hook) => {
-      controller.to(hook);
-      return (evt, record) => {
-        if (Observable.keys.includes(evt)) {
-          return e(evt, record);
-        }
-        const _e = (evt, _record) => e(evt, _record || record);
-        return handler(_e, evt);
-      };
-    }));
   }
 
   withlatest(sourcestreams = [], project = STATIC_PROJECTS.AIO) {

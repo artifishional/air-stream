@@ -24,6 +24,7 @@ export default class RedWSP extends WSP {
   * @param {Boolean = false} reT4able Reinit getter when reT4
   * @param {RED_REC_LOCALIZATION} localization
   * @param {RED_REC_SUBORDINATION} subordination
+  * @param {Boolean} autoconfirm
   * @param {*} initialValue
   *   Видимо ведет себя по разному:
    *   для зависимых - не создает новое сообщение, а только предоставляет
@@ -34,6 +35,7 @@ export default class RedWSP extends WSP {
    * @param args
   */
   constructor(wsps, {
+    autoconfirm = true,
     subordination = RED_REC_SUBORDINATION.MASTER,
     localization = RED_REC_LOCALIZATION.LOCAL,
     reT4able = false,
@@ -41,6 +43,7 @@ export default class RedWSP extends WSP {
     ...args
   } = {}, /* <debug> */ creatorKey /* </debug> */) {
     super(wsps, args, /* <debug> */ creatorKey /* </debug> */);
+    this.autoconfirm = autoconfirm;
     this.reT4able = reT4able;
     this.initialValue = initialValue;
     this.incompleteRet4 = null;
@@ -240,16 +243,19 @@ export default class RedWSP extends WSP {
         return rec.from(updates, RedRecord, undefined, {
           subordination: RED_REC_SUBORDINATION.MASTER,
           localization: RED_REC_LOCALIZATION.REMOTE,
+          status: RED_REC_STATUS.PENDING,
         });
       }
       return rec.from(updates, RedRecord, undefined, {
         subordination: RED_REC_SUBORDINATION.SLAVE,
         localization: RED_REC_LOCALIZATION.REMOTE,
+        status: RED_REC_STATUS.PENDING,
       });
     }
     return rec.from(updates, RedRecord, undefined, this, {
       subordination: RED_REC_SUBORDINATION.MASTER,
       localization: RED_REC_LOCALIZATION.REMOTE,
+      status: RED_REC_STATUS.SUCCESS,
     });
   }
 
