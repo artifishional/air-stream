@@ -55,10 +55,17 @@ export class RedRecord extends Record {
   ) {
     super(prev, owner, value, token, head, src);
     this.subordination = subordination;
-    this.subscribers = new Set();
+    this.$subscribers = null;
     this.status = status;
     this.localization = localization;
     this.registered = false;
+  }
+
+  get subscribers() {
+    if (!this.$subscribers) {
+      this.$subscribers = new Set();
+    }
+    return this.$subscribers;
   }
 
   /**

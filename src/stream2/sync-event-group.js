@@ -3,21 +3,21 @@ export default class SyncEventGroup {
     this.own = own;
     this.headRec = headRec;
     this.neighbourWSPCount = neighbourWSPCount;
-    this.store = new Map();
+    this.store = [];
   }
 
   fill(src, cuR) {
-    this.store.set(src, cuR);
+    this.store.push(cuR);
     if (this.filled) {
       this.own.sncGrpFilledHandler(this);
     }
   }
 
   get filled() {
-    return this.store.size === this.neighbourWSPCount;
+    return this.neighbourWSPCount === this.store.length;
   }
 
   getUpdates() {
-    return [...this.store.values()];
+    return this.store;
   }
 }
