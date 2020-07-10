@@ -35,10 +35,6 @@ export default class WSP
      */
     this.hn = null;
     this.conf = conf;
-    if (!wsps) {
-      staticOriginWSPIDCounter += 1;
-      this.id = staticOriginWSPIDCounter;
-    }
     this.$after5FullUpdateHn = null;
     this.wsps = wsps;
     /* <debug> */
@@ -57,12 +53,18 @@ export default class WSP
      * @property {Set<WSP>}
      */
     this.slaves = new Set();
-    this.$lastedRec = null;
+    /* <debug> */
+    this.debug.$lastedRec = null;
+    /* </debug> */
     this.curFrameCachedRecord = null;
     this.$originWSPs = null;
     this.$sncMan = null;
     // this.setupCTD = null;
     this.after5fullUpdateCTD = null;
+    if (!wsps) {
+      staticOriginWSPIDCounter += 1;
+      this.id = staticOriginWSPIDCounter;
+    }
   }
 
   static get STATIC_LOCAL_WSP() {
@@ -107,13 +109,13 @@ export default class WSP
     return new SyncEventManager(this);
   }
 
-  handleR(src, cuR) {
+  handleR(cuR) {
     /* <debug> */
     if (!this.originWSPs.has(cuR.head.src)) {
       throw new Error('Original source not found for current record');
     }
     /* </debug> */
-    this.sncMan.fill(src, cuR);
+    this.sncMan.fill(cuR);
   }
 
   sncGrpFilledHandler(updates) {
@@ -334,7 +336,7 @@ export default class WSP
     if (this.curFrameCachedRecord
       && this.curFrameCachedRecord[0].token.token === STTMP.get().token
     ) {
-      this.curFrameCachedRecord.map((cuR) => slv.handleR(this, cuR));
+      this.curFrameCachedRecord.map((cuR) => slv.handleR(cuR));
     } else {
       this.curFrameCachedRecord = null;
     }
@@ -361,14 +363,16 @@ export default class WSP
      *   во время дейстующей рассылки
      *
      */
-    if (!this.curFrameCachedRecord) {
+    if (!this.curFrameCachedRecord
+      || this.curFrameCachedRecord[0].token.token !== rec.token.token
+    ) {
       this.curFrameCachedRecord = [];
     }
     this.curFrameCachedRecord.push(rec);
     [...this.slaves].forEach((slv) => {
       // Если подписчик удяляется во время подписки
       if (this.slaves.has(slv)) {
-        slv.handleR(this, rec);
+        slv.handleR(rec);
       }
     });
     this.after5FullUpdateHn();
@@ -383,21 +387,21 @@ export default class WSP
    */
   burn(value, token = STTMP.get()) {
     /* <debug> */
-    if (this.$lastedRec) {
-      if (token.token === this.$lastedRec.token.token
-        || this.$lastedRec.token.token.sttmp >= token.token.sttmp
+    if (this.debug.$lastedRec) {
+      if (token.token === this.debug.$lastedRec.token.token
+        || this.debug.$lastedRec.token.token.sttmp >= token.token.sttmp
       ) {
         throw new Error(`
         More than one event at a time for the current source
         current value is: ${value}
-        lasted value is: ${this.$lastedRec.value}
+        lasted value is: ${this.debug.$lastedRec.value}
       `);
       }
     }
     /* </debug> */
     const rec = Propagate.burn(value, token, this);
     /* <debug> */
-    this.$lastedRec = rec;
+    this.debug.$lastedRec = rec;
     /* </debug> */
     this.next(rec);
   }

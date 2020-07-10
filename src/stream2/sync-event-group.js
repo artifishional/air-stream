@@ -6,7 +6,7 @@ export default class SyncEventGroup {
     this.store = [];
   }
 
-  fill(src, cuR) {
+  fill(cuR) {
     this.store.push(cuR);
     if (this.filled) {
       this.own.sncGrpFilledHandler(this);

@@ -1,9 +1,4 @@
-import {
-  RED_REC_STATUS,
-  RED_REC_LOCALIZATION,
-  RED_REC_SUBORDINATION,
-  RedRecord,
-} from '../record/red-record';
+import { RED_REC_STATUS, RedRecord } from '../record/red-record';
 import WSP from './wsp';
 import ReT4 from '../retouch/retouch';
 import { RET4_TYPES } from '../retouch/retouch-types';
@@ -15,15 +10,42 @@ import Token from '../token';
 import RedWSPSlave from './rwsp-slave';
 
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
+const UPDATE_T4_STATUS_CTD_COUNTER = 10;
+
+/**
+ * @readonly
+ * @enum {number}
+ */
+export const RED_WSP_SUBORDINATION = {
+  MASTER: 'MASTER',
+  SLAVE: 'SLAVE',
+};
+
+/**
+ * @readonly
+ * @enum {number}
+ */
+export const RED_WSP_LOCALIZATION = {
+  LOCAL: 'LOCAL',
+  REMOTE: 'REMOTE',
+};
 
 export default class RedWSP extends WSP {
+  static get SUBORDINATION() {
+    return RED_WSP_SUBORDINATION;
+  }
+
+  static get LOCALIZATION() {
+    return RED_WSP_LOCALIZATION;
+  }
+
   /**
   * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
   * Для мастера может быть только один источник
   * null - если это головной узел
   * @param {Boolean = false} Reinit getter when reT4
-  * @param {RED_REC_LOCALIZATION} localization
-  * @param {RED_REC_SUBORDINATION} subordination
+  * @param {RED_WSP_LOCALIZATION} localization
+  * @param {RED_WSP_SUBORDINATION} subordination
   * @param {Boolean} autoconfirm
   * @param {*} initialValue
   *   Видимо ведет себя по разному:
@@ -35,9 +57,9 @@ export default class RedWSP extends WSP {
    * @param args
   */
   constructor(wsps, {
-    autoconfirm = true,
-    subordination = RED_REC_SUBORDINATION.MASTER,
-    localization = RED_REC_LOCALIZATION.LOCAL,
+    subordination = RED_WSP_SUBORDINATION.MASTER,
+    localization = RED_WSP_LOCALIZATION.LOCAL,
+    autoconfirm = localization === RED_WSP_LOCALIZATION.LOCAL,
     initialValue = EMPTY,
     ...args
   } = {}, /* <debug> */ creatorKey /* </debug> */) {
@@ -54,6 +76,7 @@ export default class RedWSP extends WSP {
     /* <debug> */
     this.debug.reT4SpreadInProgress = false;
     /* </debug> */
+    this.$updateT4statusCTD = UPDATE_T4_STATUS_CTD_COUNTER;
   }
 
   /* <debug> */
@@ -68,7 +91,7 @@ export default class RedWSP extends WSP {
 
   initiate(hnProJ, after5FullUpdateHn) {
     this.hnProJReT4 = hnProJ;
-    if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
+    if (this.subordination === RED_WSP_SUBORDINATION.MASTER) {
       this.state = [];
       this.next(new HeadRecord(
         null,
@@ -155,7 +178,7 @@ export default class RedWSP extends WSP {
     if (!this.incompleteRet4) {
       // TODO: super.next(rec); after curFrameCachedRecord resolution
       // To prevent adding a subscriber while broadcasting
-      [...this.slaves].forEach((slv) => slv.handleR(this, rec));
+      [...this.slaves].forEach((slv) => slv.handleR(rec));
     }
     // TODO: не полное решение
     // есть ли необходисоть дергать апдейтер до того как заврешился тач?
@@ -206,7 +229,7 @@ export default class RedWSP extends WSP {
   onReT4Complete({ type }, _, data) {
     const updates = this.getUpdates();
     this.state = [];
-    updates.forEach((rec) => this.handleR(rec.src, rec));
+    updates.forEach((rec) => this.handleR(rec));
     /* <debug> */
     if (this.sncMan.sncLastEvtGrp) {
       throw new Error('Unexpected model state');
@@ -231,32 +254,20 @@ export default class RedWSP extends WSP {
   }
 
   createRecordFrom(rec, updates) {
-    if (this.localization === RED_REC_LOCALIZATION.REMOTE) {
-      if (rec.localization === RED_REC_LOCALIZATION.LOCAL) {
-        return rec.from(updates, RedRecord, undefined, {
-          subordination: RED_REC_SUBORDINATION.MASTER,
-          localization: RED_REC_LOCALIZATION.REMOTE,
-          status: RED_REC_STATUS.PENDING,
-        });
-      }
-      return rec.from(updates, RedRecord, undefined, {
-        subordination: RED_REC_SUBORDINATION.SLAVE,
-        localization: RED_REC_LOCALIZATION.REMOTE,
-        status: RED_REC_STATUS.PENDING,
-      });
-    }
-    return rec.from(updates, RedRecord, undefined, this, {
-      subordination: RED_REC_SUBORDINATION.MASTER,
-      localization: RED_REC_LOCALIZATION.REMOTE,
-      status: RED_REC_STATUS.SUCCESS,
-    });
+    return rec.from(
+      updates,
+      RedRecord,
+      undefined,
+      this,
+      this.autoconfirm ? RED_REC_STATUS.SUCCESS : RED_REC_STATUS.PENDING,
+    );
   }
 
   /**
    * @param {RedWSPSlave|RedWSP|WSP} slv
    */
   off(slv) {
-    if (slv.subordination === RED_REC_SUBORDINATION.SLAVE) {
+    if (slv.subordination === RED_WSP_SUBORDINATION.SLAVE) {
       this.redSlaves.delete(slv);
     }
     super.off(slv);
@@ -274,7 +285,7 @@ export default class RedWSP extends WSP {
     /**
      * TODO: may be duplicate users
      */
-    if (slv.subordination === RED_REC_SUBORDINATION.SLAVE) {
+    if (slv.subordination === RED_WSP_SUBORDINATION.SLAVE) {
       this.updateT4status();
       slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
       this.redSlaves.add(slv);
@@ -308,6 +319,15 @@ export default class RedWSP extends WSP {
       return;
     }
     this.state.push(rec);
+    this.updateT4statusCTD();
+  }
+
+  updateT4statusCTD() {
+    this.$updateT4statusCTD -= 1;
+    if (!this.$updateT4statusCTD) {
+      this.$updateT4statusCTD = UPDATE_T4_STATUS_CTD_COUNTER;
+      this.updateT4status();
+    }
   }
 
   getLastStateValue() {

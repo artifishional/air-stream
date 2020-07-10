@@ -3,7 +3,7 @@ export default class SyncEventManagerSingle {
     this.own = own;
   }
 
-  fill(src, cuR) {
+  fill(cuR) {
     this.own.sncGrpFilledHandler([cuR]);
   }
 }

@@ -1,5 +1,4 @@
 import RedWSP from './rwsp';
-import { RED_REC_SUBORDINATION } from '../record/red-record';
 
 export default class RedWSPSlave extends RedWSP {
   /**
@@ -16,7 +15,7 @@ export default class RedWSPSlave extends RedWSP {
   ) {
     super(
       wsps,
-      { subordination: RED_REC_SUBORDINATION.SLAVE, reT4able, ...args },
+      { subordination: new.target.SUBORDINATION.SLAVE, reT4able, ...args },
       /* <debug> */ creatorKey, /* </debug> */
     );
   }

@@ -1,14 +1,30 @@
 import { EMPTY } from '../signals';
+import Debug from '../debug';
 
 let staticOriginRecIDCounter = 0;
 
-export default class Record {
-  constructor(prev, owner, value, token, head = this, src) {
-    if (head === this) {
+export default class Record
+  /* <debug> */extends Debug/* </debug> */ {
+  constructor(from, owner, value, token, head, src) {
+    /* <debug> */
+    super({ type: 'record' });
+    /* </debug> */
+    if (!head) {
       staticOriginRecIDCounter += 1;
       this.id = staticOriginRecIDCounter;
+      this.$token = token;
+      this.head = this;
+    } else {
+      /**
+       * Ссылка на головную запись
+       * Головная запись сохраняется, даже для редьюсеров
+       * @type {Record}
+       */
+      this.head = head;
     }
-    this.prev = prev;
+    /* <debug> */
+    this.debug.from = from;
+    /* </debug> */
     /**
      * Ссылка на поток-создатель
      */
@@ -19,25 +35,16 @@ export default class Record {
       throw new TypeError('owner must be a WSP');
     }
     /* </debug> */
-    /**
-     * Ссылка на головную запись
-     * Головная запись сохраняется, даже для редьюсеров
-     * @type {Record}
-     */
-    this.head = head;
-    /**
-     * @type {Record}
-     * @deprecated
-     */
-    this.origin = head;
     this.value = value;
     /**
      * @type {RedWSP} Поток-владелец (Мастер)
      */
     this.owner = owner; // only for owned RedWSP rec !!! not head->src
-    if (head === this) {
-      this.$token = token;
-    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  get origin() {
+    throw new Error('Deprecated property');
   }
 
   serializeValue(value = this.value, deep = 2) {
@@ -47,6 +54,7 @@ export default class Record {
     if (value && value.toJSON) {
       return value.toJSON();
     }
+    // eslint-disable-next-line no-undef
     if (value instanceof Node) {
       return value.nodeName;
     }

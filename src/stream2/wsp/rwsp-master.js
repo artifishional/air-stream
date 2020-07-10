@@ -1,11 +1,10 @@
 import RedWSP from './rwsp';
 import { EMPTY } from '../signals';
-import { RED_REC_STATUS, RED_REC_SUBORDINATION } from '../record/red-record';
-import {RET4_TYPES} from "air-stream/src/stream2/retouch/retouch-types";
+import { RET4_TYPES } from '../retouch/retouch-types';
 
 export default class RedWSPMaster extends RedWSP {
   constructor(wsps) {
-    super(wsps, { subordination: RED_REC_SUBORDINATION.MASTER });
+    super(wsps, { subordination: new.target.RED_WSP_SUBORDINATION.MASTER });
     // если среди стримов есть хотябы один контроллер - то это мастер редьюсер,
     // мастер редьюсер должен получить начальное состояние извне
     // в ином случае состояние создается на базе мастер стримов
@@ -24,11 +23,11 @@ export default class RedWSPMaster extends RedWSP {
     this.initialValue = initialValue;
   }
 
-  handleR(src, cuR) {
+  handleR(cuR) {
     if (cuR.value !== EMPTY) {
       this.t4queue.push(cuR);
     }
-    super.handleR(src, cuR);
+    super.handleR(cuR);
   }
 
   onReT4Complete(src, _, data) {
@@ -39,7 +38,7 @@ export default class RedWSPMaster extends RedWSP {
 
   next(rec) {
     if (rec.value !== EMPTY) {
-      if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
+      if (this.subordination === RED_WSP_SUBORDINATION.MASTER) {
         if (rec.status !== RED_REC_STATUS.PENDING) {
           this.reliable.push(rec);
         }
@@ -53,7 +52,7 @@ export default class RedWSPMaster extends RedWSP {
     if (!this.incompleteRet4) {
       // TODO: super.next(rec); after curFrameCachedRecord resolution
       // To prevent adding a subscriber while broadcasting
-      [...this.slaves].forEach((slv) => slv.handleR(this, rec));
+      [...this.slaves].forEach((slv) => slv.handleR(rec));
     }
     // TODO: не полное решение
     // есть ли необходисоть дергать апдейтер до того как заврешился тач?

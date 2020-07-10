@@ -1,10 +1,9 @@
 import getTTMP from './get-ttmp';
 import WSP from './wsp/wsp';
 import Record from './record/record';
-import { RED_REC_SUBORDINATION } from './record/red-record';
 import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './wsp/rwsp-slave';
-import RedWSP from './wsp/rwsp';
+import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp';
 import { EMPTY } from './signals';
 import {
   FROM_OWNER_STREAM,
@@ -60,7 +59,7 @@ export class Stream2 {
   /**
    * TODO:
    *  wsp (primary) -> burn(value, token)
-   *  wsp (secondary) -> handleR(stream, cuR)
+   *  wsp (secondary) -> handleR(cuR)
    *  wsp hnProJ? need wsp burn-point
    */
   static handle(hnProJ = null) {
@@ -214,7 +213,7 @@ export class Stream2 {
         ctr.to(hook);
         let rwsp = null;
         wspR.on({
-          handleR(src, rec) {
+          handleR(rec) {
             if (rec.value !== EMPTY) {
               if (!rwsp) {
                 rwsp = RedWSP.create([wsp], hnProJ, { initialValue: rec.value });
@@ -416,7 +415,7 @@ export class Stream2 {
     // eslint-disable-next-line no-param-reassign
     /* <debug> */ args = { operator: { name: 'with' }, ...args }; /* </debug> */
     /* <debug> */
-    if (streams.length !== 1 && subordination === RED_REC_SUBORDINATION.MASTER) {
+    if (streams.length !== 1 && subordination === RED_WSP_SUBORDINATION.MASTER) {
       throw new TypeError(
         'Unsupported configuration type. Master WSP can have no more than one source',
       );
@@ -434,7 +433,7 @@ export class Stream2 {
       }
     } */
     if (subordination === null) {
-      calculableConfig.subordination = RED_REC_SUBORDINATION.SLAVE;
+      calculableConfig.subordination = RED_WSP_SUBORDINATION.SLAVE;
     }
     return new Stream2((onrdy/* , ctr */) => {
       let notConnectedCounter = streams.length;

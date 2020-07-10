@@ -10,25 +10,11 @@ export const RED_REC_STATUS = {
   SUCCESS: 'SUCCESS',
 };
 
-/**
- * @readonly
- * @enum {number}
- */
-export const RED_REC_SUBORDINATION = {
-  MASTER: 'MASTER',
-  SLAVE: 'SLAVE',
-};
-
-/**
- * @readonly
- * @enum {number}
- */
-export const RED_REC_LOCALIZATION = {
-  LOCAL: 'LOCAL',
-  REMOTE: 'REMOTE',
-};
-
 export class RedRecord extends Record {
+  static get STATUS() {
+    return RED_REC_STATUS;
+  }
+
   /**
    * @param {WSP} src Source wsp
    * @param {WSP} owner Owner stream
@@ -37,8 +23,6 @@ export class RedRecord extends Record {
    * @param {Record} head Link on head wsp
    * @param {Record} prev
    * @param {RED_REC_STATUS} status
-   * @param {RED_REC_SUBORDINATION} subordination
-   * @param {RED_REC_LOCALIZATION} localization
    */
   constructor(
     prev,
@@ -47,17 +31,11 @@ export class RedRecord extends Record {
     token,
     head,
     src,
-    {
-      subordination = RED_REC_SUBORDINATION.MASTER,
-      status = RED_REC_STATUS.PENDING,
-      localization = RED_REC_LOCALIZATION.LOCAL,
-    } = {},
+    status,
   ) {
     super(prev, owner, value, token, head, src);
-    this.subordination = subordination;
     this.$subscribers = null;
     this.status = status;
-    this.localization = localization;
     this.registered = false;
   }
 
@@ -92,17 +70,5 @@ export class RedRecord extends Record {
 
   off(subscriber) {
     this.subscribers.delete(subscriber);
-  }
-
-  static get STATUS() {
-    return RED_REC_STATUS;
-  }
-
-  static get SUBORDINATION() {
-    return RED_REC_SUBORDINATION;
-  }
-
-  static get LOCALIZATION() {
-    return RED_REC_LOCALIZATION;
   }
 }

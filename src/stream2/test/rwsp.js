@@ -1,11 +1,9 @@
 import Record from '../record/record';
 import {
-  RED_REC_LOCALIZATION,
   RED_REC_STATUS,
-  RED_REC_SUBORDINATION,
   RedRecord,
 } from '../record/red-record';
-import RedWSP from '../wsp/rwsp';
+import RedWSP, { RED_WSP_LOCALIZATION } from '../wsp/rwsp';
 import STTMP from '../sync-ttmp-ctr';
 import { prop } from '../../utils';
 
@@ -21,17 +19,13 @@ describe('RedWSP', () => {
     rwsp.open([
       new Record(null, rwsp, 25, STTMP.get(3)),
     ]);
-    rwsp.handleR(null, new RedRecord(
+    rwsp.handleR(new RedRecord(
       null,
       rwsp,
       12,
       STTMP.get(4),
       undefined,
-      {
-        subordination: RED_REC_SUBORDINATION.MASTER,
-        status: RED_REC_STATUS.SUCCESS,
-        localization: RED_REC_LOCALIZATION.REMOTE,
-      },
+      RED_REC_STATUS.SUCCESS,
     ));
     expect(rwsp.state.slice(-2).map(prop('value'))).toEqual([25, 37]);
   });
@@ -44,17 +38,13 @@ describe('RedWSP', () => {
     rwsp.open([
       new Record(null, rwsp, 25, STTMP.get(3)),
     ]);
-    rwsp.handleR(null, new RedRecord(
+    rwsp.handleR(new RedRecord(
       null,
       rwsp,
       12,
       STTMP.get(4),
       undefined,
-      {
-        subordination: RED_REC_SUBORDINATION.MASTER,
-        status: RED_REC_STATUS.PENDING,
-        localization: RED_REC_LOCALIZATION.REMOTE,
-      },
+      RED_REC_STATUS.PENDING,
     ));
     expect(rwsp.state.slice(-2).map(prop('value'))).toEqual([25, 37]);
   });
@@ -73,13 +63,9 @@ describe('RedWSP', () => {
       12,
       STTMP.get(4),
       undefined,
-      {
-        subordination: RED_REC_SUBORDINATION.MASTER,
-        status: RED_REC_STATUS.PENDING,
-        localization: RED_REC_LOCALIZATION.REMOTE,
-      },
+      RED_REC_STATUS.PENDING,
     );
-    rwsp.handleR(null, aeR);
+    rwsp.handleR(aeR);
     aeR.onRecordStatusUpdate(aeR, RED_REC_STATUS.FAILURE);
     rwsp.onRecordStatusUpdate(aeR, RED_REC_STATUS.FAILURE);
     expect(rwsp.state.slice(-1).map(prop('value'))).toEqual([25]);
@@ -93,17 +79,13 @@ describe('RedWSP', () => {
     rwsp.open([
       new Record(null, rwsp, 25, STTMP.get(3)),
     ]);
-    rwsp.handleR(null, new RedRecord(
+    rwsp.handleR(new RedRecord(
       null,
       rwsp,
       2,
       STTMP.get(1),
       undefined,
-      {
-        subordination: RED_REC_SUBORDINATION.MASTER,
-        status: RED_REC_STATUS.PENDING,
-        localization: RED_REC_LOCALIZATION.REMOTE,
-      },
+      RED_REC_STATUS.PENDING,
     ));
     const aeR = new RedRecord(
       null,
@@ -111,24 +93,16 @@ describe('RedWSP', () => {
       1,
       STTMP.get(2),
       undefined,
-      {
-        subordination: RED_REC_SUBORDINATION.MASTER,
-        status: RED_REC_STATUS.PENDING,
-        localization: RED_REC_LOCALIZATION.REMOTE,
-      },
+      RED_REC_STATUS.PENDING,
     );
-    rwsp.handleR(null, aeR);
-    rwsp.handleR(null, new RedRecord(
+    rwsp.handleR(aeR);
+    rwsp.handleR(new RedRecord(
       null,
       rwsp,
       -3,
       STTMP.get(3),
       undefined,
-      {
-        subordination: RED_REC_SUBORDINATION.MASTER,
-        status: RED_REC_STATUS.PENDING,
-        localization: RED_REC_LOCALIZATION.REMOTE,
-      },
+      RED_REC_STATUS.PENDING,
     ));
     aeR.onRecordStatusUpdate(aeR, RED_REC_STATUS.FAILURE);
     rwsp.onRecordStatusUpdate(aeR, RED_REC_STATUS.FAILURE);
@@ -139,26 +113,22 @@ describe('RedWSP', () => {
     const rwsp = new RedWSP(
       null,
       () => (count, add) => count + add,
-      { localization: RED_REC_LOCALIZATION.REMOTE },
+      { localization: RED_WSP_LOCALIZATION.REMOTE },
     );
     rwsp.handleRt4(rwsp, [
       new Record(null, rwsp, 25, STTMP.get(1)),
     ]);
     const rwsp2 = RedWSP.with([rwsp], () => (count) => count);
-    rwsp.handleR(null, new RedRecord(
+    rwsp.handleR(new RedRecord(
       null,
       rwsp2,
       2,
       STTMP.get(2),
       undefined,
-      {
-        subordination: RED_REC_SUBORDINATION.MASTER,
-        status: RED_REC_STATUS.PENDING,
-        localization: RED_REC_LOCALIZATION.LOCAL,
-      },
+      RED_REC_STATUS.PENDING,
     ));
     expect(rwsp2.state.slice(-1).map(prop('localization')))
-      .toEqual([RED_REC_LOCALIZATION.REMOTE]);
+      .toEqual([RED_WSP_LOCALIZATION.REMOTE]);
     expect(rwsp.state.slice(-2).map(prop('value'))).toEqual([25, 27]);
   });
 });

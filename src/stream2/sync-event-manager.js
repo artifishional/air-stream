@@ -12,7 +12,7 @@ export default class SyncEventManager {
     this.sncLastEvtGrp = null;
   }
 
-  fill(src, cuR) {
+  fill(cuR) {
     /* <debug> */
     if (this.sncLastEvtGrp
       && cuR.head.token.token.sttmp < this.sncLastEvtGrp.headRec.token.token.sttmp
@@ -40,7 +40,7 @@ export default class SyncEventManager {
     if (!this.sncLastEvtGrp) {
       this.sncLastEvtGrp = this.createGrp(cuR);
     }
-    this.sncLastEvtGrp.fill(src, cuR);
+    this.sncLastEvtGrp.fill(cuR);
   }
 
   sncGrpFilledHandler(src) {
