@@ -21,7 +21,7 @@ export default class RedWSP extends WSP {
   * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
   * Для мастера может быть только один источник
   * null - если это головной узел
-  * @param {Boolean = false} reT4able Reinit getter when reT4
+  * @param {Boolean = false} Reinit getter when reT4
   * @param {RED_REC_LOCALIZATION} localization
   * @param {RED_REC_SUBORDINATION} subordination
   * @param {Boolean} autoconfirm
@@ -38,13 +38,11 @@ export default class RedWSP extends WSP {
     autoconfirm = true,
     subordination = RED_REC_SUBORDINATION.MASTER,
     localization = RED_REC_LOCALIZATION.LOCAL,
-    reT4able = false,
     initialValue = EMPTY,
     ...args
   } = {}, /* <debug> */ creatorKey /* </debug> */) {
     super(wsps, args, /* <debug> */ creatorKey /* </debug> */);
     this.autoconfirm = autoconfirm;
-    this.reT4able = reT4able;
     this.initialValue = initialValue;
     this.incompleteRet4 = null;
     // Если происходит изменение в состоянии то вызываются только реды
@@ -54,27 +52,23 @@ export default class RedWSP extends WSP {
     this.state = null;
     this.hnProJReT4 = null;
     /* <debug> */
-    this.recHistory = [];
-    /* </debug> */
-    /* <debug> */
     this.debug.reT4SpreadInProgress = false;
     /* </debug> */
   }
 
   /* <debug> */
-  /*get originWSPs() {
+  /* get originWSPs() {
     const res = super.originWSPs;
     if (this.state && this.state.some((rec) => !res.has(rec.head.src))) {
       throw new Error();
     }
     return res;
-  }*/
+  } */
   /* </debug> */
 
   initiate(hnProJ, after5FullUpdateHn) {
+    this.hnProJReT4 = hnProJ;
     if (this.subordination === RED_REC_SUBORDINATION.MASTER) {
-      this.t4queue = [];
-      this.reliable = [];
       this.state = [];
       this.next(new HeadRecord(
         null,
@@ -84,9 +78,11 @@ export default class RedWSP extends WSP {
         undefined,
         this.constructor.STATIC_LOCAL_WSP,
       ).from(this.initialValue, RedRecord, this, this));
+      super.initiate(hnProJ, after5FullUpdateHn);
+    } else {
+      // to prevent W initiate hn
+      super.initiate(null, after5FullUpdateHn);
     }
-    this.hnProJReT4 = hnProJ;
-    super.initiate(hnProJ, after5FullUpdateHn);
   }
 
   toJSON() {
@@ -156,9 +152,6 @@ export default class RedWSP extends WSP {
 
   next(rec) {
     this.pushToState(rec);
-    /* <debug> */
-    this.recHistory.push(rec);
-    /* </debug> */
     if (!this.incompleteRet4) {
       // TODO: super.next(rec); after curFrameCachedRecord resolution
       // To prevent adding a subscriber while broadcasting
@@ -352,25 +345,5 @@ export default class RedWSP extends WSP {
           return state;
         };
       }, conf);
-  }
-
-  onRecordStatusUpdate(rec, status) {
-    const indexOf = this.t4queue.indexOf(rec);
-    this.t4queue.splice(indexOf, 1);
-    if (status === RED_REC_STATUS.SUCCESS) {
-      if (indexOf === 0) {
-        this.reliable.push(this.state[this.reliable.length]);
-      }
-    } else if (status === RED_REC_STATUS.FAILURE) {
-      this.state.splice(this.reliable.length, Infinity);
-      this.t4queue.reduce((acc, _rec) => {
-        const res = this.createRecordFrom(
-          _rec, this.hn(acc.value, _rec.value), this,
-        );
-        this.state.push(res);
-        return res;
-      }, this.reliable.slice(-1)[0]);
-      this.redSlaves.forEach((slv) => slv.handleReT4(this, this.state, RET4_TYPES.ABORT));
-    }
   }
 }

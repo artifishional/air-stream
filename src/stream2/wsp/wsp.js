@@ -61,8 +61,7 @@ export default class WSP
     this.curFrameCachedRecord = null;
     this.$originWSPs = null;
     this.$sncMan = null;
-    this.$lastedMinorValue = UNIQUE_MINOR_VALUE;
-    this.setupCTD = null;
+    // this.setupCTD = null;
     this.after5fullUpdateCTD = null;
   }
 
@@ -210,7 +209,7 @@ export default class WSP
   }
 
   setupCTDrdy(wsps) {
-    this.setupCTD = null;
+    // this.setupCTD = null;
     /* <debug> */
     if (this.debug.spreadInProgress) {
       throw new Error('Unexpected model state');
@@ -245,21 +244,15 @@ export default class WSP
   }
 
   setup(wsps) {
-    /*if (!this.setupCTD) {
+    /* if (!this.setupCTD) {
       this.setupCTD = new AsyncTask(this.setupCTDrdy, this);
     }
-    this.setupCTD.update(wsps);*/
+    this.setupCTD.update(wsps); */
     this.setupCTDrdy(wsps);
   }
 
   updateWSPs(wsps) {
     this.wsps = wsps;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  $(data) {
-    this.$lastedMinorValue = data;
-    return data;
   }
 
   after5fullUpdateCTDrdy() {

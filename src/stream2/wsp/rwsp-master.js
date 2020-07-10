@@ -1,6 +1,7 @@
 import RedWSP from './rwsp';
 import { EMPTY } from '../signals';
 import { RED_REC_STATUS, RED_REC_SUBORDINATION } from '../record/red-record';
+import {RET4_TYPES} from "air-stream/src/stream2/retouch/retouch-types";
 
 export default class RedWSPMaster extends RedWSP {
   constructor(wsps) {
@@ -59,6 +60,26 @@ export default class RedWSPMaster extends RedWSP {
     // и если нет, то как избежать пустых сообщений
     if (rec.value !== EMPTY) {
       this.after5FullUpdateHn();
+    }
+  }
+
+  onRecordStatusUpdate(rec, status) {
+    const indexOf = this.t4queue.indexOf(rec);
+    this.t4queue.splice(indexOf, 1);
+    if (status === RED_REC_STATUS.SUCCESS) {
+      if (indexOf === 0) {
+        this.reliable.push(this.state[this.reliable.length]);
+      }
+    } else if (status === RED_REC_STATUS.FAILURE) {
+      this.state.splice(this.reliable.length, Infinity);
+      this.t4queue.reduce((acc, _rec) => {
+        const res = this.createRecordFrom(
+          _rec, this.hn(acc.value, _rec.value), this,
+        );
+        this.state.push(res);
+        return res;
+      }, this.reliable.slice(-1)[0]);
+      this.redSlaves.forEach((slv) => slv.handleReT4(this, this.state, RET4_TYPES.ABORT));
     }
   }
 }

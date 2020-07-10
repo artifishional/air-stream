@@ -1,28 +1,44 @@
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
+import { EMPTY_FUNCTION } from '../defs';
+import RedWSPSlave from '../wsp/rwsp-slave';
+import RedWSP from '../wsp/rwsp';
 
-// eslint-disable-next-line no-undef
+// eslint-disable-next-line
 const { describe, test, expect } = globalThis;
 
 describe('constructor', () => {
-  test('reconnect', (done) => {
+  test('reconnect', () => {
+    // eslint-disable-next-line no-undef
+    const proJ = jest.fn();
     const _ = async();
-    const expected = [
-      1,
-      2,
-    ];
-    const queue1 = expected.values();
     const s1 = stream
       .fromCbFunc((cb) => {
         cb(1);
         _(() => cb(2));
       });
     s1
-      .get(({ value }) => {
-        expect(value).toEqual(queue1.next().value);
-      });
+      .get(({ value }) => proJ(value));
     _(() => setTimeout(() => {
-      s1.connect(() => queue1.next().done && done());
+      expect(proJ.mock.calls).toEqual([
+        [1],
+        [2],
+      ]);
     }));
+  });
+
+  test('master does not recreate a hnProJ on init', () => {
+    // eslint-disable-next-line no-undef
+    const hnProJ = jest.fn(() => EMPTY_FUNCTION);
+    RedWSP.create(null, hnProJ, { initialValue: 0 });
+    expect(hnProJ).toHaveBeenCalledTimes(1);
+  });
+
+  test('slave does not recreate a hnProJ on init', () => {
+    // eslint-disable-next-line no-undef
+    const hnProJ = jest.fn(() => EMPTY_FUNCTION);
+    const rwsp = RedWSP.create(null, () => EMPTY_FUNCTION, { initialValue: 0 });
+    RedWSPSlave.create([rwsp], hnProJ);
+    expect(hnProJ).toHaveBeenCalledTimes(1);
   });
 });

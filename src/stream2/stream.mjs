@@ -494,7 +494,7 @@ export class Stream2 {
             transform(updates);
             return updates;
           };
-        }, { reT4able: true }));
+        }));
       });
     });
   }
