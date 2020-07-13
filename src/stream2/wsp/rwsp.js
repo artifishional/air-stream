@@ -226,9 +226,11 @@ export default class RedWSP extends WSP {
       ) => a - b || x - y);
   }
 
-  onReT4Complete({ type }, _, data) {
+  onReT4Complete({ type, data, tokenWith }) {
     const updates = this.getUpdates();
-    this.state = [];
+    this.state = tokenWith
+      ? this.state.filter(({ token }) => Token.comp(token, tokenWith) < 0)
+      : [];
     updates.forEach((rec) => this.handleR(rec));
     /* <debug> */
     if (this.sncMan.sncLastEvtGrp) {

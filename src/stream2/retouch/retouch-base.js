@@ -3,7 +3,8 @@ import { microtask } from '../../utils';
 /* </debug> */
 
 export default class ReT4Base {
-  constructor(owner, type, data = null) {
+  constructor(owner, type, data = null, tokenWith = null) {
+    this.tokenWith = tokenWith;
     this.data = data;
     this.type = type;
     this.owner = owner;
@@ -21,10 +22,10 @@ export default class ReT4Base {
     }
   }
 
-  complete(updates) {
+  complete() {
     /* <debug> */
     this.reT4completeCTD();
     /* </debug> */
-    this.owner.onReT4Complete(this, updates, this.data);
+    this.owner.onReT4Complete(this);
   }
 }
