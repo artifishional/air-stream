@@ -3,8 +3,8 @@ import { microtask } from '../../utils';
 /* </debug> */
 
 export default class ReT4Base {
-  constructor(owner, type, data = null, tokenWith = null) {
-    this.tokenWith = tokenWith;
+  constructor(owner, type, data = null, merge = false) {
+    this.merge = merge;
     this.data = data;
     this.type = type;
     this.owner = owner;

@@ -3,8 +3,8 @@ import WSP from './wsp/wsp';
 import Record from './record/record';
 import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './wsp/rwsp-slave';
-import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp';
-import { EMPTY } from './signals';
+import RedWSP, { RED_WSP_LOCALIZATION, RED_WSP_SUBORDINATION } from './wsp/rwsp';
+import { EMPTY, PUSH, STATUS_UPDATE } from './signals';
 import {
   FROM_OWNER_STREAM,
   STD_DISCONNECT_REQ,
@@ -14,6 +14,7 @@ import {
 } from './defs';
 import Controller from './controller';
 import WSPSchemaTuner from './wsp-chema-tuner';
+import { RED_REC_STATUS } from './record/red-record';
 
 let GLOBAL_CONNECTIONS_ID_COUNTER = 1;
 const TYPES = { PIPE: 0, STORE: 1 };
@@ -212,23 +213,66 @@ export class Stream2 {
       Stream2.whenAllConnected([initialValue, this], ([[wspR, hookR], [wsp, hook]]) => {
         ctr.to(hook);
         let rwsp = null;
-        wspR.on({
+        let queue = null;
+        const handler = {
           handleR(rec) {
-            if (rec.value !== EMPTY) {
-              if (!rwsp) {
-                rwsp = RedWSP.create([wsp], hnProJ, { initialValue: rec.value });
-                onrdy(rwsp);
-                rwsp.on({
-                  handleR(_rec) {
-                    hookR('remote-confirm', _rec);
-                  },
+            const { src, value } = rec;
+            if (value !== EMPTY) {
+              if (src === wsp && rwsp) {
+                const act = {
+                  state: rec.next,
+                  rec,
+                  status: RED_REC_STATUS.PENDING,
+                };
+                queue.push(act);
+                queueMicrotask(() => {
+                  if (rec.head.preRejected) {
+                    act.status = RED_REC_STATUS.FAILURE;
+                    initiateReT4();
+                  } else {
+                    hookR('coordinate', act);
+                  }
                 });
-              } else {
-                rwsp.open(rec.value);
+              } else if (src === wspR) {
+                if (!rwsp) {
+                  queue = [{
+                    state: value,
+                    rec,
+                    status: RED_REC_STATUS.SUCCESS,
+                  }];
+                  rwsp = RedWSP.create([wsp], hnProJ, {
+                    initialValue: value,
+                    localization: RED_WSP_LOCALIZATION.REMOTE,
+                  });
+                  onrdy(rwsp);
+                } else if (value.kind === STATUS_UPDATE) {
+                  const act = queue.find(({ id }) => id === value.id);
+                  act.status = value.status;
+                } else if (value.kind === PUSH) {
+                  const act = {
+                    state: null,
+                    rec: Record.fromRemote(rec, wsp, value.data),
+                    status: RED_REC_STATUS.SUCCESS,
+                  };
+                  if (queue.length > 1) {
+                    queue.splice(1, 0, act);
+                    initiateReT4();
+                  } else {
+                    wspR.handleR(act.rec);
+                    queue[0] = act;
+                  }
+                  // Здесь так только для варината когда не был инициирован
+                  //  ретач. Как достать состояние?
+                  act.state = rwsp.getLastStateValue();
+                } else {
+                  throw new Error('Remote reinit callback isn\'t currently supported.');
+                }
               }
             }
           },
-        });
+        };
+        wspR.on(handler);
+        wsp.on(handler);
       });
     });
   }

@@ -2,7 +2,7 @@ import { EMPTY } from '../signals';
 import STTMP from '../sync-ttmp-ctr';
 import Record from '../record/record';
 import Propagate from '../propagate';
-import { STATIC_CREATOR_KEY, UNIQUE_MINOR_VALUE } from '../defs';
+import { STATIC_CREATOR_KEY } from '../defs';
 import SyncEventManager from '../sync-event-manager';
 import SyncEventManagerSingle from '../sync-event-manager-single';
 /* <debug> */ import Debug from '../debug'; /* </debug> */

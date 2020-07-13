@@ -5,9 +5,9 @@ import Record from './record';
  * @enum {number}
  */
 export const RED_REC_STATUS = {
-  PENDING: 'PENDING',
-  FAILURE: 'FAILURE',
-  SUCCESS: 'SUCCESS',
+  PENDING: { /* <debug> */ PENDING: 'PENDING' /* </debug> */ },
+  FAILURE: { /* <debug> */ FAILURE: 'FAILURE' /* </debug> */ },
+  SUCCESS: { /* <debug> */ SUCCESS: 'SUCCESS' /* </debug> */ },
 };
 
 export class RedRecord extends Record {

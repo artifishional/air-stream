@@ -12,6 +12,10 @@ export default class Token {
   compromised() {
     return new Token(this.sttmp);
   }
+
+  static compare({ token: { sttmp: x1 } }, { token: { sttmp: x2 } }) {
+    return x1 - x2;
+  }
 }
 
 Token.INITIAL_TOKEN = { token: new Token(DEFAULT_START_TTMP), order: 0 };
