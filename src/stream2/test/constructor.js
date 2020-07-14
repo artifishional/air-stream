@@ -37,7 +37,9 @@ describe('constructor', () => {
   test('slave does not recreate a hnProJ on init', () => {
     // eslint-disable-next-line no-undef
     const hnProJ = jest.fn(() => EMPTY_FUNCTION);
-    const rwsp = RedWSP.create(null, () => EMPTY_FUNCTION, { initialValue: 0 });
+    const rwsp = RedWSP.create(
+      null, () => EMPTY_FUNCTION, { initialValue: 0 },
+    );
     RedWSPSlave.create([rwsp], hnProJ);
     expect(hnProJ).toHaveBeenCalledTimes(1);
   });

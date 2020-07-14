@@ -2,6 +2,9 @@ import { RED_REC_STATUS } from './record/red-record';
 import RedWSP, { RED_WSP_LOCALIZATION } from './wsp/rwsp';
 import { PUSH, STATUS_UPDATE, EMPTY } from './signals';
 import Record from './record/record';
+import { RET4_TYPES } from './retouch/retouch-types';
+
+let COORDINATE_REQ_ID_COUNTER = 0;
 
 export default class ReduceRemoteTuner {
   constructor({ whenAllConnected }, onrdy, ctr, hnProJ) {
@@ -38,7 +41,23 @@ export default class ReduceRemoteTuner {
   initiateReT4() {
     // Хранить здесь только неподтвержденную очередь?
     // Либо только актуальную с учетом мержа для воспроизведения
-    this.queue = [];
+    this.rwsp.handleReT4(
+      null,
+      this.queue.map(({ rec }) => rec),
+      RET4_TYPES.ABORT,
+      { merge: true },
+    );
+    this.normalizeQueue();
+  }
+
+  normalizeQueue() {
+    this.queue.splice(0, this.queue.findIndex(
+      ({ status }) => status !== RED_REC_STATUS.SUCCESS,
+    ) + 1);
+  }
+
+  coordinate({ rec: { value }, id }) {
+    this.hookR('coordinate', { value, id });
   }
 
   handleR(rec) {
@@ -46,7 +65,7 @@ export default class ReduceRemoteTuner {
     if (value !== EMPTY) {
       if (src === this.wsp && this.rwsp) {
         const act = {
-          state: rec.next,
+          id: -1,
           rec,
           status: RED_REC_STATUS.PENDING,
         };
@@ -54,22 +73,27 @@ export default class ReduceRemoteTuner {
         queueMicrotask(() => {
           if (rec.head.preRejected) {
             act.status = RED_REC_STATUS.FAILURE;
+            this.queue.splice(this.queue.indexOf(act), 1);
             this.initiateReT4();
           } else {
-            this.hookR('coordinate', act);
+            COORDINATE_REQ_ID_COUNTER += 1;
+            act.id = COORDINATE_REQ_ID_COUNTER;
+            this.coordinate(act);
           }
         });
       } else if (src === this.wspR) {
         if (!this.rwsp) {
-          this.queue = [{
-            state: value,
-            rec,
-            status: RED_REC_STATUS.SUCCESS,
-          }];
+          this.queue = [];
           this.initialize(value);
         } else if (value.kind === STATUS_UPDATE) {
           const act = this.queue.find(({ id }) => id === value.id);
+          debugger;
           act.status = value.status;
+          if (act.status === RED_REC_STATUS.SUCCESS) {
+            this.normalizeQueue();
+          } else {
+            this.initiateReT4();
+          }
         } else if (value.kind === PUSH) {
           const act = {
             state: null,

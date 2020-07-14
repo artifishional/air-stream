@@ -188,21 +188,21 @@ export default class RedWSP extends WSP {
     }
   }
 
-  beginReT4(type, data) {
+  beginReT4(type, prms) {
     // TODO: W reconstruct hn when init
     this.hn = this.hnProJReT4(this);
-    this.incompleteRet4 = ReT4.create(this, type, data);
+    this.incompleteRet4 = ReT4.create(this, type, prms);
   }
 
   /**
    * @param rwsp
    * @param {Array.<Record>} reT4data
    * @param {RET4_TYPES} type
-   * @param {RET4_TYPES} data abstract config
+   * @param {{merge: boolean}} prms abstract config
    */
-  handleReT4(rwsp, reT4data, type, data) {
+  handleReT4(rwsp, reT4data, type, prms) {
     if (!this.incompleteRet4) {
-      this.beginReT4(type, data);
+      this.beginReT4(type, prms);
     }
     this.incompleteRet4.fill(rwsp, reT4data);
     // не требуются дополнительные усилия за контролем над устарешвей очередью
@@ -213,24 +213,12 @@ export default class RedWSP extends WSP {
     // данные из смежных состояний
   }
 
-  getUpdates() {
-    if (this.wsps.length === 1) {
-      return this.wsps[0].state;
-    }
-    return this.wsps
-      .map(({ state }) => state)
-      .flat()
-      .sort((
-        { token: { order: x, token: { sttmp: a } } },
-        { token: { order: y, token: { sttmp: b } } },
-      ) => a - b || x - y);
-  }
-
-  onReT4Complete({ type, data, merge }) {
-    const updates = this.getUpdates();
-    this.state = merge
+  onReT4Complete({ prms, type }, updates) {
+    this.state = prms.merge
       ? this.state.splice(
-        this.state.findIndex(({ token }) => Token.compare(token, data[0].token) < 0),
+        this.state.findIndex(
+          ({ token }) => Token.compare(token, updates[0].token) < 0,
+        ),
         Infinity,
       )
       : [];
@@ -250,7 +238,7 @@ export default class RedWSP extends WSP {
     this.debug.reT4SpreadInProgress = true;
     /* </debug> */
     this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
-      this, this.state, type, data,
+      this, this.state, type, prms,
     ));
     /* <debug> */
     this.debug.reT4SpreadInProgress = false;
