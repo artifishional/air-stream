@@ -38,14 +38,14 @@ export default class ReduceRemoteTuner {
     this.onrdy(this.rwsp);
   }
 
-  initiateReT4() {
+  initiateReT4(merge) {
     // Хранить здесь только неподтвержденную очередь?
     // Либо только актуальную с учетом мержа для воспроизведения
     this.rwsp.handleReT4(
       null,
       this.queue.map(({ rec }) => rec),
       RET4_TYPES.ABORT,
-      { merge: true },
+      { merge },
     );
     this.normalizeQueue();
   }
@@ -74,7 +74,7 @@ export default class ReduceRemoteTuner {
           if (rec.head.preRejected) {
             act.status = RED_REC_STATUS.FAILURE;
             this.queue.splice(this.queue.indexOf(act), 1);
-            this.initiateReT4();
+            this.initiateReT4(act.rec);
           } else {
             COORDINATE_REQ_ID_COUNTER += 1;
             act.id = COORDINATE_REQ_ID_COUNTER;
@@ -86,13 +86,14 @@ export default class ReduceRemoteTuner {
           this.queue = [];
           this.initialize(value);
         } else if (value.kind === STATUS_UPDATE) {
-          const act = this.queue.find(({ id }) => id === value.id);
-          debugger;
+          const actIDX = this.queue.findIndex(({ id }) => id === value.id);
+          const act = this.queue[actIDX];
           act.status = value.status;
           if (act.status === RED_REC_STATUS.SUCCESS) {
             this.normalizeQueue();
           } else {
-            this.initiateReT4();
+            this.queue.splice(actIDX, 1);
+            this.initiateReT4(act.rec);
           }
         } else if (value.kind === PUSH) {
           const act = {

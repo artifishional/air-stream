@@ -214,14 +214,14 @@ export default class RedWSP extends WSP {
   }
 
   onReT4Complete({ prms, type }, updates) {
-    this.state = prms.merge
-      ? this.state.splice(
-        this.state.findIndex(
-          ({ token }) => Token.compare(token, updates[0].token) < 0,
-        ),
-        Infinity,
-      )
-      : [];
+    if (prms.merge) {
+      const idx = this.state.findIndex(
+        (rec) => Token.compare(rec, prms.merge) >= 0,
+      );
+      this.state.splice(idx, Infinity);
+    } else {
+      this.state = [];
+    }
     updates.forEach((rec) => this.handleR(rec));
     /* <debug> */
     if (this.sncMan.sncLastEvtGrp) {

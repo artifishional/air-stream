@@ -9,7 +9,7 @@ export default class ReT4Base {
    * @param {*} prms
    * @param {Boolean} prms.merge
    */
-  constructor(owner, type, { merge = false } = { }) {
+  constructor(owner, type, { merge = null } = { }) {
     this.prms = { merge };
     this.type = type;
     this.owner = owner;

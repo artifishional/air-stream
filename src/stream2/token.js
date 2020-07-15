@@ -13,8 +13,11 @@ export default class Token {
     return new Token(this.sttmp);
   }
 
-  static compare({ token: { sttmp: x1 } }, { token: { sttmp: x2 } }) {
-    return x1 - x2;
+  static compare(
+    { token: { order: x, token: { sttmp: a } } },
+    { token: { order: y, token: { sttmp: b } } },
+  ) {
+    return a - b || x - y;
   }
 }
 

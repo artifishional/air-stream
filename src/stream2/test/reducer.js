@@ -3,7 +3,7 @@ import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
 import WSP from '../wsp/wsp';
 import { RED_REC_STATUS } from '../record/red-record';
-import { STATUS_UPDATE } from '../signals';
+import {PUSH, STATUS_UPDATE} from '../signals';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
@@ -27,7 +27,7 @@ describe('reduce', () => {
     _(() => queue1.next().done && done());
   });
 
-  test('remote reducer', (done) => {
+  test('remote RED', (done) => {
     const _ = async();
     const expected = [
       100,
@@ -35,15 +35,15 @@ describe('reduce', () => {
       103,
     ];
     const rc1 = stream.fromCbFunc((cb) => {
-      _(() => cb({ type: 'dot', data: 100 }));
-      _(() => cb({ type: 'com', data: 1 }));
-      _(() => cb({ type: 'com', data: 2 }));
+      _(() => cb({ src: 'dot', data: 100 }));
+      _(() => cb({ src: 'com', data: 1 }));
+      _(() => cb({ src: 'com', data: 2 }));
     });
     const rm1 = rc1
-      .filter(({ type }) => type === 'dot')
+      .filter(({ src }) => src === 'dot')
       .map(({ data }) => data);
     const r1 = rc1
-      .filter(({ type }) => type === 'com')
+      .filter(({ src }) => src === 'com')
       .map(({ data }) => data)
       .reduce((acc, next) => acc + next, { remote: rm1 });
     const queue1 = expected.values();
@@ -53,7 +53,7 @@ describe('reduce', () => {
     _(() => queue1.next().done && done());
   });
 
-  test('remote reducer coordinate request', (done) => {
+  test('remote RED coordinate request', (done) => {
     const _ = async();
     const expected = [
       1,
@@ -64,20 +64,20 @@ describe('reduce', () => {
         expect(value).toEqual(queue1.next().value);
         done();
       });
-      _(() => cb({ type: 'dot', data: 100 }));
-      _(() => cb({ type: 'com', data: 1 }));
+      _(() => cb({ src: 'dot', data: 100 }));
+      _(() => cb({ src: 'com', data: 1 }));
     });
     const rm1 = rc1
-      .filter(({ type }) => type === 'dot')
+      .filter(({ src }) => src === 'dot')
       .map(({ data }) => data);
     rc1
-      .filter(({ type }) => type === 'com')
+      .filter(({ src }) => src === 'com')
       .map(({ data }) => data)
       .reduce((acc, next) => acc + next, { remote: rm1 })
       .get();
-  }); */
+  });
 
-  test('remote reducer abort request & reT4', (done) => {
+  test('remote RED abort request & reT4 (surface cut)', (done) => {
     const _ = async();
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
@@ -85,7 +85,7 @@ describe('reduce', () => {
       ctr.req('coordinate', ({ value, id }) => {
         if (value === 1) {
           cb({
-            type: 'dot',
+            src: 'dot',
             data: {
               id,
               kind: STATUS_UPDATE,
@@ -94,14 +94,14 @@ describe('reduce', () => {
           });
         }
       });
-      _(() => cb({ type: 'dot', data: 100 }));
-      _(() => cb({ type: 'com', data: 1 }));
+      _(() => cb({ src: 'dot', data: 100 }));
+      _(() => cb({ src: 'com', data: 1 }));
     });
     const rm1 = rc1
-      .filter(({ type }) => type === 'dot')
+      .filter(({ src }) => src === 'dot')
       .map(({ data }) => data);
     const r1 = rc1
-      .filter(({ type }) => type === 'com')
+      .filter(({ src }) => src === 'com')
       .map(({ data }) => data)
       .reduce((acc, next) => acc + next, { remote: rm1 });
     r1.get(({ value }) => proJ(value));
@@ -111,6 +111,90 @@ describe('reduce', () => {
         [101],
         // abort & reT4 here
         [100],
+      ]);
+      done();
+    });
+  });
+
+  test('remote RED abort request & reT4 (inner cut)', (done) => {
+    const _ = async();
+    // eslint-disable-next-line no-undef
+    const proJ = jest.fn();
+    const rc1 = stream.fromCbFunc((cb, ctr) => {
+      ctr.req('coordinate', ({ value, id }) => {
+        if (value === 2) {
+          cb({
+            src: 'dot',
+            data: {
+              id: id - 1,
+              kind: STATUS_UPDATE,
+              status: RED_REC_STATUS.FAILURE,
+            },
+          });
+        }
+      });
+      _(() => cb({ src: 'dot', data: 100 }));
+      _(() => cb({ src: 'com', data: 1 }));
+      _(() => cb({ src: 'com', data: 2 }));
+    });
+    const rm1 = rc1
+      .filter(({ src }) => src === 'dot')
+      .map(({ data }) => data);
+    const r1 = rc1
+      .filter(({ src }) => src === 'com')
+      .map(({ data }) => data)
+      .reduce((acc, next) => acc + next, { remote: rm1 });
+    r1.get(({ value }) => proJ(value));
+    setTimeout(() => {
+      expect(proJ.mock.calls).toEqual([
+        [100],
+        [101],
+        [103],
+        // abort & reT4 here
+        [100],
+        [102],
+      ]);
+      done();
+    });
+  }); */
+
+  test('remote RED action race', (done) => {
+    const _ = async();
+    // eslint-disable-next-line no-undef
+    const proJ = jest.fn();
+    const rc1 = stream.fromCbFunc((cb, ctr) => {
+      ctr.req('coordinate', ({ value, id, sttmp }) => {
+        if (value === 1) {
+          cb({
+            src: 'dot',
+            data: {
+              kind: PUSH,
+              data: {
+                sttmp:
+              },
+            },
+          });
+        }
+      });
+      _(() => cb({ src: 'dot', data: 100 }));
+      _(() => cb({ src: 'com', data: 1 }));
+    });
+    const rm1 = rc1
+      .filter(({ src }) => src === 'dot')
+      .map(({ data }) => data);
+    const r1 = rc1
+      .filter(({ src }) => src === 'com')
+      .map(({ data }) => data)
+      .reduce((acc, next) => acc + next, { remote: rm1 });
+    r1.get(({ value }) => proJ(value));
+    setTimeout(() => {
+      expect(proJ.mock.calls).toEqual([
+        [100],
+        [101],
+        [103],
+        // abort & reT4 here
+        [100],
+        [102],
       ]);
       done();
     });
