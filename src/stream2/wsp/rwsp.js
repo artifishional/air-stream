@@ -45,9 +45,7 @@ export default class RedWSP extends WSP {
   * Для мастера может быть только один источник
   * null - если это головной узел
   * @param {Boolean = false} Reinit getter when reT4
-  * @param {RED_WSP_LOCALIZATION} localization
   * @param {RED_WSP_SUBORDINATION} subordination
-  * @param {Boolean} autoconfirm
   * @param {*} initialValue
   *   Видимо ведет себя по разному:
    *   для зависимых - не создает новое сообщение, а только предоставляет
@@ -59,18 +57,14 @@ export default class RedWSP extends WSP {
   */
   constructor(wsps, {
     subordination = RED_WSP_SUBORDINATION.MASTER,
-    localization = RED_WSP_LOCALIZATION.LOCAL,
-    autoconfirm = localization === RED_WSP_LOCALIZATION.LOCAL,
     initialValue = EMPTY,
     ...args
   } = {}, /* <debug> */ creatorKey /* </debug> */) {
     super(wsps, args, /* <debug> */ creatorKey /* </debug> */);
-    this.autoconfirm = autoconfirm;
     this.initialValue = initialValue;
     this.incompleteRet4 = null;
     // Если происходит изменение в состоянии то вызываются только реды
     this.redSlaves = new Set();
-    this.localization = localization;
     this.subordination = subordination;
     this.state = null;
     this.hnProJReT4 = null;
@@ -79,16 +73,6 @@ export default class RedWSP extends WSP {
     /* </debug> */
     this.$updateT4statusCTD = UPDATE_T4_STATUS_CTD_COUNTER;
   }
-
-  /* <debug> */
-  /* get originWSPs() {
-    const res = super.originWSPs;
-    if (this.state && this.state.some((rec) => !res.has(rec.head.src))) {
-      throw new Error();
-    }
-    return res;
-  } */
-  /* </debug> */
 
   initiate(hnProJ, after5FullUpdateHn) {
     this.hnProJReT4 = hnProJ;
@@ -253,7 +237,6 @@ export default class RedWSP extends WSP {
       Record,
       undefined,
       this,
-      this.autoconfirm ? RED_REC_STATUS.SUCCESS : RED_REC_STATUS.PENDING,
     );
   }
 

@@ -179,6 +179,35 @@ export default class WSP
     return res;
   }
 
+  static extendedWithlatest(wsps, hnProJ, after5FullUpdateHn, conf = { }) {
+    const res = new this(
+      wsps,
+      { ...conf, configurable: true },
+      /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
+    );
+    res.initiate((own) => {
+      // To keep the order of output
+      let awaitingFilling = own.wsps.length;
+      const combined = new Map(own.wsps.map((wsp) => [wsp, EMPTY]));
+      const proJ = hnProJ(own);
+      return (updates) => {
+        updates.forEach(({ src, value }) => {
+          if (awaitingFilling) {
+            if (combined.get(src) === EMPTY) {
+              awaitingFilling -= 1;
+            }
+          }
+          combined.set(src, value);
+        });
+        if (!awaitingFilling && updates.some(({ src }) => src === wsps[0])) {
+          return proJ([...combined.values()], updates);
+        }
+        return EMPTY;
+      };
+    }, after5FullUpdateHn);
+    return res;
+  }
+
   get sncMan() {
     if (!this.$sncMan) {
       this.$sncMan = this.createSyncEventMan();
@@ -201,13 +230,7 @@ export default class WSP
     /* </debug> */
     this.$originWSPs = null;
     this.$sncMan = null;
-    /* <debug> */
-    this.debug.spreadInProgress = true;
-    /* </debug> */
     this.slaves.forEach((slave) => slave.reconstruct());
-    /* <debug> */
-    this.debug.spreadInProgress = false;
-    /* </debug> */
   }
 
   setupCTDrdy(wsps) {
@@ -369,12 +392,18 @@ export default class WSP
       this.curFrameCachedRecord = [];
     }
     this.curFrameCachedRecord.push(rec);
+    /* <debug> */
+    this.debug.spreadInProgress = true;
+    /* </debug> */
     [...this.slaves].forEach((slv) => {
       // Если подписчик удяляется во время подписки
       if (this.slaves.has(slv)) {
         slv.handleR(rec);
       }
     });
+    /* <debug> */
+    this.debug.spreadInProgress = false;
+    /* </debug> */
     this.after5FullUpdateHn();
     // При необходимости оптимизации можно перенять механику от
     // Event с жестко контролируемой через idx рассылкой

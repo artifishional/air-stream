@@ -250,7 +250,11 @@ export class Stream2 {
     });
   }
 
-  static combine(streams, proJ = STATIC_PROJECTS.STRAIGHT, { ctrMode = 'none', ...conf } = { }) {
+  static combine(
+    streams,
+    proJ = STATIC_PROJECTS.STRAIGHT,
+    { ctrMode = 'none', ...conf } = { },
+  ) {
     if (!streams.length) {
       if (proJ === STATIC_PROJECTS.STRAIGHT) {
         return Stream2.$EMPTY_ARR;
@@ -268,6 +272,32 @@ export class Stream2 {
         }
         const wsps = bags.map(([wsp]) => wsp);
         onrdy(RedWSPSlave.extendedCombine(wsps, () => proJ, null, conf));
+      });
+    });
+  }
+
+  static withlatest(
+    streams,
+    proJ = STATIC_PROJECTS.STRAIGHT,
+    { ctrMode = 'none', ...conf } = { },
+  ) {
+    if (!streams.length) {
+      if (proJ === STATIC_PROJECTS.STRAIGHT) {
+        return Stream2.$EMPTY_ARR;
+      }
+      return this.fromFn(() => proJ([]));
+    }
+    return new Stream2((onrdy, ctr) => {
+      this.whenAllRedConnected(streams, (bags) => {
+        if (ctrMode === 'all') {
+          ctr.to(...bags.map(([, hook]) => hook));
+        } else if (ctrMode === 'none') {
+          ctr.todisconnect(...bags.map(([, hook]) => hook));
+        } else {
+          throw new Error('Unsupported controller mode');
+        }
+        const wsps = bags.map(([wsp]) => wsp);
+        onrdy(RedWSPSlave.extendedWithlatest(wsps, () => proJ, null, conf));
       });
     });
   }
@@ -393,7 +423,7 @@ export class Stream2 {
     });
   }
 
-  static with(streams, hnProJ, { localization = null, subordination = null } = {}, args = {}) {
+  static with(streams, hnProJ, { subordination = null } = {}, args = {}) {
     // eslint-disable-next-line no-param-reassign
     /* <debug> */ args = { operator: { name: 'with' }, ...args }; /* </debug> */
     /* <debug> */
@@ -404,12 +434,10 @@ export class Stream2 {
     }
     /* </debug> */
     const calculableConfig = {
-      localization,
       subordination,
     };
     /* if (!localization) {
       if (streams.some((wsp) => wsp.localization === RED_REC_LOCALIZATION.LOCAL)) {
-        calculableConfig.localization = RED_REC_LOCALIZATION.LOCAL;
       } else {
         calculableConfig.localization = RED_REC_LOCALIZATION.REMOTE;
       }
@@ -599,36 +627,6 @@ export class Stream2 {
 
   createController() {
     return new Controller(this);
-  }
-
-  withlatest(sourcestreams = [], project = STATIC_PROJECTS.AIO) {
-    return new Stream2(null, (e, controller) => {
-      let slave = false;
-      const sourcestreamsstate = new Array(sourcestreams.length).fill(EMPTY_OBJECT);
-      sourcestreams.map((stream, i) => {
-        stream.connect((hook) => {
-          controller.todisconnect(hook);
-          return (data, record) => {
-            if (record.slave) slave = true;
-            if (isKeySignal(data)) {
-              return e(data, { ...record, slave });
-            }
-            sourcestreamsstate[i] = data;
-          };
-        });
-      });
-      this.connect((hook) => {
-        controller.to(hook);
-        return (data, record) => {
-          if (isKeySignal(data)) {
-            return e(data, record);
-          }
-          if (!sourcestreamsstate.includes(EMPTY_OBJECT)) {
-            e(project(data, ...sourcestreamsstate), { ...record, slave });
-          }
-        };
-      });
-    });
   }
 
   /**

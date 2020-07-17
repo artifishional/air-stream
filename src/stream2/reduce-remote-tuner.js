@@ -39,7 +39,6 @@ export default class ReduceRemoteTuner {
   initialize(initialValue) {
     this.rwsp = RedWSP.create([this.wsp], this.hnProJ, {
       initialValue,
-      localization: RED_WSP_LOCALIZATION.REMOTE,
     });
     this.onrdy(this.rwsp);
   }
