@@ -5,7 +5,7 @@ export default class ReT4ReConstruct extends ReT4 {
     super(owner, type, prms);
     /**
      * Данные активации для каждого входного стрима
-     * @type {Array.<Array.<RedRecord>>}
+     * @type {Array.<Array.<Record>>}
      */
     // TODO: hack
     //  ret4 start on the same unit

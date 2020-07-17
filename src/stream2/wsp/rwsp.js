@@ -1,4 +1,4 @@
-import { RED_REC_STATUS, RedRecord } from '../record/red-record';
+import { RED_REC_STATUS } from '../record/red-record';
 import WSP from './wsp';
 import ReT4 from '../retouch/retouch';
 import { RET4_TYPES } from '../retouch/retouch-types';
@@ -8,6 +8,7 @@ import HeadRecord from '../record/head-record';
 import Token from '../token';
 // eslint-disable-next-line import/no-cycle
 import RedWSPSlave from './rwsp-slave';
+import Record from '../record/record';
 
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 const UPDATE_T4_STATUS_CTD_COUNTER = 10;
@@ -100,7 +101,7 @@ export default class RedWSP extends WSP {
         Token.INITIAL_TOKEN,
         undefined,
         this.constructor.STATIC_LOCAL_WSP,
-      ).from(this.initialValue, RedRecord, this, this));
+      ).from(this.initialValue, Record, this, this));
       super.initiate(hnProJ, after5FullUpdateHn);
     } else {
       // to prevent W initiate hn
@@ -249,7 +250,7 @@ export default class RedWSP extends WSP {
   createRecordFrom(rec, updates) {
     return rec.from(
       updates,
-      RedRecord,
+      Record,
       undefined,
       this,
       this.autoconfirm ? RED_REC_STATUS.SUCCESS : RED_REC_STATUS.PENDING,

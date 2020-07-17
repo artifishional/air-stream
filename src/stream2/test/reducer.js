@@ -3,13 +3,13 @@ import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
 import WSP from '../wsp/wsp';
 import { RED_REC_STATUS } from '../record/red-record';
-import {PUSH, STATUS_UPDATE} from '../signals';
+import { PUSH, STATUS_UPDATE } from '../signals';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
 
 describe('reduce', () => {
-  /* test('example', (done) => {
+  test('example', (done) => {
     const _ = async();
     const expected = [
       101,
@@ -156,22 +156,55 @@ describe('reduce', () => {
       ]);
       done();
     });
-  }); */
+  });
+
+  test('remote RED action', (done) => {
+    const _ = async();
+    const SRV_RQ_RS_DELAY = 5;
+    // eslint-disable-next-line no-undef
+    const proJ = jest.fn();
+    const rc1 = stream.fromCbFunc((cb) => {
+      _(() => cb({ src: 'dot', data: 100 }));
+      _(() => cb({
+        src: 'dot',
+        data: {
+          kind: PUSH,
+          token: { sttmp: performance.now() - SRV_RQ_RS_DELAY },
+          data: 4,
+        },
+      }));
+    });
+    const rm1 = rc1
+      .filter(({ src }) => src === 'dot')
+      .map(({ data }) => data);
+    const r1 = rc1
+      .filter(({ src }) => src === 'com')
+      .map(({ data }) => data)
+      .reduce((acc, next) => acc + next, { remote: rm1 });
+    r1.get(({ value }) => proJ(value));
+    setTimeout(() => {
+      expect(proJ.mock.calls).toEqual([
+        [100],
+        [104],
+      ]);
+      done();
+    });
+  });
 
   test('remote RED action race', (done) => {
     const _ = async();
+    const SRV_RQ_RS_DELAY = 5;
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
     const rc1 = stream.fromCbFunc((cb, ctr) => {
-      ctr.req('coordinate', ({ value, id, sttmp }) => {
+      ctr.req('coordinate', ({ value }) => {
         if (value === 1) {
           cb({
             src: 'dot',
             data: {
               kind: PUSH,
-              data: {
-                sttmp:
-              },
+              token: { sttmp: performance.now() - SRV_RQ_RS_DELAY },
+              data: 4,
             },
           });
         }
@@ -191,17 +224,16 @@ describe('reduce', () => {
       expect(proJ.mock.calls).toEqual([
         [100],
         [101],
-        [103],
         // abort & reT4 here
         [100],
-        [102],
+        [104],
+        [105],
       ]);
       done();
     });
   });
 
   /*
-  
   test('clear reducer construct with initialized stream', () => {});
 
   test('several subscriptions dissolved - source stream disconnect', (done) => {

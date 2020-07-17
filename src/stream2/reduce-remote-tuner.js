@@ -1,8 +1,9 @@
 import { RED_REC_STATUS } from './record/red-record';
 import RedWSP, { RED_WSP_LOCALIZATION } from './wsp/rwsp';
 import { PUSH, STATUS_UPDATE, EMPTY } from './signals';
-import Record from './record/record';
 import { RET4_TYPES } from './retouch/retouch-types';
+import Propagate from './propagate';
+import STTMP from './sync-ttmp-ctr';
 
 let COORDINATE_REQ_ID_COUNTER = 0;
 
@@ -17,6 +18,11 @@ export default class ReduceRemoteTuner {
     this.onrdy = onrdy;
     this.wsp = null;
     this.hnProJ = hnProJ;
+    /**
+     * Request/Response delay
+     * @type {number}
+     */
+    this.rQrSDelay = 0;
   }
 
   setup(redSTR, sigSTR) {
@@ -97,23 +103,20 @@ export default class ReduceRemoteTuner {
           }
         } else if (value.kind === PUSH) {
           const act = {
-            state: null,
-            rec: Record.fromRemote(rec, this.wsp, value.data),
+            rec: Propagate.burn(value.data, STTMP.fromRawData(value.token), rec.head.src),
             status: RED_REC_STATUS.SUCCESS,
           };
-          if (this.queue.length > 1) {
-            this.queue.splice(1, 0, act);
-            this.initiateReT4();
+          if (this.queue.length) {
+            this.queue.unshift(act);
+            this.initiateReT4(act.rec);
           } else {
-            this.wspR.handleR(act.rec);
-            this.queue[0] = act;
+            this.rwsp.handleR(act.rec);
           }
-          // Здесь так только для варината когда не был инициирован
-          //  ретач. Как достать состояние?
-          //  Когда уже не возможно полностью восстановить состояние
-          //  должен быть иницирован полный рекконнект
-          //  это тайминг сохранениея очереди
-          act.state = this.rwsp.getLastStateValue();
+          // Состояние для узла не перезаписывается полностью
+          //  вместо этого используется поверхностный мерж
+          //  с учетом что RED всегда будет иметь хотябы одно
+          //  стабильное состояние. Если задержка ответа превышает
+          //  лимит ожидания, требуется полный реинит
         } else {
           throw new Error('Remote reinit callback isn\'t currently supported.');
         }

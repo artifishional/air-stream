@@ -9,6 +9,11 @@ export default new class TTMPSyncCTR {
     this.cbs = [];
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  fromRawData({ sttmp, order = 0 }) {
+    return { token: new Token(sttmp), order };
+  }
+
   get(ttmp = -1) {
     if (ttmp !== -1) {
       if (!boiler.has(ttmp)) {
@@ -17,6 +22,7 @@ export default new class TTMPSyncCTR {
       return boiler.get(ttmp);
     }
     if (!this.token) {
+      // eslint-disable-next-line
       ttmp = globalThis.performance.now();
       this.token = new Token(ttmp);
       queueMicrotask(() => {

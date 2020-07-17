@@ -1,6 +1,7 @@
 /* <debug> */
 import { microtask } from '../../utils';
 /* </debug> */
+import Token from '../token';
 
 export default class ReT4Base {
   /**
@@ -27,10 +28,7 @@ export default class ReT4Base {
     return this.owner.wsps
       .map(({ state }) => state)
       .flat()
-      .sort((
-        { token: { order: x, token: { sttmp: a } } },
-        { token: { order: y, token: { sttmp: b } } },
-      ) => a - b || x - y);
+      .sort(Token.compare);
   }
 
   fill() {
