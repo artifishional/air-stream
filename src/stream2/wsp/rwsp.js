@@ -1,4 +1,3 @@
-import { RED_REC_STATUS } from '../record/red-record';
 import WSP from './wsp';
 import ReT4 from '../retouch/retouch';
 import { RET4_TYPES } from '../retouch/retouch-types';
@@ -117,17 +116,63 @@ export default class RedWSP extends WSP {
       });
   }
 
-  /* <debug> */
+  reconstruct() {
+    /* <debug> */
+    if (this.$sncMan && this.$sncMan.sncLastEvtGrp) {
+      throw new Error('Unexpected model state');
+    }
+    /* </debug> */
+    this.$originWSPs = null;
+    this.$sncMan = null;
+    this.slaves.forEach((slave) => slave.reconstruct());
+  }
+
   setupCTDrdy(wsps) {
+    /* <debug> */
     if (this.debug.reT4SpreadInProgress) {
       throw new Error('Unexpected model state');
     }
     if (this.incompleteRet4) {
       throw new Error('Unexpected model state');
     }
-    super.setupCTDrdy(wsps);
+    /* </debug> */
+    // this.setupCTD = null;
+    /* <debug> */
+    if (this.debug.spreadInProgress) {
+      throw new Error('Unexpected model state');
+    }
+    /* </debug> */
+    /* <debug> */
+    if (!this.configurable) {
+      throw new Error('Only configurable stream are supported for setup');
+    }
+    /* </debug> */
+    /* <debug> */
+    if (!wsps || !wsps.length) {
+      throw new Error('Unsupported configuration');
+    }
+    /* </debug> */
+    if (this.after5fullUpdateCTD) {
+      this.after5fullUpdateCTD.cancel();
+      this.after5fullUpdateCTD = null;
+    }
+    this.wsps
+      .filter((wsp) => !wsps.includes(wsp))
+      .forEach((wsp) => wsp.off(this));
+    // reconstruct по сути только для WSP узлов
+    // RED сделают это на базе reT4 reconstruct
+    // TODO: Temporary solution
+    this.$originWSPs = null;
+    // TODO: Temporary solution
+    this.updateWSPs(wsps);
+    // TODO: Temporary solution
+    this.reconstruct();
+    this.subscription();
   }
-  /* </debug> */
+
+  setup(wsps) {
+    this.setupCTDrdy(wsps);
+  }
 
   // TODO: Temporary solution
   updateWSPs(wsps) {

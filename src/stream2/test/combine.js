@@ -13,14 +13,18 @@ describe('combine', () => {
       242,
     ];
     const queue1 = expected.values();
-    const rc1 = stream.fromCbFunc((cb) => {
-      cb(10);
-      _(() => cb(11));
-    });
-    const rc2 = stream.fromCbFunc((cb) => {
-      cb(20);
-      _(() => cb(22));
-    });
+    const rc1 = stream
+      .fromCbFunc((cb) => {
+        cb(10);
+        _(() => cb(11));
+      })
+      .store();
+    const rc2 = stream
+      .fromCbFunc((cb) => {
+        cb(20);
+        _(() => cb(22));
+      })
+      .store();
     stream.combine([rc1, rc2], ([vl1, vl2]) => vl1 * vl2)
       .get(({ value }) => {
         expect(value).toEqual(queue1.next().value);
@@ -35,10 +39,12 @@ describe('combine', () => {
       286,
     ];
     const queue1 = expected.values();
-    const rc = stream.fromCbFunc((cb) => {
-      cb(10);
-      _(() => cb(11));
-    });
+    const rc = stream
+      .fromCbFunc((cb) => {
+        cb(10);
+        _(() => cb(11));
+      })
+      .store();
     const rc1 = rc.map((v) => v * 2);
     const rc2 = rc.map((v) => v + 2);
     stream.combine([rc1, rc2], ([vl1, vl2]) => vl1 * vl2)
@@ -55,10 +61,12 @@ describe('combine', () => {
       11,
     ];
     const queue1 = expected.values();
-    const rc = stream.fromCbFunc((cb) => {
-      cb(10);
-      _(() => cb(11));
-    });
+    const rc = stream
+      .fromCbFunc((cb) => {
+        cb(10);
+        _(() => cb(11));
+      })
+      .store();
     stream.combine([rc], ([vl1]) => vl1)
       .get(({ value }) => {
         expect(value).toEqual(queue1.next().value);
@@ -72,9 +80,11 @@ describe('combine', () => {
       [],
     ];
     const queue1 = expected.values();
-    const rc = stream.fromCbFunc((cb) => {
-      cb([]);
-    });
+    const rc = stream
+      .fromCbFunc((cb) => {
+        cb([]);
+      })
+      .store();
     stream.combine([rc], ([vl1]) => vl1)
       .get(({ value }) => {
         expect(value).toEqual(queue1.next().value);
@@ -129,12 +139,16 @@ describe('combine', () => {
     stream
       .fromCbFunc((headCb) => {
         _(() => headCb([
-          stream.fromCbFunc((cb) => {
-            _(() => cb(10));
-          }),
-          stream.fromCbFunc((cb) => {
-            _(() => cb(20));
-          }),
+          stream
+            .fromCbFunc((cb) => {
+              _(() => cb(10));
+            })
+            .store(),
+          stream
+            .fromCbFunc((cb) => {
+              _(() => cb(20));
+            })
+            .store(),
         ]));
       })
       .combineAllFirst()
@@ -167,18 +181,24 @@ describe('combine', () => {
     const a = stream
       .fromCbFunc((headCb) => {
         _(() => headCb([
-          stream.fromCbFunc((cb) => {
-            _(() => cb(10));
-          }),
-          stream.fromCbFunc((cb) => {
-            _(() => cb(20));
-          }),
+          stream
+            .fromCbFunc((cb) => {
+              _(() => cb(10));
+            })
+            .store(),
+          stream
+            .fromCbFunc((cb) => {
+              _(() => cb(20));
+            })
+            .store(),
         ]));
       })
       .combineAllFirst();
-    const b = stream.fromCbFunc((cb) => {
-      cb(30);
-    });
+    const b = stream
+      .fromCbFunc((cb) => {
+        cb(30);
+      })
+      .store();
     stream.combine([a, b])
       .get(({ value }) => {
         expect(value).toEqual(queue1.next().value);

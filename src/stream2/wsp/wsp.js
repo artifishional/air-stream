@@ -150,7 +150,7 @@ export default class WSP
     }, conf);
   }
 
-  static extendedCombine(wsps, hnProJ, after5FullUpdateHn, conf = {}) {
+  static extendedCombine(wsps, hnProJ, after5FullUpdateHn, conf = { }) {
     const res = new this(
       wsps,
       { ...conf, configurable: true },
@@ -220,60 +220,6 @@ export default class WSP
       this.$originWSPs = this.reCalcOriginWSPs();
     }
     return this.$originWSPs;
-  }
-
-  reconstruct() {
-    /* <debug> */
-    if (this.$sncMan && this.$sncMan.sncLastEvtGrp) {
-      throw new Error('Unexpected model state');
-    }
-    /* </debug> */
-    this.$originWSPs = null;
-    this.$sncMan = null;
-    this.slaves.forEach((slave) => slave.reconstruct());
-  }
-
-  setupCTDrdy(wsps) {
-    // this.setupCTD = null;
-    /* <debug> */
-    if (this.debug.spreadInProgress) {
-      throw new Error('Unexpected model state');
-    }
-    /* </debug> */
-    /* <debug> */
-    if (!this.configurable) {
-      throw new Error('Only configurable stream are supported for setup');
-    }
-    /* </debug> */
-    /* <debug> */
-    if (!wsps || !wsps.length) {
-      throw new Error('Unsupported configuration');
-    }
-    /* </debug> */
-    if (this.after5fullUpdateCTD) {
-      this.after5fullUpdateCTD.cancel();
-      this.after5fullUpdateCTD = null;
-    }
-    this.wsps
-      .filter((wsp) => !wsps.includes(wsp))
-      .forEach((wsp) => wsp.off(this));
-    // reconstruct по сути только для WSP узлов
-    // RED сделают это на базе reT4 reconstruct
-    // TODO: Temporary solution
-    this.$originWSPs = null;
-    // TODO: Temporary solution
-    this.updateWSPs(wsps);
-    // TODO: Temporary solution
-    this.reconstruct();
-    this.subscription();
-  }
-
-  setup(wsps) {
-    /* if (!this.setupCTD) {
-      this.setupCTD = new AsyncTask(this.setupCTDrdy, this);
-    }
-    this.setupCTD.update(wsps); */
-    this.setupCTDrdy(wsps);
   }
 
   updateWSPs(wsps) {

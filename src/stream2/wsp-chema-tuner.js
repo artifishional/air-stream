@@ -1,7 +1,8 @@
 import RedWSPSlave from './wsp/rwsp-slave';
+import RedCon5ionHn from './red-connection-handler';
 
 export default class WSPSchemaTuner {
-  constructor({ whenAllRedConnected }, onrdy, ctr, proJ, tuner, async, conf) {
+  constructor(_, onrdy, ctr, proJ, tuner, async, conf) {
     this.tuner = tuner;
     this.conf = conf;
     this.proJ = proJ;
@@ -9,9 +10,8 @@ export default class WSPSchemaTuner {
     this.ctr = ctr;
     this.onrdy = onrdy;
     this.wsp = null;
-    this.whenAllRedConnected = whenAllRedConnected;
+    this.con5ionHnCTR = new RedCon5ionHn((bags) => this.con5ionHn(bags));
     this.ctr = ctr;
-    this.tunedVer = 0;
     this.bags = [];
   }
 
@@ -46,39 +46,35 @@ export default class WSPSchemaTuner {
     this.setup(streams.map((stream) => [stream, { on: true, key: -1 }]));
   }
 
+  con5ionHn(con5ion) {
+    con5ion.streams.forEach(({ wsp, hook }, idx) => {
+      this.bags[idx][1].wsp = wsp;
+      this.bags[idx][1].hook = hook;
+    });
+    if (!this.wsp) {
+      this.ctr.link(this);
+      this.wsp = RedWSPSlave.extendedCombine(
+        con5ion.streams.map(({ wsp }) => wsp),
+        () => this.proJ,
+        (wsp) => {
+          // To prevent infinity setup recreate
+          //  when setup sync executed
+          this.wsp = wsp;
+          this.tuner(this, wsp.state.slice(-1)[0].value);
+        },
+        this.conf,
+      );
+      this.onrdy(this.wsp);
+    } else {
+      this.wsp.setup(con5ion.streams.map(({ wsp }) => wsp));
+    }
+  }
+
   setup(cnf) {
     if (!this.processCNF(cnf)) {
       return;
     }
-    this.tunedVer += 1;
-    const { tunedVer } = this;
-    this.whenAllRedConnected(
-      this.bags.map(([stream]) => stream),
-      (bags) => {
-        if (tunedVer !== this.tunedVer) { return; }
-        bags.forEach(([wsp, hook], idx) => {
-          this.bags[idx][1].wsp = wsp;
-          this.bags[idx][1].hook = hook;
-        });
-        if (!this.wsp) {
-          this.ctr.link(this);
-          this.wsp = RedWSPSlave.extendedCombine(
-            bags.map(([wsp]) => wsp),
-            () => this.proJ,
-            (wsp) => {
-              // To prevent infinity setup recreate
-              //  when setup sync executed
-              this.wsp = wsp;
-              this.tuner(this, wsp.state.slice(-1)[0].value);
-            },
-            this.conf,
-          );
-          this.onrdy(this.wsp);
-        } else {
-          this.wsp.setup(bags.map(([wsp]) => wsp));
-        }
-      },
-    );
+    this.con5ionHnCTR.reconnect(this.bags.map(([stream]) => stream));
   }
 
   // не создавать промежуточных котнроллеров там,

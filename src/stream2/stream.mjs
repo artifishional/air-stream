@@ -1,4 +1,3 @@
-import getTTMP from './get-ttmp';
 import WSP from './wsp/wsp';
 import Record from './record/record';
 import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
@@ -10,13 +9,12 @@ import {
   STD_DISCONNECT_REQ,
   EMPTY_FUNCTION,
   STATIC_PROJECTS,
-  EMPTY_OBJECT,
 } from './defs';
 import Controller from './controller';
 import WSPSchemaTuner from './wsp-chema-tuner';
 import ReduceRemoteTuner from './reduce-remote-tuner';
+import RedCon5ionHn from './red-connection-handler';
 
-let GLOBAL_CONNECTIONS_ID_COUNTER = 1;
 const TYPES = { PIPE: 0, STORE: 1 };
 const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue: null });
 
@@ -29,7 +27,6 @@ export class Stream2 {
     /* </debug> */
     this.project = proJ;
     this.ctx = ctx;
-    this.type = new.target.TYPES.PIPE;
   }
 
   static get TYPES() {
@@ -142,7 +139,11 @@ export class Stream2 {
     throw new TypeError('Unsupported source type');
   }
 
-  static fromCbFunc(cb) {
+  static get fromCbFunc() {
+    return this.fromCbFn;
+  }
+
+  static fromCbFn(cb) {
     return new Stream2((onrdy, ctr) => {
       onrdy(RedWSP.fromCbFunc((e) => cb(e, ctr)));
     });
@@ -150,9 +151,11 @@ export class Stream2 {
 
   static fromFn(cb) {
     return new Stream2((onrdy) => {
-      const initialValue = cb();
-      const res = RedWSP.create(null, EMPTY_FUNCTION, { initialValue });
-      onrdy(res);
+      onrdy(RedWSP.create(
+        null,
+        EMPTY_FUNCTION,
+        { initialValue: cb() },
+      ));
     });
   }
 
@@ -217,7 +220,7 @@ export class Stream2 {
 
   /**
    * Attaches additional streams to the master but never uses them
-   * @param {Array.<Stream>} streams
+   * @param {Array.<Stream2>} streams
    * @returns {Stream2}
    */
   abuse(streams) {
@@ -225,17 +228,17 @@ export class Stream2 {
       return this;
     }
     return new Stream2((onrdy, ctr) => {
-      this.whenAllRedConnected([this, ...streams], ([master, ...bags]) => {
-        ctr.to(master.hook);
-        ctr.todisconnect(...bags.map(([, hook]) => hook));
-        onrdy(master.wsp);
+      this.whenAllRedConnected([this, ...streams], (con5ion) => {
+        ctr.tocommand(con5ion.streams[0].hook);
+        ctr.todisconnect(...con5ion.streams.map(({ hook }) => hook));
+        onrdy(con5ion.streams[0].wsp);
       });
     });
   }
 
   /**
    * Create connection to additional streams but never uses them
-   * @param {Array.<Stream>} streams
+   * @param {Array.<Stream2>} streams
    * @returns {Stream2}
    */
   static abuse(streams) {
@@ -243,8 +246,8 @@ export class Stream2 {
       return Stream2.EMPTY;
     }
     return new Stream2((onrdy, ctr) => {
-      this.whenAllRedConnected(streams, (bags) => {
-        ctr.todisconnect(...bags.map(([, hook]) => hook));
+      this.whenAllRedConnected(streams, (con5ion) => {
+        ctr.todisconnect(...con5ion.map(({ hook }) => hook));
         onrdy(STATIC_LOCAL_RED_WSP);
       });
     });
@@ -262,15 +265,15 @@ export class Stream2 {
       return this.fromFn(() => proJ([]));
     }
     return new Stream2((onrdy, ctr) => {
-      this.whenAllRedConnected(streams, (bags) => {
+      this.whenAllRedConnected(streams, (con5tion) => {
         if (ctrMode === 'all') {
-          ctr.to(...bags.map(([, hook]) => hook));
+          ctr.to(...con5tion.streams.map(({ hook }) => hook));
         } else if (ctrMode === 'none') {
-          ctr.todisconnect(...bags.map(([, hook]) => hook));
+          ctr.todisconnect(...con5tion.streams.map(({ hook }) => hook));
         } else {
           throw new Error('Unsupported controller mode');
         }
-        const wsps = bags.map(([wsp]) => wsp);
+        const wsps = con5tion.streams.map(({ wsp }) => wsp);
         onrdy(RedWSPSlave.extendedCombine(wsps, () => proJ, null, conf));
       });
     });
@@ -288,15 +291,15 @@ export class Stream2 {
       return this.fromFn(() => proJ([]));
     }
     return new Stream2((onrdy, ctr) => {
-      this.whenAllRedConnected(streams, (bags) => {
+      this.whenAllRedConnected(streams, (con5tion) => {
         if (ctrMode === 'all') {
-          ctr.to(...bags.map(([, hook]) => hook));
+          ctr.to(...con5tion.streams.map(({ hook }) => hook));
         } else if (ctrMode === 'none') {
-          ctr.todisconnect(...bags.map(([, hook]) => hook));
+          ctr.todisconnect(...con5tion.streams.map(({ hook }) => hook));
         } else {
           throw new Error('Unsupported controller mode');
         }
-        const wsps = bags.map(([wsp]) => wsp);
+        const wsps = con5tion.map(({ wsp }) => wsp);
         onrdy(RedWSPSlave.extendedWithlatest(wsps, () => proJ, null, conf));
       });
     });
@@ -320,10 +323,10 @@ export class Stream2 {
         ctr.todisconnect(headHook);
         ctr.todisconnect(() => headWsp.kill());
         Stream2.$instance(headWsp).create([headWsp], () => ([{ value }]) => {
-          Stream2.whenAllRedConnected(value, (bags) => {
-            ctr.to(...bags.map(([, hook]) => hook));
+          Stream2.whenAllRedConnected(value, (con5tion) => {
+            ctr.to(...con5tion.streams.map(({ hook }) => hook));
             onrdy(RedWSPSlave.extendedCombine(
-              bags.map(([wsp]) => wsp),
+              con5tion.streams.map(({ wsp }) => wsp),
               () => (combiner) => combiner,
               null,
               conf,
@@ -379,25 +382,7 @@ export class Stream2 {
   }
 
   static whenAllRedConnected(streams, cb) {
-    const states = new Array(streams.length);
-    let rdyCounter = 0;
-    function handler(wsp, hook, idx) {
-      states[idx] = [wsp, hook];
-      rdyCounter += 1;
-      if (rdyCounter === streams.length) {
-        cb(states);
-      }
-    }
-    streams.map((stream, idx) => stream.connect((wsp, hook) => {
-      if (wsp instanceof RedWSP) {
-        handler(wsp, hook, idx);
-      } else {
-        stream.store().connect((_wsp, _hook) => {
-          handler(_wsp, _hook, idx);
-        });
-        hook();
-      }
-    }));
+    new RedCon5ionHn(cb).reconnect(streams);
   }
 
   static whenAllConnected(streams, cb) {
@@ -542,7 +527,7 @@ export class Stream2 {
     }, conf);
   }
 
-  connect(con5ion = () => () => {}) {
+  connect(con5ion = () => {}) {
     this.con5ions.set(con5ion, null);
     if (!this.connection) {
       const ctr = this.createController();
@@ -564,9 +549,17 @@ export class Stream2 {
       };
       this.$activate(ctr);
     } else if (this.wsp) {
-      con5ion(this.wsp, this.hook);
+      this.usecon5ion(con5ion);
     }
     return (req, data) => this.hook(req, data);
+  }
+
+  usecon5ion(con5ion) {
+    if (typeof con5ion === 'function') {
+      con5ion(this.wsp, this.hook);
+    } else {
+      con5ion.hn(this);
+    }
   }
 
   distinct(equal = STATIC_PROJECTS.SURFACE_EQUAL) {
@@ -593,13 +586,13 @@ export class Stream2 {
   startConnectionToSlave(wsp) {
     this.wsp = wsp;
     [...this.con5ions.keys()]
-      .forEach((con5ion) => con5ion(this.wsp, this.hook));
+      .forEach(this.usecon5ion, this);
   }
 
-  $deactivate(connect, controller) {
+  $deactivate(connect, ctr) {
     this.con5ions.delete(connect);
     if (!this.con5ions.size) {
-      controller.send(STD_DISCONNECT_REQ, null);
+      ctr.send(STD_DISCONNECT_REQ, null);
     }
   }
 
@@ -616,7 +609,7 @@ export class Stream2 {
         throw new TypeError('WellSpring record expected');
       }
       if (![...this.connections.values()].includes(subscriber)) {
-        throw 'More unused stream continues to emit data';
+        throw new Error('More unused stream continues to emit data');
       }
       subscriber(rec);
     };
@@ -628,160 +621,14 @@ export class Stream2 {
   createController() {
     return new Controller(this);
   }
-
-  /**
-   * @param {fromRemoteService} remoteservicecontroller - Remoute service controller connection
-   * @param {Object} stream - Stream name from server
-   */
-  static fromRemoteService(remoteservicecontroller, stream) {
-    return new Stream2(null, (e, controller) => {
-      const connection = { id: GLOBAL_CONNECTIONS_ID_COUNTER += 1 };
-      remoteservicecontroller.connect((hook) => {
-        controller.tocommand((request, data) => {
-          if (request === 'request') {
-            hook('command', { data, connection });
-          }
-        });
-        controller.todisconnect(hook);
-        return ({ event, data, connection: { id } }, record) => {
-          if (event === 'remote-service-ready') {
-            hook('subscribe', { stream, connection });
-          } else if (event === 'reinitial-state' && connection.id === id) {
-            e(data, { ...record, grid: 0 });
-          } else if (event === 'data' && connection.id === id) {
-            e(data, { ...record, grid: -1 });
-          } else if (event === 'result' && connection.id === id) {
-            e(data, { ...record, grid: -1 });
-          }
-        };
-      });
-    });
-  }
-
-  static ups() {
-    const factor = UPS.ups / 1000;
-    return new Stream2([], (e, controller) => {
-      let globalCounter = 0;
-      const startttmp = getTTMP();
-      const sid = setInterval(() => {
-        const current = getTTMP();
-        const count = (current - startttmp) * factor - globalCounter | 0;
-        if (count > 10000) throw 'Uncounted err';
-        for (let i = 0; i < count; i++) {
-          globalCounter++;
-          e(globalCounter, { ttmp: startttmp + globalCounter * factor | 0 });
-        }
-      }, 500 / UPS.ups);
-      controller.todisconnect(() => clearInterval(sid));
-    });
-  }
 }
 
 export const stream2 = (...args) => new Stream2(...args);
 // static props recalc to stream2
 Object.getOwnPropertyNames(Stream2)
   .filter((prop) => typeof Stream2[prop] === 'function')
-  .map((prop) => stream2[prop] = Stream2[prop]);
-
-export class RemouteService extends Stream2 {
-  /**
-   * @param {host, port} websocketconnection settings
-   */
-  static fromWebSocketConnection({ host, port }) {
-    let websocketconnection = null;
-    let remouteserviceconnectionstatus = null;
-    const STMPSuncData = { remoute: -1, connected: -1, current: -1 };
-    return new RemouteService(null, (e, controller) => {
-      if (!websocketconnection) {
-        websocketconnection = new WebSocket(`ws://${host}:${port}`);
-        UPS.subscribe((stmp) => STMPSuncData.current = stmp);
-      }
-      function onsocketmessagehandler({ data: raw }) {
-        const msg = JSON.parse(raw);
-        if (msg.event === 'remote-service-ready') {
-          STMPSuncData.remoute = msg.stmp;
-          STMPSuncData.connected = UPS.current;
-          remouteserviceconnectionstatus = 'ready';
-          e(msg);
-        } else if (msg.event === 'data') {
-          e(msg);
-        }
-      }
-      function onsocketopendhandler() {
-        controller.tocommand((request, data) => {
-          if (request === 'subscribe') {
-            websocketconnection.send(JSON.stringify({ ...data, request }));
-          }
-          if (request === 'command') {
-            const stmp = STMPSuncData.remoute - STMPSuncData.connected - data.stmp;
-            websocketconnection.send(JSON.stringify({ ...data, stmp, request }));
-          }
-        });
-      }
-      if (websocketconnection.readyState === WebSocket.OPEN) {
-        onsocketopendhandler();
-      } else {
-        websocketconnection.addEventListener('open', onsocketopendhandler);
-        controller.todisconnect(() => {
-          socket.removeEventListener('open', onsocketopendhandler);
-        });
-      }
-      if (remouteserviceconnectionstatus === 'ready') {
-        e({ event: 'remote-service-ready', connection: { id: -1 }, data: null });
-      }
-      websocketconnection.addEventListener('message', onsocketmessagehandler);
-      controller.todisconnect(() => {
-        websocketconnection.removeEventListener('message', onsocketmessagehandler);
-      });
-    });
-  }
-}
+  .forEach((prop) => {
+    stream2[prop] = Stream2[prop];
+  });
 
 Stream2.FROM_OWNER_STREAM = FROM_OWNER_STREAM;
-const { isKeySignal } = Stream2;
-
-const UPS = new class {
-  constructor() {
-    this.subscribers = [];
-    this.sid = -1;
-  }
-
-  set(ups) {
-    this.ups = ups;
-  }
-
-  tick(stmp, ttmp) {
-    this.subscribers.map((subscriber) => subscriber(stmp, ttmp));
-  }
-
-  subscribe(subscriber) {
-    if (this.sid === -1) {
-      // todo async set at UPS state value
-      // const factor = this.ups / 1000;
-      let globalCounter = 0;
-      const startttmp = getTTMP();
-      this.sid = setInterval(() => {
-        const factor = this.ups / 1000;
-        const current = getTTMP();
-        // eslint-disable-next-line no-bitwise
-        const count = (current - startttmp) * factor - globalCounter | 0;
-        for (let i = 0; i < count; i += 1) {
-          globalCounter += 1;
-          // eslint-disable-next-line no-bitwise
-          this.tick(globalCounter, startttmp + globalCounter * factor | 0);
-        }
-      }, 500 / this.ups);
-    }
-    this.subscribers.push(subscriber);
-  }
-
-  unsubscribe(subscriber) {
-    const removed = this.subscribers.indexOf(subscriber);
-    /* <debug> */
-    if (removed < 0) throw new Error('Attempt to delete an subscriber out of the container');
-    /* </debug> */
-    this.subscribers.splice(removed, 1);
-  }
-}();
-
-stream2.UPS = UPS;
