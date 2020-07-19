@@ -62,8 +62,6 @@ export default class RedWSP extends WSP {
     super(wsps, args, /* <debug> */ creatorKey /* </debug> */);
     this.initialValue = initialValue;
     this.incompleteRet4 = null;
-    // Если происходит изменение в состоянии то вызываются только реды
-    this.redSlaves = new Set();
     this.subordination = subordination;
     this.state = null;
     this.hnProJReT4 = null;
@@ -98,7 +96,7 @@ export default class RedWSP extends WSP {
       species: this.constructor.name,
       configurable: this.configurable,
       state: this.state.map((rec) => rec.toJSON()),
-      children: [...this.redSlaves].map((slave) => slave.toJSON()),
+      children: [...this.slaves].map((slave) => slave.toJSON()),
     };
   }
 
@@ -267,7 +265,7 @@ export default class RedWSP extends WSP {
     /* <debug> */
     this.debug.reT4SpreadInProgress = true;
     /* </debug> */
-    this.redSlaves.forEach((rwsp) => rwsp.handleReT4(
+    this.slaves.forEach((rwsp) => rwsp.handleReT4(
       this, this.state, type, prms,
     ));
     /* <debug> */
@@ -286,19 +284,14 @@ export default class RedWSP extends WSP {
   }
 
   /**
-   * @param {RedWSPSlave|RedWSP|WSP} slv
-   */
-  off(slv) {
-    if (slv.subordination === RED_WSP_SUBORDINATION.SLAVE) {
-      this.redSlaves.delete(slv);
-    }
-    super.off(slv);
-  }
-
-  /**
-   * @param {RedWSPSlave|RedWSP|WSP} slv
+   * @param {RedWSPSlave} slv
    */
   on(slv) {
+    /* <debug> */
+    if (!(slv instanceof RedWSPSlave)) {
+      throw new Error('Unsupported configuration');
+    }
+    /* </debug> */
     /* <debug> */
     if (!this.state) {
       throw new Error('Unexpected model state');
@@ -307,11 +300,8 @@ export default class RedWSP extends WSP {
     /**
      * TODO: may be duplicate users
      */
-    if (slv.subordination === RED_WSP_SUBORDINATION.SLAVE) {
-      this.updateT4status();
-      slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
-      this.redSlaves.add(slv);
-    }
+    this.updateT4status();
+    slv.handleReT4(this, this.state, RET4_TYPES.ReINIT);
     /**
      * TODO: опустошение очереди
      */
