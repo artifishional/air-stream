@@ -12,3 +12,4 @@ export const evtChRmtRec = 1; // event channel (remote) record
 export const ac = 1; // abstract class or interface
 export const red = 1; // reducible
 export const reT4 = 1; // retouch update mex
+export const ctd = 1; // countdown

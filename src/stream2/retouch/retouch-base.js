@@ -1,6 +1,4 @@
-/* <debug> */
-import { microtask } from '../../utils';
-/* </debug> */
+/* <debug> */import AsyncTask from '../async-task';/* </debug> */
 import Token from '../token';
 
 export default class ReT4Base {
@@ -15,7 +13,7 @@ export default class ReT4Base {
     this.type = type;
     this.owner = owner;
     /* <debug> */
-    this.reT4completeCTD = microtask(() => {
+    this.reT4completeCTD = new AsyncTask(() => {
       throw new Error(`Uncompleted Ret4 "${this.type}"`);
     });
     /* </debug> */
@@ -40,7 +38,7 @@ export default class ReT4Base {
 
   complete() {
     /* <debug> */
-    this.reT4completeCTD();
+    this.reT4completeCTD.cancel();
     /* </debug> */
     this.owner.onReT4Complete(this, this.getUpdates());
   }

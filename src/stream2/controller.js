@@ -1,5 +1,5 @@
 import { STD_DISCONNECT_REQ } from './defs';
-import Debug from './debug';
+/* <debug> */import Debug from './debug';/* </debug> */
 
 export default class Controller
   /* <debug> */extends Debug/* </debug> */ {

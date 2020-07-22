@@ -2,12 +2,12 @@ import WSP from './wsp';
 import ReT4 from '../retouch/retouch';
 import { RET4_TYPES } from '../retouch/retouch-types';
 import { EMPTY } from '../signals';
-import getTTMP from '../get-ttmp';
 import HeadRecord from '../record/head-record';
 import Token from '../token';
 // eslint-disable-next-line import/no-cycle
 import RedWSPSlave from './rwsp-slave';
 import Record from '../record/record';
+import STTMP from '../sync-ttmp-ctr';
 
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 const UPDATE_T4_STATUS_CTD_COUNTER = 10;
@@ -306,7 +306,7 @@ export default class RedWSP extends WSP {
   }
 
   findIndexOfLastRelUpdate() {
-    const relTTMP = getTTMP() - DEFAULT_MSG_ALIVE_TIME_MS;
+    const relTTMP = STTMP.get().token.sttmp - DEFAULT_MSG_ALIVE_TIME_MS;
     let startAt = this.state.length - 1;
     if (this.state[startAt].value === EMPTY) {
       startAt -= 1;

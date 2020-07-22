@@ -1,11 +1,13 @@
-let INSTANCE_ID_COUNTER = 0;
+const INSTANCE_ID_COUNTER_BY_TYPES = new Map();
 
 export default class Debug {
   constructor({ type }) {
-    INSTANCE_ID_COUNTER += 1;
+    INSTANCE_ID_COUNTER_BY_TYPES.set(
+      type, (INSTANCE_ID_COUNTER_BY_TYPES.get(type) || 0) + 1,
+    );
     this.debug = {
       type,
-      id: INSTANCE_ID_COUNTER,
+      id: INSTANCE_ID_COUNTER_BY_TYPES.get(type),
     };
   }
 

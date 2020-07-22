@@ -1,4 +1,5 @@
 import Token from './token';
+import AsyncTask from './async-task';
 
 const boiler = new Map();
 
@@ -7,11 +8,19 @@ export default new class TTMPSyncCTR {
     this.order = 0;
     this.token = null;
     this.cbs = [];
+    this.asyncCTD = null;
   }
 
   // eslint-disable-next-line class-methods-use-this
   fromRawData({ sttmp, order = 0 }) {
     return { token: new Token(sttmp), order };
+  }
+
+  async() {
+    this.order = 0;
+    this.token = null;
+    this.cbs.map((cb) => cb());
+    this.asyncCTD = null;
   }
 
   get(ttmp = -1) {
@@ -25,18 +34,11 @@ export default new class TTMPSyncCTR {
       // eslint-disable-next-line
       ttmp = globalThis.performance.now();
       this.token = new Token(ttmp);
-      queueMicrotask(() => {
-        this.order = 0;
-        this.token = null;
-        this.cbs.map((cb) => cb());
-      });
+      if (!this.asyncCTD) {
+        this.asyncCTD = new AsyncTask(this.async, this);
+      }
     }
     this.order += 1;
     return { token: this.token, order: this.order };
-  }
-
-  async(cb) {
-    this.get();
-    this.cbs.push(cb);
   }
 }();

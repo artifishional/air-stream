@@ -1,2 +1,3 @@
-import "./globalthis.mjs";
-import './queue-microtask'
+import './globalthis';
+import './node-perf-hooks';
+import './queue-microtask';

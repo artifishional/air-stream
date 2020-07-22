@@ -1,7 +1,10 @@
 import { DEFAULT_START_TTMP } from './defs';
+/* <debug> */ import Debug from './debug'; /* </debug> */
 
-export default class Token {
+export default class Token
+  /* <debug> */extends Debug/* </debug> */ {
   constructor(sttmp) {
+    super({ type: 'token' });
     /**
      * Проверить, не создан ли уже текущий sttmp показатель
      * Если создан, то новый токен становится родственным текущему
