@@ -75,14 +75,19 @@ export default class RedWSP extends WSP {
     this.hnProJReT4 = hnProJ;
     if (this.subordination === RED_WSP_SUBORDINATION.MASTER) {
       this.state = [];
-      this.next(new HeadRecord(
-        null,
-        this,
-        null,
-        Token.INITIAL_TOKEN,
-        undefined,
-        this.constructor.STATIC_LOCAL_WSP,
-      ).from(this.initialValue, Record, this, this));
+      if (this.initialValue !== EMPTY) {
+        this.next(new HeadRecord(
+          null,
+          this,
+          null,
+          Token.INITIAL_TOKEN,
+          undefined,
+          this.constructor.STATIC_LOCAL_WSP,
+        ).from(this.initialValue, Record, this, this));
+      }
+      /* else {
+         Немедленная инициализация из очереди wsp
+      } */
       super.initiate(hnProJ, after5FullUpdateObs);
     } else {
       // to prevent W initiate hn
@@ -198,6 +203,9 @@ export default class RedWSP extends WSP {
   */
 
   next(rec) {
+    if (!this.state.length && rec.value === EMPTY) {
+      return;
+    }
     this.pushToState(rec);
     if (!this.incompleteRet4) {
       // TODO: super.next(rec); after curFrameCachedRecord resolution
@@ -289,7 +297,7 @@ export default class RedWSP extends WSP {
     }
     /* </debug> */
     /* <debug> */
-    if (!this.state) {
+    if (!this.state.length) {
       throw new Error('Unexpected model state');
     }
     /* </debug> */
