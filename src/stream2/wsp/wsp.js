@@ -6,7 +6,6 @@ import { STATIC_CREATOR_KEY } from '../defs';
 import SyncEventManager from '../sync-event-manager';
 import SyncEventManagerSingle from '../sync-event-manager-single';
 /* <debug> */ import Debug from '../debug'; /* </debug> */
-import AsyncTask from '../async-task';
 
 let staticOriginWSPIDCounter = 0;
 
@@ -15,12 +14,12 @@ export default class WSP
   /**
    * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
    * @param {*} conf
-   * @param {Boolean} configurable
+   * @param {Boolean} conf.configurable
    * @param {Object = undefined} creatorKey
    */
   constructor(
     wsps = null,
-    { configurable = false, ...conf } = { },
+    conf = { },
     /* <debug> */ creatorKey, /* </debug> */
   ) {
     /* <debug> */
@@ -29,13 +28,12 @@ export default class WSP
     /* <debug> */
     this.debug.spreadInProgress = false;
     /* </debug> */
-    this.configurable = configurable;
     /**
      * @type {Function}
      */
     this.hn = null;
     this.conf = conf;
-    this.$after5FullUpdateHn = null;
+    this.after5FullUpdateObs = null;
     this.wsps = wsps;
     /* <debug> */
     if (creatorKey !== STATIC_CREATOR_KEY) {
@@ -59,8 +57,6 @@ export default class WSP
     this.curFrameCachedRecord = null;
     this.$originWSPs = null;
     this.$sncMan = null;
-    // this.setupCTD = null;
-    this.after5fullUpdateCTD = null;
     if (!wsps) {
       staticOriginWSPIDCounter += 1;
       this.id = staticOriginWSPIDCounter;
@@ -88,7 +84,7 @@ export default class WSP
       this.wsps.length === 1
       && this.wsps[0].wsps
       && this.wsps[0].wsps.length === 1
-      && !this.configurable
+      && !this.conf.configurable
     ) {
       return this.wsps[0].originWSPs;
     }
@@ -99,7 +95,7 @@ export default class WSP
           acc.set(key, (acc.get(key) || 0) + 1);
         }
         return acc;
-      }, this.configurable ? new Map([[this, 0]]) : new Map());
+      }, this.conf.configurable ? new Map([[this, 0]]) : new Map());
   }
 
   createSyncEventMan() {
@@ -150,7 +146,7 @@ export default class WSP
     }, conf);
   }
 
-  static extendedCombine(wsps, hnProJ, after5FullUpdateHn, conf = { }) {
+  static extendedCombine(wsps, hnProJ, after5FullUpdateObs, conf = { }) {
     const res = new this(
       wsps,
       { ...conf, configurable: true },
@@ -175,11 +171,11 @@ export default class WSP
         }
         return EMPTY;
       };
-    }, after5FullUpdateHn);
+    }, after5FullUpdateObs);
     return res;
   }
 
-  static extendedWithlatest(wsps, hnProJ, after5FullUpdateHn, conf = { }) {
+  static extendedWithlatest(wsps, hnProJ, after5FullUpdateObs, conf = { }) {
     const res = new this(
       wsps,
       { ...conf, configurable: true },
@@ -204,7 +200,7 @@ export default class WSP
         }
         return EMPTY;
       };
-    }, after5FullUpdateHn);
+    }, after5FullUpdateObs);
     return res;
   }
 
@@ -226,28 +222,21 @@ export default class WSP
     this.wsps = wsps;
   }
 
-  after5fullUpdateCTDrdy() {
-    this.after5fullUpdateCTD = null;
-    this.$after5FullUpdateHn(this);
-  }
-
   after5FullUpdateHn() {
-    if (this.$after5FullUpdateHn) {
-      if (!this.after5fullUpdateCTD) {
-        this.after5fullUpdateCTD = new AsyncTask(this.after5fullUpdateCTDrdy, this);
-      }
+    if (this.after5FullUpdateObs) {
+      this.after5FullUpdateObs.after5fullUpdateHn(this);
     }
   }
 
   /**
    * @param {Function|null = null} hnProJ
-   * @param {Function|null = null} after5FullUpdateHn
+   * @param {Tuner} after5FullUpdateObs
    */
-  initiate(hnProJ, after5FullUpdateHn = null) {
+  initiate(hnProJ, after5FullUpdateObs = null) {
     if (hnProJ) {
       this.hn = hnProJ(this);
     }
-    this.$after5FullUpdateHn = after5FullUpdateHn;
+    this.after5FullUpdateObs = after5FullUpdateObs;
     this.subscription();
   }
 

@@ -1,5 +1,6 @@
 import RedWSPSlave from './wsp/rwsp-slave';
 import RedCon5ionHn from './red-connection-handler';
+import AsyncTask from './async-task';
 
 export default class WSPSchemaTuner {
   constructor(_, onrdy, ctr, proJ, tuner, async, conf) {
@@ -13,6 +14,7 @@ export default class WSPSchemaTuner {
     this.con5ionHnCTR = new RedCon5ionHn((bags) => this.con5ionHn(bags));
     this.ctr = ctr;
     this.bags = [];
+    this.after5fullUpdateCTD = null;
   }
 
   processCNF(cnf) {
@@ -46,6 +48,17 @@ export default class WSPSchemaTuner {
     this.setup(streams.map((stream) => [stream, { on: true, key: -1 }]));
   }
 
+  after5fullUpdateHn() {
+    if (!this.after5fullUpdateCTD) {
+      this.after5fullUpdateCTD = new AsyncTask(this.after5fullUpdateCTDrdy, this);
+    }
+  }
+
+  after5fullUpdateCTDrdy() {
+    this.after5fullUpdateCTD = null;
+    this.tuner(this, this.wsp.getLastStateValue());
+  }
+
   con5ionHn(con5ion) {
     con5ion.streams.forEach(({ wsp, hook }, idx) => {
       this.bags[idx][1].wsp = wsp;
@@ -56,12 +69,7 @@ export default class WSPSchemaTuner {
       this.wsp = RedWSPSlave.extendedCombine(
         con5ion.streams.map(({ wsp }) => wsp),
         () => this.proJ,
-        (wsp) => {
-          // To prevent infinity setup recreate
-          //  when setup sync executed
-          this.wsp = wsp;
-          this.tuner(this, wsp.state.slice(-1)[0].value);
-        },
+        this,
         this.conf,
       );
       this.onrdy(this.wsp);
@@ -73,6 +81,10 @@ export default class WSPSchemaTuner {
   setup(cnf) {
     if (!this.processCNF(cnf)) {
       return;
+    }
+    if (this.after5fullUpdateCTD) {
+      this.after5fullUpdateCTD.cancel();
+      this.after5fullUpdateCTD = null;
     }
     this.con5ionHnCTR.reconnect(this.bags.map(([stream]) => stream));
   }
@@ -92,7 +104,7 @@ export default class WSPSchemaTuner {
     return {
       key,
       get value() {
-        return own.bags[key][1].wsp.state.slice(-1)[0].value;
+        return own.bags[key][1].wsp.getLastStateValue();
       },
       get src() {
         return own.bags[key][1].wsp;

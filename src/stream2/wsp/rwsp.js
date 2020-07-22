@@ -71,7 +71,7 @@ export default class RedWSP extends WSP {
     this.$updateT4statusCTD = UPDATE_T4_STATUS_CTD_COUNTER;
   }
 
-  initiate(hnProJ, after5FullUpdateHn) {
+  initiate(hnProJ, after5FullUpdateObs) {
     this.hnProJReT4 = hnProJ;
     if (this.subordination === RED_WSP_SUBORDINATION.MASTER) {
       this.state = [];
@@ -83,10 +83,10 @@ export default class RedWSP extends WSP {
         undefined,
         this.constructor.STATIC_LOCAL_WSP,
       ).from(this.initialValue, Record, this, this));
-      super.initiate(hnProJ, after5FullUpdateHn);
+      super.initiate(hnProJ, after5FullUpdateObs);
     } else {
       // to prevent W initiate hn
-      super.initiate(null, after5FullUpdateHn);
+      super.initiate(null, after5FullUpdateObs);
     }
   }
 
@@ -94,7 +94,7 @@ export default class RedWSP extends WSP {
     return {
       id: this.debug.id,
       species: this.constructor.name,
-      configurable: this.configurable,
+      configurable: this.conf.configurable,
       state: this.state.map((rec) => rec.toJSON()),
       children: [...this.slaves].map((slave) => slave.toJSON()),
     };
@@ -141,7 +141,7 @@ export default class RedWSP extends WSP {
     }
     /* </debug> */
     /* <debug> */
-    if (!this.configurable) {
+    if (!this.conf.configurable) {
       throw new Error('Only configurable stream are supported for setup');
     }
     /* </debug> */
@@ -150,10 +150,6 @@ export default class RedWSP extends WSP {
       throw new Error('Unsupported configuration');
     }
     /* </debug> */
-    if (this.after5fullUpdateCTD) {
-      this.after5fullUpdateCTD.cancel();
-      this.after5fullUpdateCTD = null;
-    }
     this.wsps
       .filter((wsp) => !wsps.includes(wsp))
       .forEach((wsp) => wsp.off(this));
@@ -311,13 +307,14 @@ export default class RedWSP extends WSP {
 
   findIndexOfLastRelUpdate() {
     const relTTMP = getTTMP() - DEFAULT_MSG_ALIVE_TIME_MS;
+    let startAt = this.state.length - 1;
+    if (this.state[startAt].value === EMPTY) {
+      startAt -= 1;
+    }
     // eslint-disable-next-line no-plusplus
-    for (let i = this.state.length; i--;) {
+    for (let i = startAt; i--;) {
       const rec = this.state[i];
-      if (rec.token.token.sttmp < relTTMP && rec.value !== EMPTY) {
-        if (i === this.state.length - 1) {
-          return i;
-        }
+      if (rec.token.token.sttmp < relTTMP) {
         return i + 1;
       }
     }

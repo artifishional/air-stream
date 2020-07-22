@@ -1,6 +1,5 @@
 import WSP from './wsp/wsp';
 import Record from './record/record';
-import LocalRedWSPRecStatusCTR from './local-rwsp-rec-status-ctr';
 import RedWSPSlave from './wsp/rwsp-slave';
 import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp';
 import { EMPTY } from './signals';
@@ -192,14 +191,15 @@ export class Stream2 {
     throw new TypeError('Unsupported initial value type');
   }
 
-  reduceLocal(hnProJ, initialValue, { rejectable = false } = {}) {
+  reduceLocal(hnProJ, initialValue /* { rejectable = false } = {} */) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.to(hook);
         const rwsp = RedWSP.create([wsp], hnProJ, { initialValue });
-        if (rejectable) {
+        // TODO: need to use RED-remote-tuner instead
+        /* if (rejectable) {
           rwsp.on(LocalRedWSPRecStatusCTR);
-        }
+        } */
         onrdy(rwsp);
       });
     });
