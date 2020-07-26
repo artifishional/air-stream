@@ -1,11 +1,11 @@
 import { EMPTY } from '../signals';
-import Debug from '../debug';
+/* <debug> */import Debug from '../debug';/* </debug> */
 
 let staticOriginRecIDCounter = 0;
 
 export default class Record
   /* <debug> */extends Debug/* </debug> */ {
-  constructor(from, owner, value, token, head, src) {
+  constructor(from, _, value, token, head, src) {
     /* <debug> */
     super({ type: 'record' });
     /* </debug> */
@@ -29,17 +29,12 @@ export default class Record
      * Ссылка на поток-создатель
      */
     this.src = src;
-    /* <debug> */
-    // eslint-disable-next-line no-undef
-    if (!(owner instanceof globalThis.WSP)) {
-      throw new TypeError('owner must be a WSP');
-    }
-    /* </debug> */
     this.value = value;
-    /**
-     * @type {RedWSP} Поток-владелец (Мастер)
-     */
-    this.owner = owner; // only for owned RedWSP rec !!! not head->src
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  get owner() {
+    throw new Error('Deprecated property');
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -84,7 +79,7 @@ export default class Record
     if (this.value === EMPTY) {
       return this;
     }
-    return new Record(this, this.owner, fn(this.value, this), this.token, this.head, src);
+    return new Record(this, null, fn(this.value, this), this.token, this.head, src);
   }
 
   reject() {
@@ -102,12 +97,11 @@ export default class Record
     if (fn(this.value, this)) {
       return this;
     }
-
-    return new Record(this, this.owner, EMPTY, this.token, this.head, src);
+    return new Record(this, null, EMPTY, this.token, this.head, src);
   }
 
   // TODO: redic. species set
-  from(value, Species = Record, owner = this.owner, src, conf) {
-    return new Species(this, owner, value, this.token, this.head, src, conf);
+  from(value, Species = Record, _, src, conf) {
+    return new Species(this, null, value, this.token, this.head, src, conf);
   }
 }

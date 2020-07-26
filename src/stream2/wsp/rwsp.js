@@ -130,7 +130,7 @@ export default class RedWSP extends WSP {
     this.slaves.forEach((slave) => slave.reconstruct());
   }
 
-  setupCTDrdy(wsps) {
+  setup(wsps) {
     /* <debug> */
     if (this.debug.reT4SpreadInProgress) {
       throw new Error('Unexpected model state');
@@ -138,19 +138,12 @@ export default class RedWSP extends WSP {
     if (this.incompleteRet4) {
       throw new Error('Unexpected model state');
     }
-    /* </debug> */
-    // this.setupCTD = null;
-    /* <debug> */
     if (this.debug.spreadInProgress) {
       throw new Error('Unexpected model state');
     }
-    /* </debug> */
-    /* <debug> */
     if (!this.conf.configurable) {
       throw new Error('Only configurable stream are supported for setup');
     }
-    /* </debug> */
-    /* <debug> */
     if (!wsps || !wsps.length) {
       throw new Error('Unsupported configuration');
     }
@@ -167,10 +160,6 @@ export default class RedWSP extends WSP {
     // TODO: Temporary solution
     this.reconstruct();
     this.subscription();
-  }
-
-  setup(wsps) {
-    this.setupCTDrdy(wsps);
   }
 
   // TODO: Temporary solution

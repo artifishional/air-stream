@@ -19,7 +19,7 @@ const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue:
 
 export class Stream2 {
   constructor(proJ, ctx = null) {
-    this.con5ions = new Map();
+    this.con5ions = new Set();
     this.wsp = null;
     /* <debug> */
     this.$label = '';
@@ -528,9 +528,9 @@ export class Stream2 {
   }
 
   connect(con5ion = () => {}) {
-    this.con5ions.set(con5ion, null);
+    this.con5ions.add(con5ion);
     if (!this.connection) {
-      const ctr = this.createController();
+      const ctr = this.createCTR();
       this.connection = {
         ctr,
         wsp: null,
@@ -585,7 +585,7 @@ export class Stream2 {
   // when projectable stream connecting rdy
   startConnectionToSlave(wsp) {
     this.wsp = wsp;
-    [...this.con5ions.keys()]
+    [...this.con5ions]
       .forEach(this.usecon5ion, this);
   }
 
@@ -596,29 +596,7 @@ export class Stream2 {
     }
   }
 
-  createEmitter(subscriber, evtChWSpS) {
-    /* <debug> */
-    return (rec) => {
-      if (!Array.isArray(evtChWSpS)) {
-        throw new TypeError('Zero spring chanel produced some data?');
-      }
-      if (evtChWSpS.some((wsp) => !(wsp instanceof WSP))) {
-        throw new TypeError('WSP event sources only supported');
-      }
-      if (!(rec instanceof Record)) {
-        throw new TypeError('WellSpring record expected');
-      }
-      if (![...this.connections.values()].includes(subscriber)) {
-        throw new Error('More unused stream continues to emit data');
-      }
-      subscriber(rec);
-    };
-    /* </debug> */
-    // eslint-disable-next-line no-unreachable
-    return subscriber;
-  }
-
-  createController() {
+  createCTR() {
     return new Controller(this);
   }
 }
