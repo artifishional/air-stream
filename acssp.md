@@ -3,7 +3,7 @@ response:
 ```json5
 {
   kind: 'CONNECTION',
-  clienID: 65464,
+  clientID: 65464,
 }
 ```
 ### Подписка на поток
@@ -60,6 +60,6 @@ response:
   kind: 'STATUS_UPDATE',
   path: './namespace/acc', // vs subscriptionID: 12345,
   status: 'success', // or failure
-  err: null,
+  err: null, // if failure
 }
 ```

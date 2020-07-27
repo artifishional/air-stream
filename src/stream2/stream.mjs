@@ -1,8 +1,7 @@
 import WSP from './wsp/wsp';
-import Record from './record/record';
 import RedWSPSlave from './wsp/rwsp-slave';
 import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp';
-import { EMPTY } from './signals';
+import { EMPTY, STATUS_UPDATE } from './signals';
 import {
   FROM_OWNER_STREAM,
   STD_DISCONNECT_REQ,
@@ -13,6 +12,7 @@ import Controller from './controller';
 import WSPSchemaTuner from './wsp-chema-tuner';
 import ReduceRemoteTuner from './reduce-remote-tuner';
 import RedCon5ionHn from './red-connection-handler';
+import { RED_REC_STATUS } from './record/red-record';
 
 const TYPES = { PIPE: 0, STORE: 1 };
 const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue: null });
@@ -50,6 +50,90 @@ export class Stream2 {
         controller.todisconnect(hook);
         return e;
       }));
+    });
+  }
+
+  static fromWSConnection({ uri }) {
+    return new Stream2((onrdy, ctr) => {
+      // eslint-disable-next-line no-undef
+      const ws = new WebSocket(uri);
+      const wsp = new WSP();
+      const handler = {
+        handleEvent(event) {
+          wsp.burn(event.data);
+        },
+        handleCTR(req, data) {
+          if (req === STD_DISCONNECT_REQ) {
+            ws.close();
+            ws.removeEventListener(handler);
+            return;
+          }
+          ws.send(JSON.stringify(data));
+        },
+      };
+      ctr.req(handler);
+      ws.addEventListener('massage', handler);
+      onrdy(wsp);
+    });
+  }
+
+  // unused now
+  gate() {
+    return new Stream2((onrdy, ctr) => {
+      let connection = null;
+      this.connect((wsp, hook) => {
+        ctr.todisconnect(hook);
+        ctr.tocommand((req, data) => {
+          if (connection) {
+            hook(req, { ...connection, ...data });
+          } else if (req.kind === 'SUBSCRIBE') {
+            // subscribers queue
+          }
+        });
+        wsp.on({
+          handleR(rec) {
+            if (rec.value.kind === 'CONNECTION') {
+              connection = { clientID: rec.value.clientID };
+            }
+          },
+        });
+        onrdy(ctr);
+      });
+    });
+  }
+
+  way({ path }) {
+    return new Stream2((onrdy, ctr) => {
+      this.connect((wsp, hook) => {
+        ctr.todisconnect(hook);
+        ctr.req('coordinate', (_, { value: data, id }) => {
+          hook('*', {
+            kind: 'COORDINATE',
+            path,
+            eventID: `${path}:${id}`,
+            data,
+          });
+        });
+        onrdy(wsp.map(({ value }) => {
+          if (value.path !== path) {
+            return EMPTY;
+          }
+          if (value.kind === 'INIT') {
+            return value.data;
+          }
+          if (value.kind === 'STATUS_UPDATE') {
+            return {
+              kind: STATUS_UPDATE,
+              status: RED_REC_STATUS[value.status.toUpperCase()],
+            };
+          }
+          throw new TypeError('Unsupported signal type');
+        }));
+        hook('*', {
+          kind: 'SUBSCRIBE',
+          path,
+        });
+      });
     });
   }
 
