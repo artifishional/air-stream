@@ -1,3 +1,4 @@
+import now from 'performance-now';
 import Token from './token.js';
 import AsyncTask from './async-task.js';
 
@@ -32,7 +33,7 @@ export default new class TTMPSyncCTR {
     }
     if (!this.token) {
       // eslint-disable-next-line
-      ttmp = globalThis.performance.now();
+      ttmp = now();
       this.token = new Token(ttmp);
       if (!this.asyncCTD) {
         this.asyncCTD = new AsyncTask(this.async, this);

@@ -1,7 +1,6 @@
-import EventEmitter from 'event-emitter';
+import now from 'performance-now';
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
-import WSP from '../wsp/wsp';
 import { RED_REC_STATUS } from '../record/red-record';
 import { PUSH, STATUS_UPDATE } from '../signals';
 
@@ -169,7 +168,7 @@ describe('reduce', () => {
         src: 'dot',
         data: {
           kind: PUSH,
-          token: { sttmp: performance.now() - SRV_RQ_RS_DELAY },
+          token: { sttmp: now() - SRV_RQ_RS_DELAY },
           data: 4,
         },
       }));
@@ -203,7 +202,7 @@ describe('reduce', () => {
             src: 'dot',
             data: {
               kind: PUSH,
-              token: { sttmp: performance.now() - SRV_RQ_RS_DELAY },
+              token: { sttmp: now() - SRV_RQ_RS_DELAY },
               data: 4,
             },
           });
