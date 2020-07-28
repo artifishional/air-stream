@@ -57,7 +57,7 @@ export class Stream2 {
     return new Stream2((onrdy, ctr) => {
       // eslint-disable-next-line no-undef
       const ws = new WebSocket(uri);
-      const wsp = new WSP();
+      const wsp = WSP.create();
       const handler = {
         handleEvent(event) {
           wsp.burn(event.data);

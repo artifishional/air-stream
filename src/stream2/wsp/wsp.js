@@ -253,7 +253,7 @@ export default class WSP
     }
   }
 
-  static create(wsps, hnProJ = null, conf = {}) {
+  static create(wsps = null, hnProJ = null, conf = {}) {
     const res = new this(
       wsps,
       conf,

@@ -1,4 +1,4 @@
-import { stream2 as ch } from "../../index.mjs";
+import { stream2 as ch } from "../../index.js";
 import {WSP} from "../wsp/wsp";
 import {async} from "../../utils";
 

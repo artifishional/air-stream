@@ -1,8 +1,8 @@
 {
   "name": "air-stream",
   "version": "0.8.0",
-  "module": "src/index.mjs",
-  "main": "src/index.mjs",
+  "module": "src/index.js",
+  "main": "src/index.js",
   "scripts": {
     "start": "node run.js",
     "dev": "webpack --config=webpack.dev.config.js",
@@ -11,6 +11,7 @@
     "patch": "npm version patch && npm publish && git push origin",
     "minor": "npm version minor && npm publish && git push origin"
   },
+  "type": "module",
   "author": ".ai",
   "license": "MIT",
   "devDependencies": {
