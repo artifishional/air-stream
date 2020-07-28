@@ -1,5 +1,5 @@
-/* <debug> */import AsyncTask from '../async-task';/* </debug> */
-import Token from '../token';
+/* <debug> */import AsyncTask from '../async-task.js';/* </debug> */
+import Token from '../token.js';
 
 export default class ReT4Base {
   /**

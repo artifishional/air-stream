@@ -1,5 +1,5 @@
-import { EMPTY } from '../signals';
-/* <debug> */import Debug from '../debug';/* </debug> */
+import { EMPTY } from '../signals.js';
+/* <debug> */import Debug from '../debug.js';/* </debug> */
 
 let staticOriginRecIDCounter = 0;
 

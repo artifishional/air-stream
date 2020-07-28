@@ -1,6 +1,6 @@
-import RedWSPSlave from './wsp/rwsp-slave';
-import RedCon5ionHn from './red-connection-handler';
-import AsyncTask from './async-task';
+import RedWSPSlave from './wsp/rwsp-slave.js';
+import RedCon5ionHn from './red-connection-handler.js';
+import AsyncTask from './async-task.js';
 
 export default class WSPSchemaTuner {
   constructor(_, onrdy, ctr, proJ, tuner, async, conf) {

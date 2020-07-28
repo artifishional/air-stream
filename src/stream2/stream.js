@@ -1,18 +1,18 @@
-import WSP from './wsp/wsp';
-import RedWSPSlave from './wsp/rwsp-slave';
-import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp';
-import { EMPTY, STATUS_UPDATE } from './signals';
+import WSP from './wsp/wsp.js';
+import RedWSPSlave from './wsp/rwsp-slave.js';
+import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp.js';
+import { EMPTY, STATUS_UPDATE } from './signals.js';
 import {
   FROM_OWNER_STREAM,
   STD_DISCONNECT_REQ,
   EMPTY_FUNCTION,
   STATIC_PROJECTS,
-} from './defs';
-import Controller from './controller';
-import WSPSchemaTuner from './wsp-chema-tuner';
-import ReduceRemoteTuner from './reduce-remote-tuner';
-import RedCon5ionHn from './red-connection-handler';
-import { RED_REC_STATUS } from './record/red-record';
+} from './defs.js';
+import Controller from './controller.js';
+import WSPSchemaTuner from './wsp-chema-tuner.js';
+import ReduceRemoteTuner from './reduce-remote-tuner.js';
+import RedCon5ionHn from './red-connection-handler.js';
+import { RED_REC_STATUS } from './record/red-record.js';
 
 const TYPES = { PIPE: 0, STORE: 1 };
 const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue: null });

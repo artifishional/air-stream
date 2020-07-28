@@ -1,3 +1,3 @@
-import './globalthis';
-import './node-perf-hooks';
-import './queue-microtask';
+import './globalthis.js';
+import './node-perf-hooks.js';
+import './queue-microtask.js';

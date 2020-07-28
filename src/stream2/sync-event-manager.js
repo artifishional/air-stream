@@ -1,5 +1,5 @@
-import SyncEventGroup from './sync-event-group';
-import Token from './token';
+import SyncEventGroup from './sync-event-group.js';
+import Token from './token.js';
 
 export default class SyncEventManager {
   constructor(own) {

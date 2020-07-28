@@ -1,5 +1,5 @@
-import Token from './token';
-import AsyncTask from './async-task';
+import Token from './token.js';
+import AsyncTask from './async-task.js';
 
 const boiler = new Map();
 

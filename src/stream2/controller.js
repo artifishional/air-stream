@@ -1,5 +1,5 @@
-import { STD_DISCONNECT_REQ } from './defs';
-/* <debug> */import Debug from './debug';/* </debug> */
+import { STD_DISCONNECT_REQ } from './defs.js';
+/* <debug> */import Debug from './debug.js';/* </debug> */
 
 export default class Controller
   /* <debug> */extends Debug/* </debug> */ {

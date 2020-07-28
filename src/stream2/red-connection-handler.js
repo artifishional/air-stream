@@ -1,5 +1,5 @@
 /* <debug> */
-import RedWSP from './wsp/rwsp';
+import RedWSP from './wsp/rwsp.js';
 /* </debug> */
 
 export default class RedCon5ionHn {

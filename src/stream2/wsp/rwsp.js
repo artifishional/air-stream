@@ -1,13 +1,13 @@
-import WSP from './wsp';
-import ReT4 from '../retouch/retouch';
-import { RET4_TYPES } from '../retouch/retouch-types';
-import { EMPTY } from '../signals';
-import HeadRecord from '../record/head-record';
-import Token from '../token';
+import WSP from './wsp.js';
+import ReT4 from '../retouch/retouch.js';
+import { RET4_TYPES } from '../retouch/retouch-types.js';
+import { EMPTY } from '../signals.js';
+import HeadRecord from '../record/head-record.js';
+import Token from '../token.js';
 // eslint-disable-next-line import/no-cycle
-import RedWSPSlave from './rwsp-slave';
-import Record from '../record/record';
-import STTMP from '../sync-ttmp-ctr';
+import RedWSPSlave from './rwsp-slave.js';
+import Record from '../record/record.js';
+import STTMP from '../sync-ttmp-ctr.js';
 
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 const UPDATE_T4_STATUS_CTD_COUNTER = 10;

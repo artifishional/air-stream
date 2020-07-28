@@ -11,7 +11,7 @@
     "patch": "npm version patch && npm publish && git push origin",
     "minor": "npm version minor && npm publish && git push origin"
   },
-  "type": "module",
+
   "author": ".ai",
   "license": "MIT",
   "devDependencies": {

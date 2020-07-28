@@ -1,4 +1,4 @@
-import ReT4 from './retouch-base';
+import ReT4 from './retouch-base.js';
 
 export default class ReT4Init extends ReT4 {
   constructor(owner, type, prms) {

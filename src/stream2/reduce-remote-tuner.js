@@ -1,9 +1,9 @@
-import { RED_REC_STATUS } from './record/red-record';
-import RedWSP, { RED_WSP_LOCALIZATION } from './wsp/rwsp';
-import { PUSH, STATUS_UPDATE, EMPTY } from './signals';
-import { RET4_TYPES } from './retouch/retouch-types';
-import Propagate from './propagate';
-import STTMP from './sync-ttmp-ctr';
+import { RED_REC_STATUS } from './record/red-record.js';
+import RedWSP, { RED_WSP_LOCALIZATION } from './wsp/rwsp.js';
+import { PUSH, STATUS_UPDATE, EMPTY } from './signals.js';
+import { RET4_TYPES } from './retouch/retouch-types.js';
+import Propagate from './propagate.js';
+import STTMP from './sync-ttmp-ctr.js';
 
 let COORDINATE_REQ_ID_COUNTER = 0;
 
