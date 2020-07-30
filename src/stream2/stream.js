@@ -400,6 +400,24 @@ export class Stream2 {
     return wsp instanceof RedWSP ? RedWSPSlave : WSP;
   }
 
+  combineAll(proJ) {
+    return new Stream2((onrdy, ctr) => {
+      this.connect((headWsp, headHook) => {
+        ctr.todisconnect(headHook);
+        ctr.todisconnect(() => headWsp.kill());
+        const tuner = new WSPSchemaTuner(this, onrdy, ctr, proJ);
+        headWsp.on({
+          handleR(rec) {
+            tuner.setup(rec.value);
+          },
+          handleReT4(rwsp, reT4data, type, prms) {
+            tuner.wsp.handleReT4(null, null, type, prms);
+          }
+        });
+      });
+    });
+  }
+
   combineAllFirst(conf) {
     // TODO: not completed solution
     return new Stream2((onrdy, ctr) => {
