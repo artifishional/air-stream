@@ -281,7 +281,7 @@ export default class RedWSP extends WSP {
    */
   on(slv) {
     /* <debug> */
-    if (!(slv instanceof RedWSPSlave)) {
+    if (!(slv instanceof RedWSPSlave) && !('binding' in slv)) {
       throw new Error('Unsupported configuration');
     }
     /* </debug> */

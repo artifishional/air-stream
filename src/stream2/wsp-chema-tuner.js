@@ -2,8 +2,29 @@ import RedWSPSlave from './wsp/rwsp-slave.js';
 import RedCon5ionHn from './red-connection-handler.js';
 import AsyncTask from './async-task.js';
 
+function arrEquals(arr1, arr2) {
+  if (arr1.length !== arr2.length) {
+    return false;
+  } else {
+    for (let i = 0; i < arr1.length; i += 1) {
+      if (arr1[i] !== arr2[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
 export default class WSPSchemaTuner {
-  constructor(_, onrdy, ctr, proJ, tuner, async, conf) {
+  constructor(
+      _,
+      onrdy,
+      ctr,
+      proJ,
+      tuner = null,
+      async = false,
+      conf = {}
+  ) {
     this.tuner = tuner;
     this.conf = conf;
     this.proJ = proJ;
@@ -69,13 +90,26 @@ export default class WSPSchemaTuner {
       this.wsp = RedWSPSlave.extendedCombine(
         con5ion.streams.map(({ wsp }) => wsp),
         () => this.proJ,
-        this,
+        this.tuner && this,
         this.conf,
       );
       this.onrdy(this.wsp);
     } else {
       this.wsp.setup(con5ion.streams.map(({ wsp }) => wsp));
     }
+  }
+
+  accurate(streams) {
+    if (!arrEquals(this.bags.map(([x]) => x), streams)) {
+      this.bags = streams.map(
+        (box) => [box, { on: true, key: -1, src: null, hook: null }]
+      );
+    }
+    if (this.after5fullUpdateCTD) {
+      this.after5fullUpdateCTD.cancel();
+      this.after5fullUpdateCTD = null;
+    }
+    this.con5ionHnCTR.reconnect(this.bags.map(([stream]) => stream));
   }
 
   setup(cnf) {
