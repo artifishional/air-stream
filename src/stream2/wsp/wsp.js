@@ -1,6 +1,5 @@
 import { EMPTY } from '../signals.js';
 import STTMP from '../sync-ttmp-ctr.js';
-import Record from '../record/record.js';
 import Propagate from '../propagate.js';
 import { STATIC_CREATOR_KEY } from '../defs.js';
 import SyncEventManager from '../sync-event-manager.js';
@@ -278,7 +277,7 @@ export default class WSP
   }
 
   createRecordFrom(rec, updates) {
-    return rec.from(updates, Record, undefined, this);
+    return rec.from(updates, this);
   }
 
   off(slv) {

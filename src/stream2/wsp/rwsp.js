@@ -35,10 +35,6 @@ export default class RedWSP extends WSP {
     return RED_WSP_SUBORDINATION;
   }
 
-  static get LOCALIZATION() {
-    return RED_WSP_LOCALIZATION;
-  }
-
   /**
   * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
   * Для мастера может быть только один источник
@@ -76,14 +72,14 @@ export default class RedWSP extends WSP {
     if (this.subordination === RED_WSP_SUBORDINATION.MASTER) {
       this.state = [];
       if (this.initialValue !== EMPTY) {
-        this.next(new HeadRecord(
-          null,
-          this,
-          null,
-          Token.INITIAL_TOKEN,
-          undefined,
-          this.constructor.STATIC_LOCAL_WSP,
-        ).from(this.initialValue, Record, this, this));
+        this.next(this.createRecordFrom(
+          new HeadRecord(
+            null,
+            Token.INITIAL_TOKEN,
+            this.constructor.STATIC_LOCAL_WSP,
+          ),
+          this.initialValue,
+        ));
       }
       /* else {
          Немедленная инициализация из очереди wsp
@@ -265,15 +261,6 @@ export default class RedWSP extends WSP {
     this.debug.reT4SpreadInProgress = false;
     /* </debug> */
     this.after5FullUpdateHn();
-  }
-
-  createRecordFrom(rec, updates) {
-    return rec.from(
-      updates,
-      Record,
-      undefined,
-      this,
-    );
   }
 
   /**
