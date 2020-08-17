@@ -7,6 +7,7 @@ import {
   STD_DISCONNECT_REQ,
   EMPTY_FUNCTION,
   STATIC_PROJECTS,
+  STATIC_GETTERS,
 } from './defs.js';
 import Controller from './controller.js';
 import WSPSchemaTuner from './wsp-chema-tuner.js';
@@ -60,20 +61,25 @@ export class Stream2 {
       const wsp = WSP.create();
       const handler = {
         handleEvent(event) {
-          wsp.burn(event.data);
+          if (event.type === 'message') {
+            wsp.burn(JSON.parse(event.data));
+          } else if (event.type === 'open') {
+            onrdy(wsp);
+          }
         },
         handleCTR(req, data) {
           if (req === STD_DISCONNECT_REQ) {
             ws.close();
-            ws.removeEventListener(handler);
+            ws.removeEventListener('message', handler);
+            ws.removeEventListener('open', handler);
             return;
           }
           ws.send(JSON.stringify(data));
         },
       };
-      ctr.req(handler);
-      ws.addEventListener('massage', handler);
-      onrdy(wsp);
+      ctr.link(handler);
+      ws.addEventListener('message', handler);
+      ws.addEventListener('open', handler);
     });
   }
 
@@ -126,6 +132,9 @@ export class Stream2 {
               kind: STATUS_UPDATE,
               status: RED_REC_STATUS[value.status.toUpperCase()],
             };
+          }
+          if (value.kind[0] === '$') {
+            return EMPTY;
           }
           throw new TypeError('Unsupported signal type');
         }));
@@ -226,7 +235,7 @@ export class Stream2 {
     return this.fromCbFn;
   }
 
-  static fromCbFn(cb) {
+  static fromCbFn(cb = () => {}) {
     return new Stream2((onrdy, ctr) => {
       onrdy(RedWSP.fromCbFunc((e) => cb(e, ctr)));
     });
@@ -240,6 +249,10 @@ export class Stream2 {
         { initialValue: cb() },
       ));
     });
+  }
+
+  static emptyChannel() {
+    return this.fromCbFn();
   }
 
   static get EMPTY() {
@@ -440,7 +453,7 @@ export class Stream2 {
     });
   }
 
-  gripFirst(getter) {
+  gripFirst(getter = STATIC_GETTERS.STRAIGHT) {
     return new Stream2((onrdy, ctr) => {
       this.connect((headWSP, headHook) => {
         ctr.todisconnect(headHook);

@@ -12,6 +12,9 @@ export const STATIC_PROJECTS = {
   AIO: (...args) => args,
   SURFACE_EQUAL: (x, y) => x === y,
 };
+export const STATIC_GETTERS = {
+  STRAIGHT: (value) => value,
+};
 export const FROM_OWNER_STREAM = {
   /* <debug> */
   FROM_OWNER_STREAM: 'FROM_OWNER_STREAM',
