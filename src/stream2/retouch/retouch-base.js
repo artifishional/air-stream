@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 /* <debug> */import AsyncTask from '../async-task.js';/* </debug> */
 import Token from '../token.js';
 
