@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 import WSP from './wsp/wsp.js';
 import RedWSPSlave from './wsp/rwsp-slave.js';
 import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp.js';
@@ -14,6 +15,7 @@ import WSPSchemaTuner from './wsp-chema-tuner.js';
 import ReduceRemoteTuner from './reduce-remote-tuner.js';
 import RedCon5ionHn from './red-connection-handler.js';
 import { RED_REC_STATUS } from './record/red-record.js';
+import * as utils from '../utils';
 
 const TYPES = { PIPE: 0, STORE: 1 };
 const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue: null });
@@ -80,6 +82,19 @@ export class Stream2 {
       ctr.link(handler);
       ws.addEventListener('message', handler);
       ws.addEventListener('open', handler);
+    });
+  }
+
+  factory(
+    construct,
+    getter = STATIC_GETTERS.STRAIGHT,
+    equal = utils.equal,
+  ) {
+    return new Stream2((onrdy, ctr) => {
+      this.connect((wsp, hook) => {
+        ctr.to(hook);
+        onrdy(wsp.factory(construct, getter, equal));
+      });
     });
   }
 
@@ -426,7 +441,7 @@ export class Stream2 {
           },
           handleReT4(rwsp, reT4data) {
             tuner.accurate(reT4data.slice(-1)[0].value);
-          }
+          },
         });
       });
     });

@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 import WSP from './wsp.js';
 import ReT4 from '../retouch/retouch.js';
 import { RET4_TYPES } from '../retouch/retouch-types.js';
@@ -6,7 +7,6 @@ import HeadRecord from '../record/head-record.js';
 import Token from '../token.js';
 // eslint-disable-next-line import/no-cycle
 import RedWSPSlave from './rwsp-slave.js';
-import Record from '../record/record.js';
 import STTMP from '../sync-ttmp-ctr.js';
 
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
@@ -113,6 +113,19 @@ export default class RedWSP extends WSP {
         proJ(update);
         return update;
       });
+  }
+
+  factory(construct, getter, equal) {
+    const cache = [];
+    return RedWSPSlave.create([this],
+      () => ([update]) => getter(update).map((raw) => {
+        let exst = cache.find((x) => equal(x, raw));
+        if (!exst) {
+          exst = construct(raw /* , source mapper */);
+          cache.push(exst);
+        }
+        return exst;
+      }));
   }
 
   reconstruct() {
@@ -264,7 +277,7 @@ export default class RedWSP extends WSP {
   }
 
   /**
-   * @param {RedWSPSlave} slv
+   * @param {WSP} slv
    */
   on(slv) {
     /* <debug> */
