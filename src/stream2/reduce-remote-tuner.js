@@ -1,11 +1,20 @@
 import { RED_REC_STATUS } from './record/red-record.js';
-import RedWSP, { RED_WSP_LOCALIZATION } from './wsp/rwsp.js';
+import RedWSP from './wsp/rwsp.js';
 import { PUSH, STATUS_UPDATE, EMPTY } from './signals.js';
 import { RET4_TYPES } from './retouch/retouch-types.js';
 import Propagate from './propagate.js';
 import STTMP from './sync-ttmp-ctr.js';
 
 let COORDINATE_REQ_ID_COUNTER = 0;
+
+/**
+ * @readonly
+ * @enum {number}
+ */
+export const RED_WSP_TUNER_SUBORDINATION_MODE = {
+  RED: 'RED',
+  RI: 'RI',
+};
 
 export default class ReduceRemoteTuner {
   constructor({ whenAllConnected }, onrdy, ctr, hnProJ) {
@@ -18,6 +27,8 @@ export default class ReduceRemoteTuner {
     this.onrdy = onrdy;
     this.wsp = null;
     this.hnProJ = hnProJ;
+    this.binding = true;
+    this.mode = RED_WSP_TUNER_SUBORDINATION_MODE.RED;
     /**
      * Request/Response delay
      * @type {number}
@@ -32,6 +43,9 @@ export default class ReduceRemoteTuner {
       this.wspR = wspR;
       this.wsp = wsp;
       wspR.on(this);
+      if (wsp instanceof RedWSP) {
+        this.mode = RED_WSP_TUNER_SUBORDINATION_MODE.RI;
+      }
       wsp.on(this);
     });
   }
@@ -56,36 +70,49 @@ export default class ReduceRemoteTuner {
   }
 
   normalizeQueue() {
-    this.queue.splice(0, this.queue.findIndex(
-      ({ status }) => status !== RED_REC_STATUS.SUCCESS,
-    ) + 1);
+    // TODO: need refactor
+    if (this.mode === RED_WSP_TUNER_SUBORDINATION_MODE.RED) {
+      this.queue.splice(0, this.queue.findIndex(
+        ({status}) => status !== RED_REC_STATUS.SUCCESS,
+      ) + 1);
+    }
   }
 
   coordinate({ rec: { value }, id }) {
     this.hookR('coordinate', { value, id });
   }
 
+  /**
+   * RI reT4
+   */
+  handleReT4() {
+    this.initiateReT4(act.rec);
+  }
+
   handleR(rec) {
     const { src, value } = rec;
     if (value !== EMPTY) {
       if (src === this.wsp && this.rwsp) {
-        const act = {
-          id: -1,
-          rec,
-          status: RED_REC_STATUS.PENDING,
-        };
-        this.queue.push(act);
-        queueMicrotask(() => {
-          if (rec.head.preRejected) {
-            act.status = RED_REC_STATUS.FAILURE;
-            this.queue.splice(this.queue.indexOf(act), 1);
-            this.initiateReT4(act.rec);
-          } else {
-            COORDINATE_REQ_ID_COUNTER += 1;
-            act.id = COORDINATE_REQ_ID_COUNTER;
-            this.coordinate(act);
-          }
-        });
+        // TODO: need refactor
+        if (this.mode === RED_WSP_TUNER_SUBORDINATION_MODE.RED) {
+          const act = {
+            id: -1,
+            rec,
+            status: RED_REC_STATUS.PENDING,
+          };
+          this.queue.push(act);
+          queueMicrotask(() => {
+            if (rec.head.preRejected) {
+              act.status = RED_REC_STATUS.FAILURE;
+              this.queue.splice(this.queue.indexOf(act), 1);
+              this.initiateReT4(act.rec);
+            } else {
+              COORDINATE_REQ_ID_COUNTER += 1;
+              act.id = COORDINATE_REQ_ID_COUNTER;
+              this.coordinate(act);
+            }
+          });
+        }
       } else if (src === this.wspR) {
         if (!this.rwsp) {
           this.queue = [];

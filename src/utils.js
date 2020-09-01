@@ -23,3 +23,14 @@ export function equal(a, b) {
   }
   return false;
 }
+
+// https://jsbench.me/c2ked5khi1/1
+export function findFromMap(map, equalFn) {
+  // eslint-disable-next-line no-restricted-syntax
+  for (const pair of map) {
+    if (equalFn(pair)) {
+      return pair;
+    }
+  }
+  return undefined;
+}

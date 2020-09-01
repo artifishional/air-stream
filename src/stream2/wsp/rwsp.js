@@ -8,6 +8,7 @@ import Token from '../token.js';
 // eslint-disable-next-line import/no-cycle
 import RedWSPSlave from './rwsp-slave.js';
 import STTMP from '../sync-ttmp-ctr.js';
+import { findFromMap } from '../../utils.js';
 
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 const UPDATE_T4_STATUS_CTD_COUNTER = 10;
@@ -116,16 +117,19 @@ export default class RedWSP extends WSP {
   }
 
   factory(construct, getter, equal) {
-    const cache = [];
+    const cache = new Map();
     return RedWSPSlave.create([this],
-      () => ([update]) => getter(update).map((raw) => {
-        let exst = cache.find((x) => equal(x, raw));
-        if (!exst) {
-          exst = construct(raw /* , source mapper */);
-          cache.push(exst);
-        }
-        return exst;
-      }));
+      () => ([update]) => {
+      const res = getter(update.value).map((raw) => {
+          let exst = findFromMap(cache, ([x]) => equal(x, raw));
+          if (!exst) {
+            exst = [raw, construct(raw /* , source mapper */)];
+            cache.set(raw, exst[1]);
+          }
+          return exst[1];
+        });
+        return res;
+      });
   }
 
   reconstruct() {
@@ -281,7 +285,10 @@ export default class RedWSP extends WSP {
    */
   on(slv) {
     /* <debug> */
-    if (!(slv instanceof RedWSPSlave) && !('binding' in slv)) {
+    if (!(slv instanceof RedWSPSlave)
+      && !('binding' in slv)
+      && !('handleReT4' in slv)
+    ) {
       throw new Error('Unsupported configuration');
     }
     /* </debug> */

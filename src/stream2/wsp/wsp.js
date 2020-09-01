@@ -302,7 +302,7 @@ export default class WSP
 
   get(proJ) {
     return WSP.create([this],
-      () => ([[update]]) => {
+      () => ([update]) => {
         proJ(update);
         return update;
       });

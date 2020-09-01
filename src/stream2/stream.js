@@ -1,4 +1,5 @@
 /* eslint-disable import/extensions */
+import now from 'performance-now';
 import WSP from './wsp/wsp.js';
 import RedWSPSlave from './wsp/rwsp-slave.js';
 import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp.js';
@@ -20,6 +21,8 @@ import * as utils from '../utils';
 const TYPES = { PIPE: 0, STORE: 1 };
 const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue: null });
 
+let UNIQUE_STREAM_COUNTER = 0;
+
 export class Stream2 {
   constructor(proJ, ctx = null) {
     this.con5ions = new Set();
@@ -33,6 +36,27 @@ export class Stream2 {
 
   static get TYPES() {
     return TYPES;
+  }
+
+  get id() {
+    if (!this.$id) {
+      UNIQUE_STREAM_COUNTER += 1;
+      this.$id = UNIQUE_STREAM_COUNTER;
+    }
+    return this.$id;
+  }
+
+  static ups(delay, startAt = now()) {
+    return this.fromCbFunc((cb, ctr) => {
+      let stepCt = 0;
+      const ctd = setInterval(() => {
+        while (stepCt * delay < now() - startAt) {
+          stepCt += 1;
+          cb(stepCt);
+        }
+      });
+      ctr.todisconnect(() => clearInterval(ctd));
+    });
   }
 
   static fromNodeEvent(target, event, mapFn) {
@@ -123,7 +147,7 @@ export class Stream2 {
     });
   }
 
-  way({ path }) {
+  way({ path, args = null }) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.todisconnect(hook);
@@ -131,6 +155,7 @@ export class Stream2 {
           hook('*', {
             kind: 'COORDINATE',
             path,
+            args,
             eventID: `${path}:${id}`,
             data,
           });
@@ -156,6 +181,7 @@ export class Stream2 {
         hook('*', {
           kind: 'SUBSCRIBE',
           path,
+          args,
         });
       });
     });
@@ -244,6 +270,23 @@ export class Stream2 {
       return this.fromPromise(source, proJ);
     }
     throw new TypeError('Unsupported source type');
+  }
+
+  static fromEvent(target, evtName) {
+    return this.fromCbFn((cb, ctr) => {
+      ctr.todisconnect(() => {
+        evtName
+          .split(' ')
+          .forEach((evt) => {
+            target.removeAllListener(evt, cb);
+          });
+      });
+      evtName
+        .split(' ')
+        .forEach((evt) => {
+          target.addEventListener(evt, cb);
+        });
+    });
   }
 
   static get fromCbFunc() {
