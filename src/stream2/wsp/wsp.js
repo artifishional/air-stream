@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 import { EMPTY } from '../signals.js';
 import STTMP from '../sync-ttmp-ctr.js';
 import Propagate from '../propagate.js';

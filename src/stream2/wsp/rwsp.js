@@ -8,7 +8,8 @@ import Token from '../token.js';
 // eslint-disable-next-line import/no-cycle
 import RedWSPSlave from './rwsp-slave.js';
 import STTMP from '../sync-ttmp-ctr.js';
-import { findFromMap } from '../../utils.js';
+import { STATIC_GETTERS } from '../defs.js';
+import * as utils from '../../utils';
 
 const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 const UPDATE_T4_STATUS_CTD_COUNTER = 10;
@@ -116,20 +117,17 @@ export default class RedWSP extends WSP {
       });
   }
 
-  factory(construct, getter, equal) {
+  factory(construct, getter = STATIC_GETTERS.STRAIGHT, equal = utils.equal) {
     const cache = new Map();
     return RedWSPSlave.create([this],
-      () => ([update]) => {
-      const res = getter(update.value).map((raw) => {
-          let exst = findFromMap(cache, ([x]) => equal(x, raw));
-          if (!exst) {
-            exst = [raw, construct(raw /* , source mapper */)];
-            cache.set(raw, exst[1]);
-          }
-          return exst[1];
-        });
-        return res;
-      });
+      () => ([update]) => getter(update.value).map((raw) => {
+        let exst = utils.findFromMap(cache, ([x]) => equal(x, raw));
+        if (!exst) {
+          exst = [raw, construct(raw /* , source mapper */)];
+          cache.set(raw, exst[1]);
+        }
+        return exst[1];
+      }));
   }
 
   reconstruct() {

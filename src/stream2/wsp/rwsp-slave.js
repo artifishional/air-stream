@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 import RedWSP from './rwsp.js';
 
 export default class RedWSPSlave extends RedWSP {
