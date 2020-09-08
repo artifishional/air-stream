@@ -11,6 +11,8 @@ describe('reduce', () => {
   test('example', (done) => {
     const _ = async();
     const expected = [
+      // теперь это +1 stable msg
+      100,
       101,
       103,
       106,
@@ -227,6 +229,40 @@ describe('reduce', () => {
         [100],
         [104],
         [105],
+      ]);
+      done();
+    });
+  });
+
+  test('remote RED slave (RI) example', (done) => {
+    const _ = async();
+    // eslint-disable-next-line no-undef
+    const proJ = jest.fn();
+    const rc1 = stream.fromCbFunc((cb) => {
+      _(() => cb({ src: 'dot', data: 10, path: 'ab' }));
+      _(() => cb({ src: 'com', data: 1, path: 'a' }));
+      _(() => cb({ src: 'com', data: 2, path: 'a' }));
+    });
+    const rm1 = rc1
+      .filter(({ path }) => path.includes('a'))
+      .filter(({ src }) => src === 'dot')
+      .map(({ data }) => data);
+    const rm2 = rc1
+      .filter(({ path }) => path.includes('b'))
+      .filter(({ src }) => src === 'dot')
+      .map(({ data }) => data);
+    const r1 = rc1
+      .filter(({ path }) => path.includes('a'))
+      .filter(({ src }) => src === 'com')
+      .map(({ data }) => data)
+      .reduce((acc, next) => acc + next, { remote: rm1 })
+      .reduce((acc, next) => acc * next, { remote: rm2 });
+    r1.get(({ value }) => proJ(value));
+    setTimeout(() => {
+      expect(proJ.mock.calls).toEqual([
+        [10],
+        [110],
+        [1430],
       ]);
       done();
     });

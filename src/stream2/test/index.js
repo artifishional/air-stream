@@ -5,3 +5,4 @@ import './combine-all';
 import './reducer';
 import './controller';
 import './constructor';
+import './rwsp';

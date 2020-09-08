@@ -11,8 +11,8 @@ import STTMP from '../sync-ttmp-ctr.js';
 import { STATIC_GETTERS } from '../defs.js';
 import * as utils from '../../utils';
 
-const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
-const UPDATE_T4_STATUS_CTD_COUNTER = 10;
+export const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
+export const DEFAULT_UPDATE_T4_STATUS_CTD_VALUE = 10;
 
 /**
  * @readonly
@@ -66,7 +66,23 @@ export default class RedWSP extends WSP {
     /* <debug> */
     this.debug.reT4SpreadInProgress = false;
     /* </debug> */
-    this.$updateT4statusCTD = UPDATE_T4_STATUS_CTD_COUNTER;
+    this.$updateT4statusCTD = this.constructor.UPDATE_T4_STATUS_CTD_VALUE;
+  }
+
+  static get MSG_ALIVE_TIME_MS() {
+    return this.$MSG_ALIVE_TIME_MS;
+  }
+
+  static set MSG_ALIVE_TIME_MS(value) {
+    this.$MSG_ALIVE_TIME_MS = value;
+  }
+
+  static get UPDATE_T4_STATUS_CTD_VALUE() {
+    return this.$UPDATE_T4_STATUS_CTD_VALUE;
+  }
+
+  static set UPDATE_T4_STATUS_CTD_VALUE(value) {
+    this.$UPDATE_T4_STATUS_CTD_VALUE = value;
   }
 
   initiate(hnProJ, after5FullUpdateObs) {
@@ -246,7 +262,18 @@ export default class RedWSP extends WSP {
   }
 
   onReT4Complete({ prms, type }, updates) {
-    if (prms.merge) {
+    // TODO: need refactor
+    //  'updates' processing is needed in polymorphic form
+    if (this.subordination === this.constructor.SUBORDINATION.MASTER
+      && !prms.merge
+    ) {
+      this.state.length = 1;
+      const idx = updates.findIndex(
+        (rec) => Token.compare(rec, this.state[0]) < 0,
+      );
+      // eslint-disable-next-line no-param-reassign
+      updates = idx > -1 ? updates.slice(idx) : [];
+    } else if (prms.merge) {
       const idx = this.state.findIndex(
         (rec) => Token.compare(rec, prms.merge) >= 0,
       );
@@ -308,7 +335,8 @@ export default class RedWSP extends WSP {
   }
 
   findIndexOfLastRelUpdate() {
-    const relTTMP = STTMP.get().token.sttmp - DEFAULT_MSG_ALIVE_TIME_MS;
+    const relTTMP = STTMP.get().token.sttmp
+      - this.constructor.MSG_ALIVE_TIME_MS;
     let startAt = this.state.length - 1;
     if (this.state[startAt].value === EMPTY) {
       startAt -= 1;
@@ -317,7 +345,7 @@ export default class RedWSP extends WSP {
     for (let i = startAt; i--;) {
       const rec = this.state[i];
       if (rec.token.token.sttmp < relTTMP) {
-        return i + 1;
+        return i;
       }
     }
     return 0;
@@ -336,7 +364,7 @@ export default class RedWSP extends WSP {
   updateT4statusCTD() {
     this.$updateT4statusCTD -= 1;
     if (!this.$updateT4statusCTD) {
-      this.$updateT4statusCTD = UPDATE_T4_STATUS_CTD_COUNTER;
+      this.$updateT4statusCTD = this.constructor.UPDATE_T4_STATUS_CTD_VALUE;
       this.updateT4status();
     }
   }
@@ -378,3 +406,8 @@ export default class RedWSP extends WSP {
       }, conf);
   }
 }
+
+RedWSP.$MSG_ALIVE_TIME_MS = RedWSP.$MSG_ALIVE_TIME_MS
+  || DEFAULT_MSG_ALIVE_TIME_MS;
+RedWSP.$UPDATE_T4_STATUS_CTD_VALUE = RedWSP.$UPDATE_T4_STATUS_CTD_VALUE
+  || DEFAULT_UPDATE_T4_STATUS_CTD_VALUE;

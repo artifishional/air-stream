@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 import { RED_REC_STATUS } from './record/red-record.js';
 import RedWSP from './wsp/rwsp.js';
 import { PUSH, STATUS_UPDATE, EMPTY } from './signals.js';
@@ -73,7 +74,7 @@ export default class ReduceRemoteTuner {
     // TODO: need refactor
     if (this.mode === RED_WSP_TUNER_SUBORDINATION_MODE.RED) {
       this.queue.splice(0, this.queue.findIndex(
-        ({status}) => status !== RED_REC_STATUS.SUCCESS,
+        ({ status }) => status !== RED_REC_STATUS.SUCCESS,
       ) + 1);
     }
   }
@@ -83,10 +84,11 @@ export default class ReduceRemoteTuner {
   }
 
   /**
-   * RI reT4
+   * RI ReT4
    */
+  // eslint-disable-next-line class-methods-use-this
   handleReT4() {
-    this.initiateReT4(act.rec);
+    // RI ReT4 now correctly works from him source RWSP
   }
 
   handleR(rec) {

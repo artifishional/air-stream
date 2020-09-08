@@ -95,6 +95,8 @@ describe('combine', () => {
   test('several remote RedWSP to local RedSWPSlave', (done) => {
     const _ = async();
     const expected = [
+      // теперь это +1 stable msg
+      1000,
       1020,
       1122,
     ];
