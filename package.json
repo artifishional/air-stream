@@ -4,12 +4,11 @@
   "module": "src/index.js",
   "main": "src/index.js",
   "scripts": {
-    "start": "node run.js",
-    "dev": "webpack --config=webpack.dev.config.js",
     "test": "jest --verbose --runInBand",
     "test-dev": "jest --verbose --runInBand -t \"sync when reT4 through EMPTY record\"",
     "patch": "npm version patch && npm publish && git push origin",
-    "minor": "npm version minor && npm publish && git push origin"
+    "minor": "npm version minor && npm publish && git push origin",
+    "major": "npm version major && npm publish && git push origin"
   },
   "type": "module",
   "author": ".ai",
