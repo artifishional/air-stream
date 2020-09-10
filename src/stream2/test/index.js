@@ -6,3 +6,4 @@ import './reducer';
 import './controller';
 import './constructor';
 import './rwsp';
+import './ups';

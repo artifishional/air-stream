@@ -34,3 +34,7 @@ export function findFromMap(map, equalFn) {
   }
   return undefined;
 }
+
+export function isUndef(value) {
+  return value === undefined;
+}

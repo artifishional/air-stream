@@ -52,13 +52,16 @@ export class Stream2 {
       // eslint-disable-next-line no-bitwise
       const delay = 1000 / ups | 0;
       let stepCt = 0;
-      const ctd = setInterval(() => {
-        while (stepCt * delay < now() - startAt) {
+      let ctd;
+      function fps() {
+        ctd = setTimeout(() => {
           stepCt += 1;
           cb(stepCt);
-        }
-      });
-      ctr.todisconnect(() => clearInterval(ctd));
+          fps();
+        }, stepCt * delay - now() + startAt);
+      }
+      fps();
+      ctr.todisconnect(() => clearTimeout(ctd));
     });
   }
 
@@ -151,6 +154,11 @@ export class Stream2 {
   }
 
   way({ path, args = null }) {
+    /* <debug> */
+    if (utils.isUndef(path)) {
+      throw new TypeError('Required "path" param');
+    }
+    /* </debug> */
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.todisconnect(hook);
