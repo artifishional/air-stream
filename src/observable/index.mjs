@@ -455,6 +455,45 @@ export default class Observable {
       });
     });
   }
+  
+  advancedReducer(project, { preventWorkOnEmptyState = true } = {}) {
+    return new Observable(emt => {
+      let acc = empty;
+      let history = [];
+      return this.on((evt, src) => {
+        if (evt === keyF) {
+          acc = empty;
+          history = [[keyF, src]];
+          emt(evt, src);
+        } else if (evt === keyA) {
+          if (src.is.abort) {
+            if (src.rid === -1) throw `requires request "rid" for cancellation`;
+            const canceled = history.findIndex(([, {rid}]) => rid === src.rid);
+            if (canceled > -1) {
+              history.splice(canceled, 1);
+              emt(history[0][0], {...history[0][1], rid: -1});
+              acc = history.slice(1).reduce(([acc], [evt, _src], index, {length}) => {
+                acc = [project(acc, evt, _src), _src];
+                if (index > length - 3) {
+                  emt(acc[0], {..._src, __sid__: src.__sid__});
+                }
+                return acc;
+              });
+              emt(acc[0], {...src, rid: -1});
+            }
+          }
+        } else if (acc === empty) {
+          if (preventWorkOnEmptyState && 'action' in evt) return;
+          acc = [evt, src];
+          history.push(acc);
+          emt(...acc);
+        } else {
+          history.push([evt, src]);
+          emt(...acc = [project(acc[0], evt, src), src]);
+        }
+      });
+    });
+  }
 
   reduce (project) {
     return new Observable(emt => {
