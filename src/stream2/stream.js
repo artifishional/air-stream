@@ -20,6 +20,7 @@ import * as utils from '../utils';
 
 const TYPES = { PIPE: 0, STORE: 1 };
 const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue: null });
+const DEFAULT_UPS_VALUE = 50;
 
 let UNIQUE_STREAM_COUNTER = 0;
 
@@ -46,8 +47,10 @@ export class Stream2 {
     return this.$id;
   }
 
-  static ups(delay, startAt = now()) {
+  static ups(ups = DEFAULT_UPS_VALUE, startAt = now()) {
     return this.fromCbFunc((cb, ctr) => {
+      // eslint-disable-next-line no-bitwise
+      const delay = 1000 / ups | 0;
       let stepCt = 0;
       const ctd = setInterval(() => {
         while (stepCt * delay < now() - startAt) {
@@ -432,6 +435,18 @@ export class Stream2 {
         onrdy(RedWSPSlave.extendedCombine(wsps, () => proJ, null, conf));
       });
     });
+  }
+
+  withlatest(
+    streams,
+    proJ = STATIC_PROJECTS.STRAIGHT,
+    { ctrMode = 'none', ...conf } = { },
+  ) {
+    return this.constructor.withlatest(
+      [this, ...streams],
+      proJ,
+      { ctrMode, ...conf },
+    );
   }
 
   static withlatest(
