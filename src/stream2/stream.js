@@ -16,7 +16,7 @@ import WSPSchemaTuner from './wsp-chema-tuner.js';
 import ReduceRemoteTuner from './reduce-remote-tuner.js';
 import RedCon5ionHn from './red-connection-handler.js';
 import { RED_REC_STATUS } from './record/red-record.js';
-import * as utils from '../utils';
+import * as utils from '../utils.js';
 
 const TYPES = { PIPE: 0, STORE: 1 };
 const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue: null });

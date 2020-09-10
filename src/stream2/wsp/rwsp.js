@@ -9,7 +9,7 @@ import Token from '../token.js';
 import RedWSPSlave from './rwsp-slave.js';
 import STTMP from '../sync-ttmp-ctr.js';
 import { STATIC_GETTERS } from '../defs.js';
-import * as utils from '../../utils';
+import * as utils from '../../utils.js';
 
 export const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 export const DEFAULT_UPDATE_T4_STATUS_CTD_VALUE = 10;
