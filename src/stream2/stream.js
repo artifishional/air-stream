@@ -18,8 +18,9 @@ import RedCon5ionHn from './red-connection-handler.js';
 import { RED_REC_STATUS } from './record/red-record.js';
 import * as utils from '../utils.js';
 
-const TYPES = { PIPE: 0, STORE: 1 };
-const STATIC_LOCAL_RED_WSP = RedWSP.create(null, EMPTY_FUNCTION, { initialValue: null });
+const STATIC_LOCAL_RED_WSP = RedWSP.create(
+  null, EMPTY_FUNCTION, { initialValue: null },
+);
 const DEFAULT_UPS_VALUE = 50;
 
 let UNIQUE_STREAM_COUNTER = 0;
@@ -33,10 +34,6 @@ export class Stream2 {
     /* </debug> */
     this.project = proJ;
     this.ctx = ctx;
-  }
-
-  static get TYPES() {
-    return TYPES;
   }
 
   get id() {
