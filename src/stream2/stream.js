@@ -721,6 +721,14 @@ export class Stream2 {
     }, conf);
   }
 
+  debug(conf = {}) {
+    return this.mapF(({ value }) => {
+      // eslint-disable-next-line no-debugger
+      debugger;
+      return value;
+    }, conf);
+  }
+
   connect(con5ion = () => {}) {
     this.con5ions.add(con5ion);
     if (!this.connection) {
