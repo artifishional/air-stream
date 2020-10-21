@@ -5,7 +5,7 @@ import { async } from '../../utils';
 const { describe, test, expect } = globalThis;
 
 describe('combine', () => {
-  test('example', (done) => {
+  test('combine example', (done) => {
     const _ = async();
     const expected = [
       200,

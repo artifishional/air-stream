@@ -43,17 +43,15 @@ describe('RedWSP', () => {
       .fromCbFunc((cb) => {
         cb(1);
         _(() => cb(2));
-        setTimeout(() => {
+        _(() => setTimeout(() => {
           _(() => cb(3));
           _(() => cb(4));
-        }, RedWSP.MSG_ALIVE_TIME_MS);
+          _(() => expect(red.wsp.state.length).toEqual(3));
+          _(done);
+        }, RedWSP.MSG_ALIVE_TIME_MS));
       })
       .store();
     red.connect();
-    setTimeout(() => {
-      _(() => expect(red.wsp.state.length).toEqual(3));
-      _(done);
-    }, RedWSP.MSG_ALIVE_TIME_MS);
   });
 
   test('mandatory actions + 1 stable action store view', (done) => {

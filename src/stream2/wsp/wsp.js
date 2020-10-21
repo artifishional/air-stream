@@ -265,8 +265,8 @@ export default class WSP
     return res;
   }
 
-  static fromCbFunc(cb) {
-    const res = WSP.create();
+  static fromCbFunc(cb, conf) {
+    const res = WSP.create(null, null, conf);
     cb((data) => res.burn(data));
     return res;
   }
@@ -376,10 +376,11 @@ export default class WSP
     );
   }
 
-  filter(proJ) {
+  filter(proJ, conf) {
     return WSP.create(
       [this],
       () => ([update]) => (proJ(update) ? update.value : EMPTY),
+      conf,
     );
   }
 }

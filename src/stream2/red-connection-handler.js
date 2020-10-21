@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 /* <debug> */
 import RedWSP from './wsp/rwsp.js';
 /* </debug> */

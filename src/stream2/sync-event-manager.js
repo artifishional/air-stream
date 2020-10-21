@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 import SyncEventGroup from './sync-event-group.js';
 import Token from './token.js';
 
@@ -33,8 +34,11 @@ export default class SyncEventManager {
         && (sncGrp.headRec.token.token !== Token.INITIAL_TOKEN.token
         || cuR.head.token.token !== Token.INITIAL_TOKEN.token)
       ) {
-        this.sncLastEvtGrp = null;
+        // здесь данный порядок обусловлен тем, что
+        // после завершения синхронизации будет проверяться
+        // необходимость завершения ReT4
         this.own.sncGrpFilledHandler(sncGrp.getUpdates());
+        this.sncLastEvtGrp = null;
       }
     }
     if (!this.sncLastEvtGrp) {

@@ -7,3 +7,4 @@ import './controller';
 import './constructor';
 import './rwsp';
 import './ups';
+import './withlatest';

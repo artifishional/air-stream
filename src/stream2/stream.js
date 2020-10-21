@@ -301,9 +301,9 @@ export class Stream2 {
     return this.fromCbFn;
   }
 
-  static fromCbFn(cb = () => {}) {
+  static fromCbFn(cb = () => {}, conf) {
     return new Stream2((onrdy, ctr) => {
-      onrdy(RedWSP.fromCbFunc((e) => cb(e, ctr)));
+      onrdy(RedWSP.fromCbFunc((e) => cb(e, ctr), conf));
     });
   }
 
@@ -437,7 +437,13 @@ export class Stream2 {
           throw new Error('Unsupported controller mode');
         }
         const wsps = con5tion.streams.map(({ wsp }) => wsp);
-        onrdy(RedWSPSlave.extendedCombine(wsps, () => proJ, null, conf));
+        // Несмотря на то, что базовые хранилища уже готовы
+        // на момент запуска дочернего, он все равно имеет шанс
+        // инициализироваться позднее, так как будет
+        // завершать процесс синхронизации
+        RedWSPSlave.extendedCombine(wsps, () => proJ, null, {
+          onReT4completeCb: onrdy, ...conf,
+        });
       });
     });
   }
@@ -474,8 +480,14 @@ export class Stream2 {
         } else {
           throw new Error('Unsupported controller mode');
         }
-        const wsps = con5tion.map(({ wsp }) => wsp);
-        onrdy(RedWSPSlave.extendedWithlatest(wsps, () => proJ, null, conf));
+        const wsps = con5tion.streams.map(({ wsp }) => wsp);
+        // Несмотря на то, что базовые хранилища уже готовы
+        // на момент запуска дочернего, он все равно имеет шанс
+        // инициализироваться позднее, так как будет
+        // завершать процесс синхронизации
+        RedWSPSlave.extendedWithlatest(wsps, () => proJ, null, {
+          onReT4completeCb: onrdy, ...conf,
+        });
       });
     });
   }
@@ -551,7 +563,7 @@ export class Stream2 {
     });
   }
 
-  store() {
+  store(conf = {}) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.to(hook);
@@ -559,18 +571,20 @@ export class Stream2 {
           onrdy(wsp);
           return;
         }
-        let init = false;
-        wsp.on({
-          handleR() {
-            if (!init) {
-              init = true;
-              const rwsp = RedWSP.create(
-                [wsp], () => ([{ value }]) => value,
+        let rwsp = null;
+        const hn = {
+          handleR(cuR) {
+            if (cuR.value === EMPTY) return;
+            if (!rwsp) {
+              rwsp = RedWSP.create(
+                [wsp], () => ([{ value }]) => value, conf,
               );
               onrdy(rwsp);
+              wsp.off(hn);
             }
           },
-        });
+        };
+        wsp.on(hn);
       });
     });
   }
@@ -700,15 +714,15 @@ export class Stream2 {
     });
   }
 
-  filter(proJ) {
-    return this.filterF(({ value }) => proJ(value));
+  filter(proJ, conf) {
+    return this.filterF(({ value }) => proJ(value), conf);
   }
 
-  filterF(proJ) {
+  filterF(proJ, conf) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.to(hook);
-        onrdy(wsp.filter(proJ));
+        onrdy(wsp.filter(proJ, conf));
       });
     });
   }

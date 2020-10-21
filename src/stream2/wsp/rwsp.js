@@ -55,6 +55,7 @@ export default class RedWSP extends WSP {
   constructor(wsps, {
     subordination = RED_WSP_SUBORDINATION.MASTER,
     initialValue = EMPTY,
+    onReT4completeCb = null,
     ...args
   } = {}, /* <debug> */ creatorKey /* </debug> */) {
     super(wsps, args, /* <debug> */ creatorKey /* </debug> */);
@@ -67,6 +68,8 @@ export default class RedWSP extends WSP {
     this.debug.reT4SpreadInProgress = false;
     /* </debug> */
     this.$updateT4statusCTD = this.constructor.UPDATE_T4_STATUS_CTD_VALUE;
+    this.onReT4completeCb = onReT4completeCb;
+    this.reT4NotFinalized = false;
   }
 
   static get MSG_ALIVE_TIME_MS() {
@@ -218,8 +221,12 @@ export default class RedWSP extends WSP {
   *    Как различать тип хранилища?
   */
 
+  get isInitialized() {
+    return !!this.state.length;
+  }
+
   next(rec) {
-    if (!this.state.length && rec.value === EMPTY) {
+    if (!this.isInitialized && rec.value === EMPTY) {
       return;
     }
     this.pushToState(rec);
@@ -261,7 +268,7 @@ export default class RedWSP extends WSP {
     // данные из смежных состояний
   }
 
-  onReT4Complete({ prms, type }, updates) {
+  onReT4Complete({ prms }, updates) {
     // TODO: need refactor
     //  'updates' processing is needed in polymorphic form
     if (this.subordination === this.constructor.SUBORDINATION.MASTER
@@ -282,13 +289,17 @@ export default class RedWSP extends WSP {
       this.state = [];
     }
     updates.forEach((rec) => this.handleR(rec));
-    /* <debug> */
     if (this.sncMan.sncLastEvtGrp) {
-      throw new Error('Unexpected model state');
+      this.reT4NotFinalized = true;
+    } else {
+      this.finalizeReT4(this.incompleteRet4);
     }
-    /* </debug> */
+  }
+
+  finalizeReT4({ prms, type }) {
+    this.reT4NotFinalized = false;
     /* <debug> */
-    if (!this.state.length) {
+    if (!this.isInitialized) {
       throw new Error('Unexpected model state');
     }
     /* </debug> */
@@ -303,6 +314,17 @@ export default class RedWSP extends WSP {
     this.debug.reT4SpreadInProgress = false;
     /* </debug> */
     this.after5FullUpdateHn();
+    if (this.onReT4completeCb) {
+      this.onReT4completeCb(this);
+      this.onReT4completeCb = null;
+    }
+  }
+
+  sncGrpFilledHandler(updates) {
+    super.sncGrpFilledHandler(updates);
+    if (this.reT4NotFinalized && !this.sncMan.sncLastEvtGrp) {
+      this.finalizeReT4(this.incompleteRet4);
+    }
   }
 
   /**
