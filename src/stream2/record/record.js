@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 import { EMPTY } from '../signals.js';
 /* <debug> */import Debug from '../debug.js';/* </debug> */
 
@@ -7,7 +8,7 @@ export default class Record
     value,
     head,
     src,
-    /* <debug> */from/* <debug> */
+    /* <debug> */from, /* <debug> */
   ) {
     /* <debug> */
     super({ type: 'record' });
@@ -72,7 +73,7 @@ export default class Record
       fn(this.value, this),
       this.head,
       src,
-      /* <debug> */this/* </debug> */
+      /* <debug> */this, /* </debug> */
     );
   }
 
@@ -95,11 +96,16 @@ export default class Record
       EMPTY,
       this.head,
       src,
-      /* <debug> */this/* </debug> */
+      /* <debug> */this, /* </debug> */
     );
   }
-  
+
   from(value, src) {
-    return new Record(value, this.head, src,/* <debug> */this/* </debug> */);
+    return new Record(
+      value,
+      this.head,
+      src,
+      /* <debug> */this, /* </debug> */
+    );
   }
 }

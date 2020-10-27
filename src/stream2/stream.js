@@ -14,6 +14,7 @@ import {
 import Controller from './controller.js';
 import WSPSchemaTuner from './wsp-chema-tuner.js';
 import ReduceRemoteTuner from './reduce-remote-tuner.js';
+import ReplicateRemoteTuner from './replicate-remote-tuner.js';
 import RedCon5ionHn from './red-connection-handler.js';
 import { RED_REC_STATUS } from './record/red-record.js';
 import * as utils from '../utils.js';
@@ -159,7 +160,7 @@ export class Stream2 {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
         ctr.todisconnect(hook);
-        ctr.req('coordinate', (_, { value: data, id }) => {
+        ctr.req('coordinate', ({ value: data, id }) => {
           hook('*', {
             kind: 'COORDINATE',
             path,
@@ -377,6 +378,17 @@ export class Stream2 {
   reduceRemote(hnProJ, initialValue) {
     return new Stream2((onrdy, ctr) => {
       new ReduceRemoteTuner(Stream2, onrdy, ctr, hnProJ)
+        .setup(initialValue, this);
+    });
+  }
+
+  // работает как редьюсер, но расчитывает на то, что
+  // удаленный сервис имеет логику генерации событий,
+  // которая в точности воспроизводится на клиенте
+  // без необходимости синхронизации каждого шага
+  replicateRemote(hnProJ, initialValue) {
+    return new Stream2((onrdy, ctr) => {
+      new ReplicateRemoteTuner(Stream2, onrdy, ctr, hnProJ)
         .setup(initialValue, this);
     });
   }

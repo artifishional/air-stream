@@ -234,11 +234,11 @@ describe('reduce', () => {
     });
   });
 
-  test('remote RED slave (RI) example', (done) => {
+  test('remote RED slave |RI| example', (done) => {
     const _ = async();
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
-    const rc1 = stream.fromCbFunc((cb) => {
+    const rc1 = stream.fromCbFn((cb) => {
       _(() => cb({ src: 'dot', data: 10, path: 'ab' }));
       _(() => cb({ src: 'com', data: 1, path: 'a' }));
       _(() => cb({ src: 'com', data: 2, path: 'a' }));

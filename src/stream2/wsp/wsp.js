@@ -3,8 +3,8 @@ import { EMPTY } from '../signals.js';
 import STTMP from '../sync-ttmp-ctr.js';
 import Propagate from '../propagate.js';
 import { STATIC_CREATOR_KEY } from '../defs.js';
-import SyncEventManager from '../sync-event-manager.js';
-import SyncEventManagerSingle from '../sync-event-manager-single.js';
+import SyncEventManager from '../sync-man/sync-event-manager.js';
+import SyncEventManagerSingle from '../sync-man/sync-event-manager-single.js';
 /* <debug> */ import Debug from '../debug.js'; /* </debug> */
 
 let staticOriginWSPIDCounter = 0;
