@@ -20,7 +20,7 @@ import { RED_REC_STATUS } from './record/red-record.js';
 import * as utils from '../utils.js';
 
 const STATIC_LOCAL_RED_WSP = RedWSP.create(
-  null, EMPTY_FUNCTION, { initialValue: null },
+  null, STATIC_PROJECTS.EMPTY_REDUCER, { initialValue: null },
 );
 const DEFAULT_UPS_VALUE = 50;
 
@@ -312,7 +312,7 @@ export class Stream2 {
     return new Stream2((onrdy) => {
       onrdy(RedWSP.create(
         null,
-        EMPTY_FUNCTION,
+        STATIC_PROJECTS.EMPTY_REDUCER,
         { initialValue: cb() },
       ));
     });
@@ -380,6 +380,16 @@ export class Stream2 {
       new ReduceRemoteTuner(Stream2, onrdy, ctr, hnProJ)
         .setup(initialValue, this);
     });
+  }
+
+  replicate(proJ, initialValue) {
+    const hnProJ = (owner) => ([{ value: next }]) => proJ(
+      owner.getLastStateValue(), next,
+    );
+    if ('remote' in initialValue) {
+      return this.replicateRemote(hnProJ, initialValue.remote);
+    }
+    throw new TypeError('Unsupported initial value type');
   }
 
   // работает как редьюсер, но расчитывает на то, что

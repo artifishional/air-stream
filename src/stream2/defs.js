@@ -11,6 +11,7 @@ export const STATIC_PROJECTS = {
   STRAIGHT: (data) => data,
   AIO: (...args) => args,
   SURFACE_EQUAL: (x, y) => x === y,
+  EMPTY_REDUCER: () => EMPTY_FUNCTION,
 };
 export const STATIC_GETTERS = {
   STRAIGHT: (value) => value,

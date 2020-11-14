@@ -235,6 +235,11 @@ export default class WSP
   initiate(hnProJ, after5FullUpdateObs = null) {
     if (hnProJ) {
       this.hn = hnProJ(this);
+      /* <debug> */
+      if (typeof this.hn !== 'function') {
+        throw new TypeError('The hnProJ call must return a function');
+      }
+      /* </debug> */
     }
     this.after5FullUpdateObs = after5FullUpdateObs;
     this.subscription();
