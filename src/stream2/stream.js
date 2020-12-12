@@ -75,6 +75,23 @@ export class Stream2 {
     });
   }
 
+  static fromEvent(target, evtName) {
+    return this.fromCbFn((cb, ctr) => {
+      ctr.todisconnect(() => {
+        evtName
+          .split(' ')
+          .forEach((evt) => {
+            target.removeAllListener(evt, cb);
+          });
+      });
+      evtName
+        .split(' ')
+        .forEach((evt) => {
+          target.addEventListener(evt, cb);
+        });
+    });
+  }
+
   static merge(sourcestreams) {
     return new Stream2([], (e, controller) => {
       sourcestreams.map((stream) => stream.connect((hook) => {
@@ -279,23 +296,6 @@ export class Stream2 {
       return this.fromPromise(source, proJ);
     }
     throw new TypeError('Unsupported source type');
-  }
-
-  static fromEvent(target, evtName) {
-    return this.fromCbFn((cb, ctr) => {
-      ctr.todisconnect(() => {
-        evtName
-          .split(' ')
-          .forEach((evt) => {
-            target.removeAllListener(evt, cb);
-          });
-      });
-      evtName
-        .split(' ')
-        .forEach((evt) => {
-          target.addEventListener(evt, cb);
-        });
-    });
   }
 
   static get fromCbFunc() {

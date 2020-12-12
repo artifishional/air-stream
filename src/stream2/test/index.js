@@ -8,3 +8,4 @@ import './constructor';
 import './rwsp';
 import './ups';
 import './withlatest';
+import './events';

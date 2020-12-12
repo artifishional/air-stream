@@ -5,6 +5,7 @@ import { PUSH, STATUS_UPDATE, EMPTY } from './signals.js';
 import { RET4_TYPES } from './retouch/retouch-types.js';
 import Propagate from './propagate.js';
 import STTMP from './sync-ttmp-ctr.js';
+/* <debug> */ import Debug from './debug.js'; /* </debug> */
 
 let COORDINATE_REQ_ID_COUNTER = 0;
 
@@ -17,10 +18,19 @@ export const RED_WSP_TUNER_SUBORDINATION_MODE = {
   RI: 'RI',
 };
 
-export default class ReduceRemoteTuner {
-  constructor({ whenAllConnected }, onrdy, ctr, hnProJ) {
+export default class ReduceRemoteTuner
+  /* <debug> */extends Debug/* </debug> */ {
+  constructor(
+    _,
+    onrdy,
+    ctr,
+    hnProJ,
+    /* <debug> */dbg, /* </debug> */
+  ) {
+    /* <debug> */
+    super({ type: 'reduce-remote-tuner' }, dbg);
+    /* </debug> */
     this.rwsp = null;
-    this.whenAllConnected = whenAllConnected;
     this.queue = null;
     this.ctr = ctr;
     this.wspR = null;
@@ -38,16 +48,19 @@ export default class ReduceRemoteTuner {
   }
 
   setup(redSTR, sigSTR) {
-    this.whenAllConnected([redSTR, sigSTR], ([[wspR, hookR], [wsp, hook]]) => {
+    sigSTR.connect((wsp, hook) => {
       this.ctr.todisconnect(hook);
-      this.hookR = hookR;
-      this.wspR = wspR;
       this.wsp = wsp;
-      wspR.on(this);
       if (wsp instanceof RedWSP) {
         this.mode = RED_WSP_TUNER_SUBORDINATION_MODE.RI;
       }
       wsp.on(this);
+      redSTR.connect((wspR, hookR) => {
+        this.ctr.todisconnect(hookR);
+        this.hookR = hookR;
+        this.wspR = wspR;
+        wspR.on(this);
+      });
     });
   }
 
