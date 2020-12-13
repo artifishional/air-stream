@@ -340,17 +340,18 @@ export class Stream2 {
    *
    * @param proJ
    * @param {{local}|{remote}} initialValue
+   * @param {*} dbg Debug config
    * @returns {Stream2}
    */
-  reduce(proJ, initialValue) {
+  reduce(proJ, initialValue, dbg) {
     const hnProJ = (owner) => ([{ value: next }]) => proJ(
       owner.getLastStateValue(), next,
     );
     if ('local' in initialValue) {
-      return this.reduceLocal(hnProJ, initialValue.local);
+      return this.reduceLocal(hnProJ, initialValue.local, dbg);
     }
     if ('remote' in initialValue) {
-      return this.reduceRemote(hnProJ, initialValue.remote);
+      return this.reduceRemote(hnProJ, initialValue.remote, dbg);
     }
     throw new TypeError('Unsupported initial value type');
   }
@@ -375,9 +376,9 @@ export class Stream2 {
    * Если запись становится неактуальной, то она должна получить известие об этом
    * тогда она сможет отключиться от канала согласования
    */
-  reduceRemote(hnProJ, initialValue) {
+  reduceRemote(hnProJ, initialValue, dbg) {
     return new Stream2((onrdy, ctr) => {
-      new ReduceRemoteTuner(Stream2, onrdy, ctr, hnProJ)
+      new ReduceRemoteTuner(Stream2, onrdy, ctr, hnProJ, dbg)
         .setup(initialValue, this);
     });
   }
