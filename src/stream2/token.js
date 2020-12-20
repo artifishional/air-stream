@@ -1,10 +1,13 @@
+/* eslint-disable import/extensions */
 import { DEFAULT_START_TTMP } from './defs.js';
 /* <debug> */ import Debug from './debug.js'; /* </debug> */
 
 export default class Token
   /* <debug> */extends Debug/* </debug> */ {
   constructor(sttmp) {
+    /* <debug> */
     super({ type: 'token' });
+    /* </debug> */
     /**
      * Проверить, не создан ли уже текущий sttmp показатель
      * Если создан, то новый токен становится родственным текущему
@@ -14,6 +17,16 @@ export default class Token
 
   compromised() {
     return new Token(this.sttmp);
+  }
+
+  statusUpdate(sttmp) {
+    const dt = sttmp - this.sttmp;
+    this.sttmp = sttmp;
+    return dt;
+  }
+
+  statusMove(dt) {
+    this.sttmp += dt;
   }
 
   static compare(

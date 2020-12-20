@@ -106,10 +106,28 @@ export class Stream2 {
       // eslint-disable-next-line no-undef
       const ws = new WebSocket(uri);
       const wsp = WSP.create();
+      let remote2localDTsttmp = Number.NEGATIVE_INFINITY;
       const handler = {
         handleEvent(event) {
           if (event.type === 'message') {
-            wsp.burn(JSON.parse(event.data));
+            // TODO: hack 2 rms
+            const data = JSON.parse(event.data);
+            if (data.kind === 'REMOTE_SERVICE_RDY') {
+              remote2localDTsttmp = data.sttmp - now();
+              return;
+            }
+
+            /* <debug> */
+            if (remote2localDTsttmp === Number.NEGATIVE_INFINITY) {
+              throw new Error('Remote service is not rdy yet.');
+            }
+            /* </debug> */
+
+            if ('sttmp' in data) {
+              data.sttmp -= remote2localDTsttmp;
+            }
+
+            wsp.burn(data);
           } else if (event.type === 'open') {
             onrdy(wsp);
           }
@@ -182,7 +200,7 @@ export class Stream2 {
             kind: 'COORDINATE',
             path,
             args,
-            eventID: `${path}:${id}`,
+            event: { id },
             data,
           });
         });
@@ -195,6 +213,8 @@ export class Stream2 {
           }
           if (value.kind === 'STATUS_UPDATE') {
             return {
+              sttmp: value.sttmp,
+              id: value.event.id,
               kind: STATUS_UPDATE,
               status: RED_REC_STATUS[value.status.toUpperCase()],
             };
@@ -633,7 +653,11 @@ export class Stream2 {
     return new Stream2((onrdy, ctr) => {
       source.then((value) => {
         if (!ctr.disconnected) {
-          onrdy(RedWSP.create(null, EMPTY_FUNCTION, { initialValue: proJ(value) }));
+          onrdy(RedWSP.create(
+            null,
+            STATIC_PROJECTS.EMPTY_REDUCER,
+            { initialValue: proJ(value) },
+          ));
         }
       });
     });

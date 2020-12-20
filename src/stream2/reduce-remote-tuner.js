@@ -80,7 +80,6 @@ export default class ReduceRemoteTuner
       RET4_TYPES.ABORT,
       { merge },
     );
-    this.normalizeQueue();
   }
 
   normalizeQueue() {
@@ -96,12 +95,37 @@ export default class ReduceRemoteTuner
     this.hookR('coordinate', { value, id });
   }
 
+  // Свдигает неподтвержденные записи на предполагаемую задержку
+  //  (задержка на примере предыдущей записи)
+  statusMove(actIDX, value) {
+    const act = this.queue[actIDX];
+    const dt = act.rec.token.token.statusUpdate(value.sttmp);
+    console.log('DTS', dt);
+    for (let i = actIDX + 1; i < this.queue.length; i += 1) {
+      this.queue[i].rec.token.token.statusMove(dt);
+    }
+  }
+
   /**
    * RI ReT4
    */
   // eslint-disable-next-line class-methods-use-this
   handleReT4() {
     // RI ReT4 now correctly works from him source RWSP
+  }
+
+  statusUpdate(src, value) {
+    const actIDX = this.queue.findIndex(({ id }) => id === value.id);
+    const act = this.queue[actIDX];
+    act.status = value.status;
+    // TODO: Now always reT4 cus need to agree sttmp
+    if (act.status === RED_REC_STATUS.SUCCESS) {
+      this.statusMove(actIDX, value);
+      this.initiateReT4(act.rec);
+      this.normalizeQueue();
+    } else {
+      this.queue.splice(actIDX, 1);
+    }
   }
 
   handleR(rec) {
@@ -121,6 +145,7 @@ export default class ReduceRemoteTuner
               act.status = RED_REC_STATUS.FAILURE;
               this.queue.splice(this.queue.indexOf(act), 1);
               this.initiateReT4(act.rec);
+              this.normalizeQueue();
             } else {
               COORDINATE_REQ_ID_COUNTER += 1;
               act.id = COORDINATE_REQ_ID_COUNTER;
@@ -133,15 +158,7 @@ export default class ReduceRemoteTuner
           this.queue = [];
           this.initialize(value);
         } else if (value.kind === STATUS_UPDATE) {
-          const actIDX = this.queue.findIndex(({ id }) => id === value.id);
-          const act = this.queue[actIDX];
-          act.status = value.status;
-          if (act.status === RED_REC_STATUS.SUCCESS) {
-            this.normalizeQueue();
-          } else {
-            this.queue.splice(actIDX, 1);
-            this.initiateReT4(act.rec);
-          }
+          this.statusUpdate(src, value);
         } else if (value.kind === PUSH) {
           const act = {
             rec: Propagate.burn(value.data, STTMP.fromRawData(value.token), rec.head.src),
@@ -150,6 +167,7 @@ export default class ReduceRemoteTuner
           if (this.queue.length) {
             this.queue.unshift(act);
             this.initiateReT4(act.rec);
+            this.normalizeQueue();
           } else {
             this.rwsp.handleR(act.rec);
           }

@@ -50,7 +50,9 @@ request:
 {
   kind: 'COORDINATE',
   path: './namespace/acc', // vs subscriptionID: 12345,
-  eventID: 'UNIQUE_ID_HASH', // vs clientID + eventID counter
+  event: {
+    id: 'UNIQUE_ID_HASH', // vs clientID + eventID counter
+  },
   data: { /* Action, data */ },
 }
 ```
@@ -59,6 +61,9 @@ response:
 {
   kind: 'STATUS_UPDATE',
   path: './namespace/acc', // vs subscriptionID: 12345,
+  event: {
+    id: 'UNIQUE_ID_HASH' // (mirror from client)
+  },
   status: 'success', // or failure
   err: null, // if failure
 }
