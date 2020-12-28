@@ -159,6 +159,77 @@ describe('reduce', () => {
     });
   });
 
+  test('remote RED abort request & reT4 (inner cut) with different sources', (done) => {
+    const _ = async();
+    // eslint-disable-next-line no-undef
+    const proJ = jest.fn();
+    const rc1 = stream.fromCbFunc((cb, ctr) => {
+      const allCoordinateValues = new Map();
+      ctr.req('coordinate', ({ value, id }) => {
+        allCoordinateValues.set(value, id);
+        if (value === 'A2') {
+          cb({
+            src: 'dot',
+            data: {
+              id: allCoordinateValues.get('A1'),
+              kind: STATUS_UPDATE,
+              status: RED_REC_STATUS.FAILURE,
+            },
+          });
+        }
+      });
+      _(() => cb({ src: 'dot', data: 'A0' }));
+      _(() => cb({ src: 'dot2', data: 'B0' }));
+      _(() => cb({ src: 'com', data: 'A1' }));
+      _(() => cb({ src: 'com2', data: 'B1' }));
+      _(() => cb({ src: 'com', data: 'A2' }));
+    });
+
+    const rm1 = rc1
+      .filter(({ src }) => src === 'dot')
+      .map(({ data }) => data);
+    const r1 = rc1
+      .filter(({ src }) => src === 'com')
+      .map(({ data }) => data)
+      .reduce((acc, next) => acc + next, { remote: rm1 });
+
+    // source substitution
+    const rc2 = stream.fromCbFn((cb, ctr) => {
+      rc1.connect((wsp, hook) => {
+        ctr.to(hook);
+        wsp.on({
+          handleR({ value }) {
+            cb(value);
+          },
+        });
+      });
+    });
+    const rm2 = rc2
+      .filter(({ src }) => src === 'dot2')
+      .map(({ data }) => data);
+    const r2 = rc2
+      .filter(({ src }) => src === 'com2')
+      .map(({ data }) => data)
+      .reduce((acc, next) => acc + next, { remote: rm2 });
+
+    stream
+      .combine([r1, r2], ([a, b]) => a + b)
+      .get(({ value }) => proJ(value));
+    setTimeout(() => {
+      expect(proJ.mock.calls).toEqual([
+        ['A0B0'],
+        ['A0A1B0'],
+        ['A0A1B0B1'],
+        ['A0A1A2B0B1'],
+        // abort & reT4 here
+        ['A0B0'],
+        ['A0B0B1'],
+        ['A0A2B0B1'],
+      ]);
+      done();
+    });
+  });
+
   test('remote RED action', (done) => {
     const _ = async();
     const SRV_RQ_RS_DELAY = 5;
