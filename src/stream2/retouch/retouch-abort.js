@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 import ReT4 from './retouch-base.js';
 import { RET4_TYPES } from './retouch-types.js';
 

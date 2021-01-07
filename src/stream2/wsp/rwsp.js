@@ -5,8 +5,6 @@ import { RET4_TYPES } from '../retouch/retouch-types.js';
 import { EMPTY } from '../signals.js';
 import HeadRecord from '../record/head-record.js';
 import Token from '../token.js';
-// eslint-disable-next-line import/no-cycle
-import RedWSPSlave from './rwsp-slave.js';
 import STTMP from '../sync-ttmp-ctr.js';
 import { STATIC_GETTERS } from '../defs.js';
 import * as utils from '../../utils.js';
@@ -134,6 +132,15 @@ export default class RedWSP extends WSP {
         proJ(update);
         return update;
       });
+  }
+
+  // TODO: Only for master RWSP
+  reCalcOriginWSPs() {
+    const wsps = super.reCalcOriginWSPs();
+    if (this.subordination === RED_WSP_SUBORDINATION.MASTER) {
+      wsps.set(this, 1);
+    }
+    return wsps;
   }
 
   factory(construct, getter = STATIC_GETTERS.STRAIGHT, equal = utils.equal) {
@@ -433,3 +440,23 @@ RedWSP.$MSG_ALIVE_TIME_MS = RedWSP.$MSG_ALIVE_TIME_MS
   || DEFAULT_MSG_ALIVE_TIME_MS;
 RedWSP.$UPDATE_T4_STATUS_CTD_VALUE = RedWSP.$UPDATE_T4_STATUS_CTD_VALUE
   || DEFAULT_UPDATE_T4_STATUS_CTD_VALUE;
+
+export class RedWSPSlave extends RedWSP {
+  /**
+   * @augments RedWSP
+   * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
+   * @param {STATIC_CREATOR_KEY} creatorKey
+   * @param args
+   */
+  constructor(
+    wsps,
+    args,
+    /* <debug> */ creatorKey, /* </debug> */
+  ) {
+    super(
+      wsps,
+      { subordination: new.target.SUBORDINATION.SLAVE, ...args },
+      /* <debug> */ creatorKey, /* </debug> */
+    );
+  }
+}

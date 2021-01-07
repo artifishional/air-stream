@@ -8,9 +8,10 @@ export default class ReT4Base {
    * @param {RET4_TYPES} type
    * @param {*} prms
    * @param {Boolean} prms.merge
+   * @param {RedWSP} prms.initiator
    */
-  constructor(owner, type, { merge = null } = { }) {
-    this.prms = { merge };
+  constructor(owner, type, prms = { }) {
+    this.prms = prms;
     this.type = type;
     this.owner = owner;
     /* <debug> */

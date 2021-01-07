@@ -63,7 +63,7 @@ export default class ReplicateRemoteTuner {
       null,
       this.queue.map(({ rec }) => rec),
       RET4_TYPES.ABORT,
-      { merge },
+      { merge, initiator: this.rwsp },
     );
     this.normalizeQueue();
   }

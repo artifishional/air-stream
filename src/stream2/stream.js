@@ -1,8 +1,7 @@
 /* eslint-disable import/extensions */
 import now from 'performance-now';
 import WSP from './wsp/wsp.js';
-import RedWSPSlave from './wsp/rwsp-slave.js';
-import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp.js';
+import RedWSP, { RED_WSP_SUBORDINATION, RedWSPSlave } from './wsp/rwsp.js';
 import { EMPTY, STATUS_UPDATE } from './signals.js';
 import {
   FROM_OWNER_STREAM,

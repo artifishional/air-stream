@@ -10,7 +10,7 @@ module.exports = {
   ],
   testEnvironment: 'node',
   testMatch: [
-    '**/stream2/test/**/index.js',
+    '**/test/index.js',
   ],
   transform: {
     '^.+\\.js$': 'babel-jest',

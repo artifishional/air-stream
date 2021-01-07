@@ -48,7 +48,7 @@ describe('RedWSP', () => {
           _(() => cb(4));
           _(() => expect(red.wsp.state.length).toEqual(3));
           _(done);
-        }, RedWSP.MSG_ALIVE_TIME_MS));
+        }, RedWSP.MSG_ALIVE_TIME_MS + 1));
       })
       .store();
     red.connect();

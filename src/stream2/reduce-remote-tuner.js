@@ -78,7 +78,7 @@ export default class ReduceRemoteTuner
       null,
       this.queue.map(({ rec }) => rec),
       RET4_TYPES.ABORT,
-      { merge },
+      { merge, initiator: this.rwsp },
     );
   }
 
@@ -100,7 +100,6 @@ export default class ReduceRemoteTuner
   statusMove(actIDX, value) {
     const act = this.queue[actIDX];
     const dt = act.rec.token.token.statusUpdate(value.sttmp);
-    console.log('DTS', dt);
     for (let i = actIDX + 1; i < this.queue.length; i += 1) {
       this.queue[i].rec.token.token.statusMove(dt);
     }
@@ -125,6 +124,7 @@ export default class ReduceRemoteTuner
       this.normalizeQueue();
     } else {
       this.queue.splice(actIDX, 1);
+      this.initiateReT4(act.rec);
     }
   }
 

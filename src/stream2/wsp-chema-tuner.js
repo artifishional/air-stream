@@ -1,29 +1,29 @@
-import RedWSPSlave from './wsp/rwsp-slave.js';
+/* eslint-disable import/extensions */
+import { RedWSPSlave } from './wsp/rwsp.js';
 import RedCon5ionHn from './red-connection-handler.js';
 import AsyncTask from './async-task.js';
 
 function arrEquals(arr1, arr2) {
   if (arr1.length !== arr2.length) {
     return false;
-  } else {
-    for (let i = 0; i < arr1.length; i += 1) {
-      if (arr1[i] !== arr2[i]) {
-        return false;
-      }
-    }
-    return true;
   }
+  for (let i = 0; i < arr1.length; i += 1) {
+    if (arr1[i] !== arr2[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export default class WSPSchemaTuner {
   constructor(
-      _,
-      onrdy,
-      ctr,
-      proJ,
-      tuner = null,
-      async = false,
-      conf = {}
+    _,
+    onrdy,
+    ctr,
+    proJ,
+    tuner = null,
+    async = false,
+    conf = {},
   ) {
     this.tuner = tuner;
     this.conf = conf;
@@ -102,7 +102,9 @@ export default class WSPSchemaTuner {
   accurate(streams) {
     if (!arrEquals(this.bags.map(([x]) => x), streams)) {
       this.bags = streams.map(
-        (box) => [box, { on: true, key: -1, src: null, hook: null }]
+        (box) => [box, {
+          on: true, key: -1, src: null, hook: null,
+        }],
       );
     }
     if (this.after5fullUpdateCTD) {
