@@ -40,8 +40,11 @@ export default class Record
       return value.toJSON();
     }
     // eslint-disable-next-line no-undef
-    if (value instanceof Node) {
-      return value.nodeName;
+    if (globalThis.Node) {
+      // eslint-disable-next-line no-undef
+      if (value instanceof Node) {
+        return value.nodeName;
+      }
     }
     if (Array.isArray(value)) {
       return value.map((elm) => this.serializeValue(elm, deep - 1));
@@ -59,6 +62,7 @@ export default class Record
 
   toJSON() {
     return {
+      id: this.head.id,
       value: this.serializeValue(),
       order: this.token.order,
       sttmp: this.token.token.sttmp,

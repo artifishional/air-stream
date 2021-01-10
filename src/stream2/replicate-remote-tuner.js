@@ -5,6 +5,7 @@ import { PUSH, STATUS_UPDATE, EMPTY } from './signals.js';
 import { RET4_TYPES } from './retouch/retouch-types.js';
 import Propagate from './propagate.js';
 import STTMP from './sync-ttmp-ctr.js';
+import Token from "./token";
 
 /**
  * @readonly
@@ -57,11 +58,22 @@ export default class ReplicateRemoteTuner {
   }
 
   initiateReT4(merge) {
+    // Здесь срезается та часть очереди, которая находится
+    // перед меткой, так как она начнет накатываться повторно
+    let { queue } = this;
+    if (this.queue.length) {
+      if (Token.compare(merge, this.queue[0].rec) > 0) {
+        const idx = this.queue.findIndex(
+          ({ rec }) => Token.compare(merge, rec) <= 0,
+        );
+        queue = this.queue.slice(idx, Infinity);
+      }
+    }
     // Хранить здесь только неподтвержденную очередь?
     // Либо только актуальную с учетом мержа для воспроизведения
     this.rwsp.handleReT4(
       null,
-      this.queue.map(({ rec }) => rec),
+      queue.map(({ rec }) => rec),
       RET4_TYPES.ABORT,
       { merge, initiator: this.rwsp },
     );

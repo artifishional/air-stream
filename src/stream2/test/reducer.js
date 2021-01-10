@@ -78,7 +78,7 @@ describe('reduce', () => {
       .get();
   });
 
-  test('remote RED abort request & reT4 (surface cut)', (done) => {
+  test('remote RED abort request & reT4 - surface cut', (done) => {
     const _ = async();
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
@@ -117,26 +117,27 @@ describe('reduce', () => {
     });
   });
 
-  test('remote RED abort request & reT4 (inner cut)', (done) => {
+  test('remote RED abort request & reT4 before confirm', (done) => {
     const _ = async();
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
     const rc1 = stream.fromCbFunc((cb, ctr) => {
       ctr.req('coordinate', ({ value, id }) => {
-        if (value === 2) {
-          cb({
+        if (value === 'A2') {
+          _(() => cb({
             src: 'dot',
             data: {
-              id: id - 1,
+              id,
               kind: STATUS_UPDATE,
               status: RED_REC_STATUS.FAILURE,
             },
-          });
+          }));
         }
       });
-      _(() => cb({ src: 'dot', data: 100 }));
-      _(() => cb({ src: 'com', data: 1 }));
-      _(() => cb({ src: 'com', data: 2 }));
+      _(() => cb({ src: 'dot', data: 'A0' }));
+      _(() => cb({ src: 'com', data: 'A1' }));
+      _(() => cb({ src: 'com', data: 'A2' }));
+      _(() => cb({ src: 'com', data: 'A3' }));
     });
     const rm1 = rc1
       .filter(({ src }) => src === 'dot')
@@ -148,18 +149,62 @@ describe('reduce', () => {
     r1.get(({ value }) => proJ(value));
     setTimeout(() => {
       expect(proJ.mock.calls).toEqual([
-        [100],
-        [101],
-        [103],
+        ['A0'],
+        ['A0A1'],
+        ['A0A1A2'],
+        ['A0A1A2A3'],
         // abort & reT4 here
-        [100],
-        [102],
+        ['A0'],
+        ['A0A1'],
+        ['A0A1A3'],
       ]);
       done();
     });
   });
 
-  test('remote RED abort request & reT4 (inner cut) with different sources', (done) => {
+  test('remote RED abort request & reT4 (inner cut)', (done) => {
+    const _ = async();
+    // eslint-disable-next-line no-undef
+    const proJ = jest.fn();
+    const rc1 = stream.fromCbFunc((cb, ctr) => {
+      ctr.req('coordinate', ({ value, id }) => {
+        if (value === 'A2') {
+          cb({
+            src: 'dot',
+            data: {
+              id: id - 1,
+              kind: STATUS_UPDATE,
+              status: RED_REC_STATUS.FAILURE,
+            },
+          });
+        }
+      });
+      _(() => cb({ src: 'dot', data: 'A0' }));
+      _(() => cb({ src: 'com', data: 'A1' }));
+      _(() => cb({ src: 'com', data: 'A2' }));
+    });
+    const rm1 = rc1
+      .filter(({ src }) => src === 'dot')
+      .map(({ data }) => data);
+    const r1 = rc1
+      .filter(({ src }) => src === 'com')
+      .map(({ data }) => data)
+      .reduce((acc, next) => acc + next, { remote: rm1 });
+    r1.get(({ value }) => proJ(value));
+    setTimeout(() => {
+      expect(proJ.mock.calls).toEqual([
+        ['A0'],
+        ['A0A1'],
+        ['A0A1A2'],
+        // abort & reT4 here
+        ['A0'],
+        ['A0A2'],
+      ]);
+      done();
+    });
+  });
+
+  test('remote RED abort request & reT4 - inner cut - with different sources', (done) => {
     const _ = async();
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
@@ -270,19 +315,19 @@ describe('reduce', () => {
     const proJ = jest.fn();
     const rc1 = stream.fromCbFunc((cb, ctr) => {
       ctr.req('coordinate', ({ value }) => {
-        if (value === 1) {
+        if (value === 'A1') {
           cb({
             src: 'dot',
             data: {
               kind: PUSH,
               token: { sttmp: now() - SRV_RQ_RS_DELAY },
-              data: 4,
+              data: 'A2',
             },
           });
         }
       });
-      _(() => cb({ src: 'dot', data: 100 }));
-      _(() => cb({ src: 'com', data: 1 }));
+      _(() => cb({ src: 'dot', data: 'A0' }));
+      _(() => cb({ src: 'com', data: 'A1' }));
     });
     const rm1 = rc1
       .filter(({ src }) => src === 'dot')
@@ -294,12 +339,12 @@ describe('reduce', () => {
     r1.get(({ value }) => proJ(value));
     setTimeout(() => {
       expect(proJ.mock.calls).toEqual([
-        [100],
-        [101],
+        ['A0'],
+        ['A0A1'],
         // abort & reT4 here
-        [100],
-        [104],
-        [105],
+        ['A0'],
+        ['A0A2'],
+        ['A0A2A1'],
       ]);
       done();
     });
