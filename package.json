@@ -10,18 +10,17 @@
     "minor": "npm version minor && npm publish && git push origin",
     "major": "npm version major && npm publish && git push origin"
   },
-  "type": "module",
   "author": ".ai",
   "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.0.0",
-    "@babel/plugin-proposal-optional-chaining": "^7.10.1",
     "@babel/plugin-proposal-class-properties": "^7.0.0",
     "@babel/plugin-proposal-decorators": "^7.0.0",
     "@babel/plugin-proposal-export-namespace-from": "^7.0.0",
     "@babel/plugin-proposal-function-sent": "^7.0.0",
     "@babel/plugin-proposal-json-strings": "^7.0.0",
     "@babel/plugin-proposal-numeric-separator": "^7.0.0",
+    "@babel/plugin-proposal-optional-chaining": "^7.10.1",
     "@babel/plugin-proposal-throw-expressions": "^7.0.0",
     "@babel/plugin-syntax-dynamic-import": "^7.0.0",
     "@babel/plugin-syntax-import-meta": "^7.0.0",
@@ -29,19 +28,19 @@
     "@babel/preset-env": "^7.0.0",
     "@babel/register": "^7.0.0",
     "@babel/runtime": "^7.7.2",
-    "babel-jest": "^24.8.0",
+    "babel-jest": "^26.6.3",
     "babel-loader": "^8.0.0",
-    "copy-webpack-plugin": "^5.0.4",
-    "eslint": "^6.8.0",
+    "copy-webpack-plugin": "^7.0.0",
+    "eslint": "^7.18.0",
     "eslint-config-airbnb": "^18.0.1",
     "eslint-plugin-import": "^2.20.0",
-    "jest": "^24.8.0",
-    "webpack": "^4.39.1",
-    "webpack-cli": "^3.3.7"
+    "jest": "^26.6.3",
+    "webpack": "^5.15.0",
+    "webpack-cli": "^4.3.1"
   },
   "dependencies": {
-    "performance-now": "^2.1.0",
     "event-emitter": "^0.3.5",
+    "performance-now": "^2.1.0",
     "queue-microtask": "^1.1.2"
   }
 }

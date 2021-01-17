@@ -10,10 +10,10 @@ describe('ups', () => {
     const ups = stream.ups(100);
     const hook = ups.get(({ value }) => proJ(value));
     setTimeout(() => {
+      hook();
       expect(proJ.mock.calls).toEqual([
         [1], [2], [3], [4], [5],
       ]);
-      hook();
       done();
     }, 45);
   });
