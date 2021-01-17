@@ -12,6 +12,7 @@
   },
   "author": ".ai",
   "license": "MIT",
+  "type": "module",
   "devDependencies": {
     "@babel/core": "^7.0.0",
     "@babel/plugin-proposal-class-properties": "^7.0.0",

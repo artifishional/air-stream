@@ -7,7 +7,7 @@ describe('ups', () => {
   test('ups example', (done) => {
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
-    const ups = stream.ups(100);
+    const ups = stream.ups(10);
     const hook = ups.get(({ value }) => proJ(value));
     setTimeout(() => {
       hook();
@@ -15,6 +15,6 @@ describe('ups', () => {
         [1], [2], [3], [4], [5],
       ]);
       done();
-    }, 45);
+    }, 450);
   });
 });
