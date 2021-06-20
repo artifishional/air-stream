@@ -5,7 +5,7 @@ import { PUSH, STATUS_UPDATE, EMPTY } from './signals.js';
 import { RET4_TYPES } from './retouch/retouch-types.js';
 import Propagate from './propagate.js';
 import STTMP from './sync-ttmp-ctr.js';
-import Token from "./token";
+import Token from './token';
 
 /**
  * @readonly
