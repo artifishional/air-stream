@@ -1,4 +1,4 @@
-import { stream2 as stream } from '../stream.js';
+import { stream2 as stream } from '../stream';
 import {WSP} from "../wsp/wsp";
 
 describe('one stream', () => {

@@ -1,2 +1,2 @@
-export * from './stream.js';
-export * from './record/red-record.js';
+export * from './stream';
+export * from './record/red-record';

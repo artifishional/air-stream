@@ -1,4 +1,4 @@
-import HeadRecord from './record/head-record.js';
+import HeadRecord from './record/head-record';
 
 class Propagate {
   interrupt() {

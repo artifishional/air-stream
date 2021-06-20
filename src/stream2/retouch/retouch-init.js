@@ -1,5 +1,4 @@
-/* eslint-disable import/extensions */
-import ReT4 from './retouch-base.js';
+import ReT4 from './retouch-base';
 
 export default class ReT4Init extends ReT4 {
   constructor(owner, type, prms = { }) {

@@ -1,2 +1,2 @@
-import './globalthis.js';
-import './queue-microtask.js';
+import './globalthis';
+import './queue-microtask';

@@ -1,10 +1,9 @@
-/* eslint-disable import/extensions */
-import { RED_REC_STATUS } from './record/red-record.js';
-import RedWSP from './wsp/rwsp.js';
-import { PUSH, STATUS_UPDATE, EMPTY } from './signals.js';
-import { RET4_TYPES } from './retouch/retouch-types.js';
-import Propagate from './propagate.js';
-import STTMP from './sync-ttmp-ctr.js';
+import { RED_REC_STATUS } from './record/red-record';
+import RedWSP from './wsp/rwsp';
+import { PUSH, STATUS_UPDATE, EMPTY } from './signals';
+import { RET4_TYPES } from './retouch/retouch-types';
+import Propagate from './propagate';
+import STTMP from './sync-ttmp-ctr';
 import Token from './token';
 
 /**

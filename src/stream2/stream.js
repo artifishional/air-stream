@@ -1,22 +1,21 @@
-/* eslint-disable import/extensions */
 import now from 'performance-now';
-import WSP from './wsp/wsp.js';
-import RedWSP, { RED_WSP_SUBORDINATION, RedWSPSlave } from './wsp/rwsp.js';
-import { EMPTY, STATUS_UPDATE } from './signals.js';
+import WSP from './wsp/wsp';
+import RedWSP, { RED_WSP_SUBORDINATION, RedWSPSlave } from './wsp/rwsp';
+import { EMPTY, STATUS_UPDATE } from './signals';
 import {
   FROM_OWNER_STREAM,
   STD_DISCONNECT_REQ,
   EMPTY_FUNCTION,
   STATIC_PROJECTS,
   STATIC_GETTERS,
-} from './defs.js';
-import Controller from './controller.js';
-import WSPSchemaTuner from './wsp-chema-tuner.js';
-import ReduceRemoteTuner from './reduce-remote-tuner.js';
-import ReplicateRemoteTuner from './replicate-remote-tuner.js';
-import RedCon5ionHn from './red-connection-handler.js';
-import { RED_REC_STATUS } from './record/red-record.js';
-import * as utils from '../utils.js';
+} from './defs';
+import Controller from './controller';
+import WSPSchemaTuner from './wsp-chema-tuner';
+import ReduceRemoteTuner from './reduce-remote-tuner';
+import ReplicateRemoteTuner from './replicate-remote-tuner';
+import RedCon5ionHn from './red-connection-handler';
+import { RED_REC_STATUS } from './record/red-record';
+import * as utils from '../utils';
 
 const STATIC_LOCAL_RED_WSP = RedWSP.create(
   null, STATIC_PROJECTS.EMPTY_REDUCER, { initialValue: null },

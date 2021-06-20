@@ -1,11 +1,10 @@
-/* eslint-disable import/extensions */
-import { EMPTY } from '../signals.js';
-import STTMP from '../sync-ttmp-ctr.js';
-import Propagate from '../propagate.js';
-import { STATIC_CREATOR_KEY } from '../defs.js';
-import SyncEventManager from '../sync-man/sync-event-manager.js';
-import SyncEventManagerSingle from '../sync-man/sync-event-manager-single.js';
-/* <debug> */ import Debug from '../debug.js'; /* </debug> */
+import { EMPTY } from '../signals';
+import STTMP from '../sync-ttmp-ctr';
+import Propagate from '../propagate';
+import { STATIC_CREATOR_KEY } from '../defs';
+import SyncEventManager from '../sync-man/sync-event-manager';
+import SyncEventManagerSingle from '../sync-man/sync-event-manager-single';
+/* <debug> */ import Debug from '../debug'; /* </debug> */
 
 let staticOriginWSPIDCounter = 0;
 

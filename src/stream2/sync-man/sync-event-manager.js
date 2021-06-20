@@ -1,6 +1,5 @@
-/* eslint-disable import/extensions */
-import SyncEventGroup from './sync-event-group.js';
-import Token from '../token.js';
+import SyncEventGroup from './sync-event-group';
+import Token from '../token';
 
 export default class SyncEventManager {
   constructor(own) {

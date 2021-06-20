@@ -1,6 +1,5 @@
-/* eslint-disable import/extensions */
-/* <debug> */import AsyncTask from '../async-task.js';/* </debug> */
-import Token from '../token.js';
+/* <debug> */import AsyncTask from '../async-task';/* </debug> */
+import Token from '../token';
 
 export default class ReT4Base {
   /**

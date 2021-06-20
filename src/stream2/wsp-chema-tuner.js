@@ -1,7 +1,6 @@
-/* eslint-disable import/extensions */
-import { RedWSPSlave } from './wsp/rwsp.js';
-import RedCon5ionHn from './red-connection-handler.js';
-import AsyncTask from './async-task.js';
+import { RedWSPSlave } from './wsp/rwsp';
+import RedCon5ionHn from './red-connection-handler';
+import AsyncTask from './async-task';
 
 function arrEquals(arr1, arr2) {
   if (arr1.length !== arr2.length) {

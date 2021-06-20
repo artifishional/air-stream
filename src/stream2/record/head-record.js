@@ -1,4 +1,4 @@
-import Record from './record.js';
+import Record from './record';
 
 let ORIGIN_RECORD_ID_COUNTER = 0;
 

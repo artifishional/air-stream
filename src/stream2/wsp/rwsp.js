@@ -1,13 +1,12 @@
-/* eslint-disable import/extensions */
-import WSP from './wsp.js';
-import ReT4 from '../retouch/retouch.js';
-import { RET4_TYPES } from '../retouch/retouch-types.js';
-import { EMPTY } from '../signals.js';
-import HeadRecord from '../record/head-record.js';
-import Token from '../token.js';
-import STTMP from '../sync-ttmp-ctr.js';
-import { STATIC_GETTERS } from '../defs.js';
-import * as utils from '../../utils.js';
+import WSP from './wsp';
+import ReT4 from '../retouch/retouch';
+import { RET4_TYPES } from '../retouch/retouch-types';
+import { EMPTY } from '../signals';
+import HeadRecord from '../record/head-record';
+import Token from '../token';
+import STTMP from '../sync-ttmp-ctr';
+import { STATIC_GETTERS } from '../defs';
+import * as utils from '../../utils';
 
 export const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 export const DEFAULT_UPDATE_T4_STATUS_CTD_VALUE = 10;

@@ -1,6 +1,5 @@
-/* eslint-disable import/extensions */
-import { EMPTY } from '../signals.js';
-/* <debug> */import Debug from '../debug.js';/* </debug> */
+import { EMPTY } from '../signals';
+/* <debug> */import Debug from '../debug';/* </debug> */
 
 export default class Record
   /* <debug> */extends Debug/* </debug> */ {

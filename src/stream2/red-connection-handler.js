@@ -1,6 +1,5 @@
-/* eslint-disable import/extensions */
 /* <debug> */
-import RedWSP from './wsp/rwsp.js';
+import RedWSP from './wsp/rwsp';
 /* </debug> */
 
 export default class RedCon5ionHn {

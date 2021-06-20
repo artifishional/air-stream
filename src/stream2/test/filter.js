@@ -1,4 +1,4 @@
-import { stream2 as stream } from "../../index.js";
+import { stream2 as stream } from "../../index";
 import {WSP} from "../wsp/wsp";
 
 describe('filter', function () {

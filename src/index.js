@@ -1,5 +1,4 @@
-/* eslint-disable import/extensions */
-import './polyfills/index.js';
+import './polyfills/index';
 
-export * from './stream2/index.js';
+export * from './stream2/index';
 export { default as now } from 'performance-now';
