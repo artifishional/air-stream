@@ -17,7 +17,7 @@ describe('reduce', () => {
       103,
       106,
     ];
-    const rc1 = stream.fromCbFunc((cb) => {
+    const rc1 = stream.fromCbFn((cb) => {
       cb(1);
       _(() => cb(2));
       _(() => cb(3));
@@ -35,7 +35,7 @@ describe('reduce', () => {
       101,
       103,
     ];
-    const rc1 = stream.fromCbFunc((cb) => {
+    const rc1 = stream.fromCbFn((cb) => {
       _(() => cb({ src: 'dot', data: 100 }));
       _(() => cb({ src: 'com', data: 1 }));
       _(() => cb({ src: 'com', data: 2 }));
@@ -60,7 +60,7 @@ describe('reduce', () => {
       1,
     ];
     const queue1 = expected.values();
-    const rc1 = stream.fromCbFunc((cb, ctr) => {
+    const rc1 = stream.fromCbFn((cb, ctr) => {
       ctr.req('coordinate', ({ value }) => {
         expect(value).toEqual(queue1.next().value);
         done();
@@ -82,7 +82,7 @@ describe('reduce', () => {
     const _ = async();
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
-    const rc1 = stream.fromCbFunc((cb, ctr) => {
+    const rc1 = stream.fromCbFn((cb, ctr) => {
       ctr.req('coordinate', ({ value, id }) => {
         if (value === 1) {
           cb({
@@ -121,7 +121,7 @@ describe('reduce', () => {
     const _ = async();
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
-    const rc1 = stream.fromCbFunc((cb, ctr) => {
+    const rc1 = stream.fromCbFn((cb, ctr) => {
       ctr.req('coordinate', ({ value, id }) => {
         if (value === 'A2') {
           _(() => cb({
@@ -166,7 +166,7 @@ describe('reduce', () => {
     const _ = async();
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
-    const rc1 = stream.fromCbFunc((cb, ctr) => {
+    const rc1 = stream.fromCbFn((cb, ctr) => {
       ctr.req('coordinate', ({ value, id }) => {
         if (value === 'A2') {
           cb({
@@ -208,7 +208,7 @@ describe('reduce', () => {
     const _ = async();
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
-    const rc1 = stream.fromCbFunc((cb, ctr) => {
+    const rc1 = stream.fromCbFn((cb, ctr) => {
       const allCoordinateValues = new Map();
       ctr.req('coordinate', ({ value, id }) => {
         allCoordinateValues.set(value, id);
@@ -280,7 +280,7 @@ describe('reduce', () => {
     const SRV_RQ_RS_DELAY = 5;
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
-    const rc1 = stream.fromCbFunc((cb) => {
+    const rc1 = stream.fromCbFn((cb) => {
       _(() => cb({ src: 'dot', data: 100 }));
       _(() => cb({
         src: 'dot',
@@ -313,7 +313,7 @@ describe('reduce', () => {
     const SRV_RQ_RS_DELAY = 5;
     // eslint-disable-next-line no-undef
     const proJ = jest.fn();
-    const rc1 = stream.fromCbFunc((cb, ctr) => {
+    const rc1 = stream.fromCbFn((cb, ctr) => {
       ctr.req('coordinate', ({ value }) => {
         if (value === 'A1') {
           cb({
@@ -452,7 +452,7 @@ describe('reduce', () => {
       })
       .on(done);
   });
-  
+
   it('refresh history', (done) => {
     done = series(done, [
       evt => expect(evt).to.deep.equal(keyF),
@@ -481,7 +481,7 @@ describe('reduce', () => {
       5,
     ];
     const queue1 = expected.values();
-    const rc = stream.fromCbFunc((cb) => {
+    const rc = stream.fromCbFn((cb) => {
       _(() => cb(2));
       _(() => cb(3));
     });
@@ -542,5 +542,5 @@ describe('reduce', () => {
     });
     _(() => ta2.emit('test-event', 1));
     _(() => queue1.next().done && done());
-  });*/
+  }); */
 });

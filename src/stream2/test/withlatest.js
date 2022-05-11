@@ -31,6 +31,7 @@ describe('withlatest', () => {
       });
     _(() => queue1.next().done && done());
   });
+
 /*
   test('simple2', (done) => {
     const source = stream(null, (emt) => {
@@ -68,7 +69,8 @@ describe('withlatest', () => {
 
     b.withlatest([a, c, b], ({
       type, weight: a, path, ...args
-    }, { weight: b }, { weight: c }, { weight: d }) => ({ type, ...args, total: a * b * c * d })).on((evt) => {
+    }, { weight: b }, { weight: c }, { weight: d }) =>
+    ({ type, ...args, total: a * b * c * d })).on((evt) => {
       expect(evt).toMatchObject([
         { total: 256 },
       ][index]);
@@ -94,5 +96,5 @@ describe('withlatest', () => {
   //         ({type, ...args})).on( e => {} );
   //     obs();
   //     expect(!source.obs.length).toEqual( 0 );
-  // });*/
+  // }); */
 });

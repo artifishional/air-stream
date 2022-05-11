@@ -1,10 +1,11 @@
 import { EMPTY } from '../signals';
 import STTMP from '../sync-ttmp-ctr';
 import Propagate from '../propagate';
-import { STATIC_CREATOR_KEY } from '../defs';
+import { EMPTY_WSPS_LIST_4_COMBINED, STATIC_CREATOR_KEY } from '../defs';
 import SyncEventManager from '../sync-man/sync-event-manager';
 import SyncEventManagerSingle from '../sync-man/sync-event-manager-single';
-/* <debug> */ import Debug from '../debug'; /* </debug> */
+/* <debug> */ import Debug from '../debug';/* </debug> */
+import WSPSSetupResult from '../wrapper/wsps-setup-result';
 
 let staticOriginWSPIDCounter = 0;
 
@@ -33,6 +34,11 @@ export default class WSP
     this.hn = null;
     this.conf = conf;
     this.after5FullUpdateObs = null;
+    /**
+     * TODO: Источники тоже нужно выносить в инициализатор
+     *  Так как теперь они могут изменяться в процессе
+     *  Далее также использовать метод setup()
+     */
     this.wsps = wsps;
     /* <debug> */
     if (creatorKey !== STATIC_CREATOR_KEY) {
@@ -41,7 +47,7 @@ export default class WSP
     /* </debug> */
     /* <debug> */
     if (wsps) {
-      if (wsps.some((stream) => !(stream instanceof WSP))) {
+      if (wsps.some((wsp) => !(wsp instanceof WSP))) {
         throw new TypeError('Only WSP supported');
       }
     }
@@ -60,6 +66,9 @@ export default class WSP
       staticOriginWSPIDCounter += 1;
       this.id = staticOriginWSPIDCounter;
     }
+    // Уникальный номер блокировки, когда ожидается обновление конфигурации
+    // Замок не блокирует работу всего узла, он только препятствует дальнейшее распотранение
+    this.lockedState = null;
   }
 
   static get STATIC_LOCAL_WSP() {
@@ -104,7 +113,15 @@ export default class WSP
     return new SyncEventManager(this);
   }
 
+  /**
+   * Реакция на новую запись.
+   *
+   * @param cuR
+   */
   handleR(cuR) {
+    if (cuR.originWspUpdates) {
+      this.toWSPSUpdate(cuR.originWspUpdates);
+    }
     /* <debug> */
     if (!this.originWSPs.has(cuR.head.src)) {
       throw new Error('Original source not found for current record');
@@ -113,8 +130,18 @@ export default class WSP
     this.sncMan.fill(cuR);
   }
 
+  /**
+   * Обновление источников событий.
+   */
+  toWSPSUpdate() {
+    // TODO: Доступна оптимизация
+    this.reCalcOriginWSPs();
+  }
+
   sncGrpFilledHandler(updates) {
-    this.next(this.createRecordFromUpdates(updates));
+    const rec = this.createRecordFromUpdates(updates);
+
+    if (rec) this.next(rec);
   }
 
   createRecordFromUpdates(updates) {
@@ -122,7 +149,13 @@ export default class WSP
     if (!filtered.length) {
       return this.createRecordFrom(updates[0], EMPTY);
     }
-    return this.createRecordFrom(filtered[0], this.hn(filtered));
+    // Применить изменения
+    const changes = this.hn(filtered);
+    if (changes instanceof WSPSSetupResult) {
+      this?.reConfigurate(changes.wsps);
+      return null;
+    }
+    return this.createRecordFrom(filtered[0], changes);
   }
 
   with(hnProJ) {
@@ -145,16 +178,47 @@ export default class WSP
     }, conf);
   }
 
-  static extendedCombine(wsps, hnProJ, after5FullUpdateObs, conf = { }) {
+  static merge(wsps, hnProJ, after5FullUpdateObs, conf = { }) {
+    /** <debug>
+     * Пустой список зависимостей на текущий момент
+     *  допустИм только для данного оператора
+     */
+    if (!wsps.length) {
+      // eslint-disable-next-line no-param-reassign
+      wsps = EMPTY_WSPS_LIST_4_COMBINED;
+    }
+    /* </debug> */
+    const res = new this(
+      wsps,
+      { ...conf, configurable: true },
+      /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
+    );
+    res.initiate(hnProJ, after5FullUpdateObs);
+    return res;
+  }
+
+  static extendedCombine(wsps, hnProJ, after5FullUpdateObs, {
+    arrayOrObjectMode = true, ...conf
+  } = { }) {
+    /** <debug>
+     * Пустой список зависимостей на текущий момент
+     *  допустИм только для данного оператора
+     */
+    if (!wsps.length) {
+      // eslint-disable-next-line no-param-reassign
+      wsps = EMPTY_WSPS_LIST_4_COMBINED;
+    }
+    /* </debug> */
     const res = new this(
       wsps,
       { ...conf, configurable: true },
       /* <debug> */ STATIC_CREATOR_KEY, /* </debug> */
     );
     res.initiate((own) => {
-      // To keep the order of output
-      let awaitingFilling = own.wsps.length;
       const combined = new Map(own.wsps.map((wsp) => [wsp, EMPTY]));
+      // To keep the order of output
+      // Исчтоники могут повторяться
+      let awaitingFilling = combined.size;
       const proJ = hnProJ(own);
       return (updates) => {
         updates.forEach(({ src, value }) => {
@@ -166,7 +230,14 @@ export default class WSP
           combined.set(src, value);
         });
         if (!awaitingFilling) {
-          return proJ([...combined.values()], updates);
+          return proJ(
+            arrayOrObjectMode
+              ? own.wsps.map((wsp) => combined.get(wsp)) : Object.fromEntries(
+                Object.entries(conf.streams).map(([key, { wsp }]) => [key, combined.get(wsp)]),
+              ),
+            arrayOrObjectMode ? updates
+              : Object.fromEntries(updates.map(({ src, value }) => [combined.get(src), value])),
+          );
         }
         return EMPTY;
       };
@@ -222,14 +293,14 @@ export default class WSP
   }
 
   after5FullUpdateHn() {
-    if (this.after5FullUpdateObs) {
+    if (this.after5FullUpdateObs?.after5fullUpdateHn) {
       this.after5FullUpdateObs.after5fullUpdateHn(this);
     }
   }
 
   /**
    * @param {Function|null = null} hnProJ
-   * @param {Tuner} after5FullUpdateObs
+   * @param {{after5FullUpdateHn?: Function,after5FullUpdateHn?: Function}|null} after5FullUpdateObs
    */
   initiate(hnProJ, after5FullUpdateObs = null) {
     if (hnProJ) {
@@ -331,6 +402,9 @@ export default class WSP
       this.curFrameCachedRecord = [];
     }
     this.curFrameCachedRecord.push(rec);
+    if (this.after5UpdateHn() || this.lockedState) {
+      return;
+    }
     /* <debug> */
     this.debug.spreadInProgress = true;
     /* </debug> */
@@ -346,6 +420,13 @@ export default class WSP
     this.after5FullUpdateHn();
     // При необходимости оптимизации можно перенять механику от
     // Event с жестко контролируемой через idx рассылкой
+  }
+
+  after5UpdateHn() {
+    if (this.after5FullUpdateObs?.after5UpdateHn) {
+      return this.after5FullUpdateObs.after5UpdateHn(this);
+    }
+    return false;
   }
 
   /**

@@ -26,3 +26,5 @@ export const UNIQUE_MINOR_VALUE = {
   UNIQUE_MINOR_VALUE: 'UNIQUE_MINOR_VALUE',
   /* </debug> */
 };
+
+export const EMPTY_WSPS_LIST_4_COMBINED = [];

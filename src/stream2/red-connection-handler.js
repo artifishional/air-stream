@@ -10,7 +10,15 @@ export default class RedCon5ionHn {
   reconnect(streams) {
     this.notRDYcounter = streams.length;
     this.streams = streams;
-    streams.map((stream) => stream.connect(this));
+    // TODO: подозрительно, что здесь нигде не
+    //  контролируется отписка
+    //  очень похоже на то что здесь вместро streams
+    //  должны накапливаться подключения к ним
+    streams.forEach((stream) => stream.connect(this));
+    // if zero streams length configuration
+    if (!streams.length) {
+      this.cb(this);
+    }
   }
 
   hn(stream) {

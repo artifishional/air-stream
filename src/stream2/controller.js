@@ -1,6 +1,86 @@
 import { STD_DISCONNECT_REQ } from './defs';
 /* <debug> */import Debug from './debug';/* </debug> */
 
+class Connection {
+  constructor(own) {
+    this.own = own;
+    this.streams = null;
+    this.cb = null;
+    this.wsps = null;
+    this.connectionsLeft = null;
+    this.connections = null;
+  }
+
+  activate(streams, cb) {
+    this.streams = streams;
+    this.cb = cb;
+    this.wsps = new Array(streams.length);
+    this.connectionsLeft = streams.length;
+    this.connections = new Array(streams.length);
+    this.streams.map((stream, idx) => stream
+      .connect((wsp, hook) => this.onConnect(wsp, hook, idx)));
+    if (streams && !streams.length) {
+      this.cb([], this.own);
+    }
+  }
+
+  onConnect(wsp, hook, idx) {
+    if (this.own.disconnected) {
+      hook();
+      return;
+    }
+    this.connectionsLeft -= 1;
+    this.connections[idx] = hook;
+    this.wsps[idx] = wsp;
+    if (!this.connectionsLeft) {
+      this.cb(this.wsps, this.own);
+    }
+  }
+
+  disconnect() {
+    this.disconnected = true;
+    this.connections.map((hook) => hook?.());
+  }
+}
+
+class CTR {
+  /**
+   * @param {Function} cb (wsps) => void
+   * @param {Controller} own
+   * @param {Stream2[]} streams
+   */
+  constructor(own, streams = null, cb = null) {
+    this.disconnected = false;
+    this.own = own;
+    this.lastConnection = null;
+    if (streams) {
+      this.lastConnection = new Connection(this);
+      this.lastConnection.activate(streams, cb);
+    }
+  }
+
+  get streams() {
+    return this.lastConnection?.streams;
+  }
+
+  get wsps() {
+    return this.lastConnection?.wsps;
+  }
+
+  renew(streams, cb) {
+    this.disconnected = false;
+    const { lastConnection } = this;
+    this.lastConnection = new Connection(this);
+    this.lastConnection.activate(streams, cb);
+    lastConnection?.disconnect();
+  }
+
+  disconnect() {
+    this.disconnected = true;
+    this.lastConnection?.disconnect();
+  }
+}
+
 export default class Controller
   /* <debug> */extends Debug/* </debug> */ {
   constructor(src) {
@@ -12,6 +92,7 @@ export default class Controller
     this.$todisconnect = [];
     this.$tocommand = [];
     this.handlers = new Set();
+    this.childs = [];
   }
 
   req(name, cb) {
@@ -22,6 +103,18 @@ export default class Controller
     } else {
       this.tocommand((req, data) => req === name && cb(data));
     }
+  }
+
+  /**
+   * Создание подчиненного контроллера
+   * @param {Stream2[]} streams
+   * @param {Function} cb (wsps) => void
+   * @return {CTR}
+   */
+  co5s(streams, cb) {
+    const res = new CTR(this, streams, cb);
+    this.childs.push(res);
+    return res;
   }
 
   todisconnect(...connectors) {
@@ -60,6 +153,7 @@ export default class Controller
     } else {
       this.disconnected = true;
       this.$todisconnect.forEach((connector) => connector(req, data));
+      this.childs.map((ctr) => ctr.disconnect());
     }
     this.handlers.forEach((hn) => hn.handleCTR(req, data));
   }

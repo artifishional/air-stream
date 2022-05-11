@@ -38,3 +38,10 @@ export function findFromMap(map, equalFn) {
 export function isUndef(value) {
   return value === undefined;
 }
+
+export function arrayShallowEqual(a, b) {
+  if (a.length !== b.length) {
+    return false;
+  }
+  return a.every((x, idx) => x === b[idx]);
+}

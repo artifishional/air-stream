@@ -51,13 +51,17 @@ export default class SyncEventManager {
     this.own.sncGrpFilledHandler(src.getUpdates());
   }
 
-  createGrp(rec) {
+  getNeighbourWSPCount(rec) {
     const neighbourWSPCount = this.own.originWSPs.get(rec.head.src);
     /* <debug> */
     if (neighbourWSPCount === undefined) {
       throw new Error('Unexpected model state');
     }
     /* </debug> */
-    return new SyncEventGroup(this, rec.head, neighbourWSPCount);
+    return neighbourWSPCount;
+  }
+
+  createGrp(rec) {
+    return new SyncEventGroup(this, rec);
   }
 }

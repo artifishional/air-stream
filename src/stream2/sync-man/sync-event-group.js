@@ -1,9 +1,16 @@
 export default class SyncEventGroup {
-  constructor(own, headRec, neighbourWSPCount) {
+  constructor(own, rec) {
     this.own = own;
-    this.headRec = headRec;
-    this.neighbourWSPCount = neighbourWSPCount;
+    this.rec = rec;
     this.store = [];
+  }
+
+  get headRec() {
+    return this.rec.head;
+  }
+
+  get neighbourWSPCount() {
+    return this.own.getNeighbourWSPCount(this.rec);
   }
 
   fill(cuR) {

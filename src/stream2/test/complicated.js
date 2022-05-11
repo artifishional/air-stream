@@ -17,11 +17,11 @@ describe('complicated', () => {
     ];
     const queue1 = expected.values();
     let cb1;
-    const rc1 = stream.fromCbFunc((_cb1) => {
+    const rc1 = stream.fromCbFn((_cb1) => {
       cb1 = _cb1;
     });
     let cb2;
-    const rc2 = stream.fromCbFunc((_cb2) => {
+    const rc2 = stream.fromCbFn((_cb2) => {
       cb2 = _cb2;
     });
     _(() => {
@@ -50,7 +50,7 @@ describe('complicated', () => {
       [5, 20],
     ];
     const queue1 = expected.values();
-    const rc = stream.fromCbFunc((cb) => {
+    const rc = stream.fromCbFn((cb) => {
       _(() => cb(2));
       _(() => cb(3));
     });
@@ -77,7 +77,7 @@ describe('complicated', () => {
       [5, 20],
     ];
     const queue1 = expected.values();
-    const rc = stream.fromCbFunc((cb) => {
+    const rc = stream.fromCbFn((cb) => {
       _(() => cb(2));
       _(() => cb(3));
     });
@@ -105,7 +105,7 @@ describe('complicated', () => {
       [3, 16],
     ];
     const queue1 = expected.values();
-    const rc = stream.fromCbFunc((cb) => {
+    const rc = stream.fromCbFn((cb) => {
       _(() => cb(-2));
       _(() => cb(3));
     });

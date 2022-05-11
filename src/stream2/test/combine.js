@@ -1,7 +1,6 @@
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
 
-// eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;
 
 describe('combine', () => {
@@ -14,13 +13,13 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     const rc1 = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(10);
         _(() => cb(11));
       })
       .store();
     const rc2 = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(20);
         _(() => cb(22));
       })
@@ -32,6 +31,29 @@ describe('combine', () => {
     _(() => queue1.next().done && done());
   });
 
+  test('combine after initialization', (done) => {
+    const _ = async();
+    const expected = [
+      [10],
+      [20],
+    ];
+    const queue1 = expected.values();
+    const rc1 = stream
+      .fromCbFn((cb) => {
+        cb(10);
+        _(() => cb(20));
+      })
+      .store();
+    rc1.get();
+    _(() => {
+      stream.combine([rc1])
+        .get(({ value }) => {
+          expect(value).toEqual(queue1.next().value);
+        });
+    });
+    _(() => queue1.next().done && done());
+  });
+
   test('several streams - single wsp', (done) => {
     const _ = async();
     const expected = [
@@ -40,7 +62,7 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     const rc = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(10);
         _(() => cb(11));
       })
@@ -62,7 +84,7 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     const rc = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(10);
         _(() => cb(11));
       })
@@ -81,7 +103,7 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     const rc = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb([]);
       })
       .store();
@@ -100,13 +122,13 @@ describe('combine', () => {
       1020,
       1122,
     ];
-    const rc1 = stream.fromCbFunc((cb) => {
+    const rc1 = stream.fromCbFn((cb) => {
       setTimeout(() => {
         _(() => cb({ type: 'dot', data: 10 }));
         _(() => cb({ type: 'com', data: 1 }));
       });
     });
-    const rc2 = stream.fromCbFunc((cb) => {
+    const rc2 = stream.fromCbFn((cb) => {
       _(() => cb({ type: 'dot', data: 100 }));
       _(() => cb({ type: 'com', data: 2 }));
     });
@@ -139,15 +161,15 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     stream
-      .fromCbFunc((headCb) => {
+      .fromCbFn((headCb) => {
         _(() => headCb([
           stream
-            .fromCbFunc((cb) => {
+            .fromCbFn((cb) => {
               _(() => cb(10));
             })
             .store(),
           stream
-            .fromCbFunc((cb) => {
+            .fromCbFn((cb) => {
               _(() => cb(20));
             })
             .store(),
@@ -160,7 +182,7 @@ describe('combine', () => {
     setTimeout(() => queue1.next().done && done());
   });
 
-  test('empty queue', (done) => {
+  test('empty list of streams', (done) => {
     const _ = async();
     const expected = [
       [],
@@ -181,15 +203,15 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     const a = stream
-      .fromCbFunc((headCb) => {
+      .fromCbFn((headCb) => {
         _(() => headCb([
           stream
-            .fromCbFunc((cb) => {
+            .fromCbFn((cb) => {
               _(() => cb(10));
             })
             .store(),
           stream
-            .fromCbFunc((cb) => {
+            .fromCbFn((cb) => {
               _(() => cb(20));
             })
             .store(),
@@ -197,7 +219,7 @@ describe('combine', () => {
       })
       .combineAllFirst();
     const b = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(30);
       })
       .store();
@@ -208,11 +230,11 @@ describe('combine', () => {
     setTimeout(() => queue1.next().done && done());
   });
 
-  test('extendedCombine dyn add stream', (done) => {
+  test('extended combine -> dynamic add stream', (done) => {
     const _ = async();
     const expected = [
       [1, 10],
-      [2, 20],
+      // [2, 20], locked
       // reconstruct here and rebase
       [1, 10, 11],
       [2, 20, 22],
@@ -220,7 +242,7 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     const src = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
         _(() => cb(2));
         _(() => cb(3));
@@ -230,15 +252,10 @@ describe('combine', () => {
     const b = src.map((vl) => vl * 10);
     const c = src.map((vl) => vl * 11);
     stream
-      .extendedCombine(
+      .eCombine(
         [a, b],
-        (vl) => vl, {
-          tuner(tuner) {
-            if (tuner.get(0).value > 1) {
-              tuner.add([c]);
-            }
-          },
-        },
+        (values) => values,
+        (values) => [a, b, ...values[0] > 1 ? [c] : []],
       )
       .get(({ value }) => {
         expect(value).toEqual(queue1.next().value);
@@ -246,13 +263,11 @@ describe('combine', () => {
     setTimeout(() => queue1.next().done && done());
   });
 
-  test('extendedCombine dyn add async stream', (done) => {
+  test('extended combine dyn add async stream', (done) => {
     const _ = async();
     const expected = [
       [1, 10],
-      [2, 20],
-      // TODO: need revision
-      //  store eats the first meaning
+      // [2, 20], locked
       // reconstruct here and rebase
       [2, 20, 11],
       [3, 30, 11],
@@ -261,14 +276,14 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     const s1 = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
         _(() => cb(2));
         _(() => cb(3));
       })
       .store();
     const s2 = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
         _(() => cb(2));
         _(() => cb(3));
@@ -278,15 +293,10 @@ describe('combine', () => {
     const b = s1.map((vl) => vl * 10);
     const c = s2.map((vl) => vl * 11);
     stream
-      .extendedCombine(
+      .eCombine(
         [a, b],
-        (vl) => vl, {
-          tuner(tuner) {
-            if (tuner.get(0).value > 1) {
-              tuner.add([c]);
-            }
-          },
-        },
+        (vl) => vl,
+        (values) => [a, b, ...values[0] > 1 ? [c] : []],
       )
       .get(({ value }) => {
         expect(value).toEqual(queue1.next().value);
@@ -294,21 +304,19 @@ describe('combine', () => {
     setTimeout(() => queue1.next().done && done());
   });
 
-  test('nested extendedCombine dyn add stream', (done) => {
+  test('nested extended combine -> dynamic add stream', (done) => {
     const _ = async();
     const expected = [
       [[1, 10], 11],
-      [[2, 20], 22],
+      // [[2, 20], 22], locked
       // reconstruct here and rebase
-      // TODO: need revision
-      //  store eats the first meaning
       [[1, 10, 11], 11],
       [[2, 20, 22], 22],
       [[3, 30, 33], 33],
     ];
     const queue1 = expected.values();
     const s1 = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
         _(() => cb(2));
         _(() => cb(3));
@@ -318,15 +326,10 @@ describe('combine', () => {
     const b = s1.map((vl) => vl * 10);
     const c = s1.map((vl) => vl * 11);
     const com1 = stream
-      .extendedCombine(
+      .eCombine(
         [a, b],
-        (vl) => vl, {
-          tuner(tuner) {
-            if (tuner.get(0).value > 1) {
-              tuner.add([c]);
-            }
-          },
-        },
+        (vl) => vl,
+        (values) => [a, b, ...values[0] > 1 ? [c] : []],
       );
     stream
       .combine([com1, c])
@@ -358,7 +361,7 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     const s1 = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb('a');
         _(() => cb('b'));
         _(() => cb('c'));
@@ -379,7 +382,7 @@ describe('combine', () => {
     const expected = [
       [1, 10],
       [1, 20],
-      [1, 30],
+      // [1, 30], locked
       // reconstruct here and rebase
       [1, 10, 11],
       [1, 20, 22],
@@ -387,7 +390,7 @@ describe('combine', () => {
     ];
     const queue1 = expected.values();
     const s1 = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
         _(() => cb(2));
         _(() => cb(3));
@@ -397,15 +400,10 @@ describe('combine', () => {
     const b = s1.map((vl) => vl * 10);
     const c = s1.map((vl) => vl * 11);
     stream
-      .extendedCombine(
+      .eCombine(
         [a, b],
-        (vl) => vl, {
-          tuner(tuner) {
-            if (tuner.get(1).value === 30) {
-              tuner.add([c]);
-            }
-          },
-        },
+        (vl) => vl,
+        (values) => [a, b, ...values[1] === 30 ? [c] : []],
       )
       .get(({ value }) => {
         expect(value).toEqual(queue1.next().value);

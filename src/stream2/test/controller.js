@@ -18,7 +18,7 @@ describe('controller', () => {
     ];
     const queue1 = expected.values();
     const res = stream
-      .fromCbFunc((cb, ctr) => {
+      .fromCbFn((cb, ctr) => {
         ctr.req('change', (data) => {
           cb(data);
         });

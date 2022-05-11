@@ -7,7 +7,8 @@ export default class Record
     value,
     head,
     src,
-    /* <debug> */from, /* <debug> */
+    originWspUpdates = null,
+    /* <debug> */from = null, /* <debug> */
   ) {
     /* <debug> */
     super({ type: 'record' });
@@ -19,6 +20,7 @@ export default class Record
      */
     this.src = src;
     this.value = value;
+    this.originWspUpdates = originWspUpdates;
   }
 
   // eslint-disable-next-line class-methods-use-this

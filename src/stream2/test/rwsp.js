@@ -12,7 +12,7 @@ describe('RedWSP', () => {
   test('mandatory msg store view', (done) => {
     const _ = async();
     const red = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
       })
       .store();
@@ -26,7 +26,7 @@ describe('RedWSP', () => {
   test('mandatory delay msgs store view', (done) => {
     const _ = async();
     const red = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
         _(() => cb(2));
         _(() => cb(3));
@@ -40,7 +40,7 @@ describe('RedWSP', () => {
   test('cleanup store', (done) => {
     const _ = async();
     const red = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
         _(() => cb(2));
         _(() => setTimeout(() => {
@@ -57,7 +57,7 @@ describe('RedWSP', () => {
   test('mandatory actions + 1 stable action store view', (done) => {
     const _ = async();
     const red = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
         setTimeout(() => _(() => cb(2)), RedWSP.MSG_ALIVE_TIME_MS);
       })

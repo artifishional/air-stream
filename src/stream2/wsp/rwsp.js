@@ -55,7 +55,13 @@ export default class RedWSP extends WSP {
     onReT4completeCb = null,
     ...args
   } = {}, /* <debug> */ creatorKey /* </debug> */) {
+    /* <debug> */
+    if (wsps && !wsps.length) {
+      throw new TypeError('Unsupported empty list of wsps');
+    }
+    /* </debug> */
     super(wsps, args, /* <debug> */ creatorKey /* </debug> */);
+    this.onRDY = args?.onRDY || null;
     this.initialValue = initialValue;
     this.incompleteRet4 = null;
     this.subordination = subordination;
@@ -67,6 +73,11 @@ export default class RedWSP extends WSP {
     this.$updateT4statusCTD = this.constructor.UPDATE_T4_STATUS_CTD_VALUE;
     this.onReT4completeCb = onReT4completeCb;
     this.reT4NotFinalized = false;
+    /**
+     * Прекратить обновление и начать реконфигурацию
+     * @type {RedWSP[]}
+     */
+    this.abortAndSetup = null;
   }
 
   static get MSG_ALIVE_TIME_MS() {
@@ -125,8 +136,20 @@ export default class RedWSP extends WSP {
     }
   }
 
+  after5UpdateHn() {
+    if (!this.incompleteRet4) {
+      return super.after5UpdateHn();
+    }
+    return false;
+  }
+
+  getLockedState() {
+    this.lockedState = {};
+    return this.lockedState;
+  }
+
   get(proJ) {
-    return RedWSPSlave.create([this],
+    return this.constructor[Symbol.species].create([this],
       () => ([update]) => {
         proJ(update);
         return update;
@@ -144,7 +167,7 @@ export default class RedWSP extends WSP {
 
   factory(construct, getter = STATIC_GETTERS.STRAIGHT, equal = utils.equal) {
     const cache = new Map();
-    return RedWSPSlave.create([this],
+    return this.constructor[Symbol.species].create([this],
       () => ([update]) => getter(update.value).map((raw) => {
         let exst = utils.findFromMap(cache, ([x]) => equal(x, raw));
         if (!exst) {
@@ -157,13 +180,30 @@ export default class RedWSP extends WSP {
 
   reconstruct() {
     /* <debug> */
-    if (this.$sncMan && this.$sncMan.sncLastEvtGrp) {
+    if (this.$sncMan?.sncLastEvtGrp) {
       throw new Error('Unexpected model state');
     }
     /* </debug> */
     this.$originWSPs = null;
     this.$sncMan = null;
     this.slaves.forEach((slave) => slave.reconstruct());
+  }
+
+  /**
+   * Начать обновление схемы родительских потоков
+   * @param {RedWSP[]} wsps
+   * @param {{}} locked
+   */
+  reConfigurate(wsps, locked) {
+    if (this.lockedState !== locked) {
+      return;
+    }
+    this.lockedState = null;
+    if (this.incompleteRet4) {
+      this.abortAndSetup = wsps;
+    } else {
+      this.setup(wsps);
+    }
   }
 
   setup(wsps) {
@@ -236,6 +276,9 @@ export default class RedWSP extends WSP {
       return;
     }
     this.pushToState(rec);
+    if (this.after5UpdateHn() || this.lockedState) {
+      return;
+    }
     if (!this.incompleteRet4) {
       // TODO: super.next(rec); after curFrameCachedRecord resolution
       // To prevent adding a subscriber while broadcasting
@@ -294,7 +337,21 @@ export default class RedWSP extends WSP {
     } else {
       this.state = [];
     }
-    updates.forEach((rec) => this.handleR(rec));
+    // Так как во время reT4 мы сейчас имеем шанс получить обновление
+    this.$sncMan = null;
+    updates.some((rec) => {
+      this.handleR(rec);
+      return this.abortAndSetup;
+    });
+    if (this.abortAndSetup) {
+      this.incompleteRet4.cancel();
+      this.incompleteRet4 = null;
+      this.$sncMan = null;
+      const { abortAndSetup } = this;
+      this.abortAndSetup = null;
+      this.setup(abortAndSetup);
+      return;
+    }
     if (this.sncMan.sncLastEvtGrp) {
       this.reT4NotFinalized = true;
     } else {
@@ -303,13 +360,16 @@ export default class RedWSP extends WSP {
   }
 
   finalizeReT4({ prms, type }) {
+    this.incompleteRet4 = null;
+    if (this.after5UpdateHn() || this.lockedState) {
+      return;
+    }
     this.reT4NotFinalized = false;
     /* <debug> */
     if (!this.isInitialized) {
       throw new Error('Unexpected model state');
     }
     /* </debug> */
-    this.incompleteRet4 = null;
     /* <debug> */
     this.debug.reT4SpreadInProgress = true;
     /* </debug> */
@@ -320,6 +380,7 @@ export default class RedWSP extends WSP {
     this.debug.reT4SpreadInProgress = false;
     /* </debug> */
     this.after5FullUpdateHn();
+    this.onRDY?.(this);
     if (this.onReT4completeCb) {
       this.onReT4completeCb(this);
       this.onReT4completeCb = null;
@@ -338,7 +399,7 @@ export default class RedWSP extends WSP {
    */
   on(slv) {
     /* <debug> */
-    if (!(slv instanceof RedWSPSlave)
+    if (!(slv instanceof this.constructor[Symbol.species])
       && !('binding' in slv)
       && !('handleReT4' in slv)
     ) {
@@ -398,11 +459,18 @@ export default class RedWSP extends WSP {
   }
 
   getLastStateValue() {
-    const lastStateIDX = this.state.length - 1;
-    if (this.state[lastStateIDX].value === EMPTY) {
-      return this.state[lastStateIDX - 1].value;
+    const last = this.getLastState();
+    if (last) {
+      return last.value;
     }
-    return this.state[lastStateIDX].value;
+    return EMPTY;
+  }
+
+  getLastState() {
+    if (!this.state.length) {
+      return undefined;
+    }
+    return this.state.findLast(({ value }) => value !== EMPTY);
   }
 
   updateT4status() {
@@ -413,12 +481,12 @@ export default class RedWSP extends WSP {
   }
 
   map(proJ, conf) {
-    return RedWSPSlave.create([this],
+    return this.constructor[Symbol.species].create([this],
       () => ([value]) => proJ(value), conf);
   }
 
   distinct(equal, conf) {
-    return RedWSPSlave.create([this],
+    return this.constructor[Symbol.species].create([this],
       () => {
         let state = EMPTY;
         return ([{ value }]) => {
@@ -433,29 +501,11 @@ export default class RedWSP extends WSP {
         };
       }, conf);
   }
+
+  static [Symbol.species] = this;
 }
 
 RedWSP.$MSG_ALIVE_TIME_MS = RedWSP.$MSG_ALIVE_TIME_MS
   || DEFAULT_MSG_ALIVE_TIME_MS;
 RedWSP.$UPDATE_T4_STATUS_CTD_VALUE = RedWSP.$UPDATE_T4_STATUS_CTD_VALUE
   || DEFAULT_UPDATE_T4_STATUS_CTD_VALUE;
-
-export class RedWSPSlave extends RedWSP {
-  /**
-   * @augments RedWSP
-   * @param {Array.<WSP|RedWSP>|null} wsps Список источников входных данных
-   * @param {STATIC_CREATOR_KEY} creatorKey
-   * @param args
-   */
-  constructor(
-    wsps,
-    args,
-    /* <debug> */ creatorKey, /* </debug> */
-  ) {
-    super(
-      wsps,
-      { subordination: new.target.SUBORDINATION.SLAVE, ...args },
-      /* <debug> */ creatorKey, /* </debug> */
-    );
-  }
-}

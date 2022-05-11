@@ -44,7 +44,7 @@ describe('with', () => {
     const expected = [
       ['a1', 'b1'],
     ];
-    const rc = stream.fromCbFunc((cb) => {
+    const rc = stream.fromCbFn((cb) => {
       _(() => cb(1));
     });
     const rc1 = rc.map((value) => `a${value}`);
@@ -68,7 +68,7 @@ describe('with', () => {
     const expected = [
       ['a1'], ['a2'],
     ];
-    const rc = stream.fromCbFunc((cb) => {
+    const rc = stream.fromCbFn((cb) => {
       _(() => cb(1));
       _(() => cb(2));
     });
@@ -91,7 +91,7 @@ describe('with', () => {
     const expected = [
       ['a1', 'b1'],
     ];
-    const rc = stream.fromCbFunc((cb) => {
+    const rc = stream.fromCbFn((cb) => {
       cb(1);
     });
     const rc1 = rc.map((value) => `a${value}`);
@@ -122,10 +122,10 @@ describe('with', () => {
       [101],
       [101, 12],
     ];
-    const rc1 = stream.fromCbFunc((cb) => {
+    const rc1 = stream.fromCbFn((cb) => {
       cb(1);
     });
-    const rc2 = stream.fromCbFunc((cb) => {
+    const rc2 = stream.fromCbFn((cb) => {
       cb(2);
     });
     const r1 = rc1.reduce((acc, next) => acc + next, { local: 100 });
@@ -149,13 +149,13 @@ describe('with', () => {
       [10, 102],
       [11, 102],
     ];
-    const rc1 = stream.fromCbFunc((cb) => {
+    const rc1 = stream.fromCbFn((cb) => {
       setTimeout(() => {
         _(() => cb({ type: 'dot', data: 10 }));
         _(() => cb({ type: 'com', data: 1 }));
       });
     });
-    const rc2 = stream.fromCbFunc((cb) => {
+    const rc2 = stream.fromCbFn((cb) => {
       _(() => cb({ type: 'dot', data: 100 }));
       _(() => cb({ type: 'com', data: 2 }));
     });

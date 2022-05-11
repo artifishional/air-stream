@@ -1,12 +1,12 @@
 import Record from './record';
 
-let ORIGIN_RECORD_ID_COUNTER = 0;
-
 export default class HeadRecord extends Record {
-  constructor(value, token, src) {
-    super(value, null, src, null);
-    ORIGIN_RECORD_ID_COUNTER += 1;
-    this.id = ORIGIN_RECORD_ID_COUNTER;
+  static ORIGIN_RECORD_ID_COUNTER = 0;
+
+  constructor(value, token, src, originWspUpdates = null) {
+    super(value, null, src, originWspUpdates);
+    new.target.ORIGIN_RECORD_ID_COUNTER += 1;
+    this.id = new.target.ORIGIN_RECORD_ID_COUNTER;
     this.$token = token;
     this.preRejected = false;
   }

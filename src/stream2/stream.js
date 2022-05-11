@@ -1,6 +1,6 @@
 import now from 'performance-now';
 import WSP from './wsp/wsp';
-import RedWSP, { RED_WSP_SUBORDINATION, RedWSPSlave } from './wsp/rwsp';
+import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp';
 import { EMPTY, STATUS_UPDATE } from './signals';
 import {
   FROM_OWNER_STREAM,
@@ -10,12 +10,13 @@ import {
   STATIC_GETTERS,
 } from './defs';
 import Controller from './controller';
-import WSPSchemaTuner from './wsp-chema-tuner';
 import ReduceRemoteTuner from './reduce-remote-tuner';
 import ReplicateRemoteTuner from './replicate-remote-tuner';
 import RedCon5ionHn from './red-connection-handler';
 import { RED_REC_STATUS } from './record/red-record';
 import * as utils from '../utils';
+import { arrayShallowEqual } from '../utils';
+import RedWSPSlave from './wsp/rwsp-slave';
 
 const STATIC_LOCAL_RED_WSP = RedWSP.create(
   null, STATIC_PROJECTS.EMPTY_REDUCER, { initialValue: null },
@@ -44,7 +45,7 @@ export class Stream2 {
   }
 
   static ups(ups = DEFAULT_UPS_VALUE, startAt = now()) {
-    return this.fromCbFunc((cb, ctr) => {
+    return this.fromCbFn((cb, ctr) => {
       // eslint-disable-next-line no-bitwise
       const delay = 1000 / ups | 0;
       let stepCt = 0;
@@ -316,8 +317,10 @@ export class Stream2 {
     throw new TypeError('Unsupported source type');
   }
 
-  static get fromCbFunc() {
-    return this.fromCbFn;
+  static fromCbFunc(...args) {
+    // eslint-disable-next-line no-console
+    console.warn('deprecated now');
+    return this.fromCbFn(...args);
   }
 
   static fromCbFn(cb = () => {}, conf) {
@@ -457,35 +460,66 @@ export class Stream2 {
     });
   }
 
+  /**
+   * @param {Stream2[]|{}} streams
+   * @param proJ
+   * @param ctrMode
+   * @param conf
+   * @returns {Stream2}
+   */
   static combine(
     streams,
     proJ = STATIC_PROJECTS.STRAIGHT,
     { ctrMode = 'none', ...conf } = { },
   ) {
+    /* <debug> */
+    if (streams === undefined) {
+      throw new TypeError();
+    }
     if (!streams.length) {
       if (proJ === STATIC_PROJECTS.STRAIGHT) {
         return Stream2.$EMPTY_ARR;
       }
       return this.fromFn(() => proJ([]));
     }
+    /* </debug> */
     return new Stream2((onrdy, ctr) => {
-      this.whenAllRedConnected(streams, (con5tion) => {
-        if (ctrMode === 'all') {
-          ctr.to(...con5tion.streams.map(({ hook }) => hook));
-        } else if (ctrMode === 'none') {
-          ctr.todisconnect(...con5tion.streams.map(({ hook }) => hook));
-        } else {
-          throw new Error('Unsupported controller mode');
-        }
-        const wsps = con5tion.streams.map(({ wsp }) => wsp);
-        // Несмотря на то, что базовые хранилища уже готовы
-        // на момент запуска дочернего, он все равно имеет шанс
-        // инициализироваться позднее, так как будет
-        // завершать процесс синхронизации
-        RedWSPSlave.extendedCombine(wsps, () => proJ, null, {
-          onReT4completeCb: onrdy, ...conf,
-        });
-      });
+      ctr.co5s(streams, (wsps) => {
+        let init = false; /// TODO: ???
+        RedWSPSlave.merge(
+          wsps,
+          (own) => {
+            const combined = new Map(own.wsps.map((wsp) => [wsp, EMPTY]) || []);
+            // To keep the order of output
+            // Исчтоники могут повторяться
+            let awaitingFilling = combined.size;
+            return (updates) => {
+              for (let i = 0; i < updates.length; i += 1) {
+                const { src, value } = updates[i];
+                if (awaitingFilling) {
+                  if (combined.get(src) === EMPTY) {
+                    awaitingFilling -= 1;
+                  }
+                }
+                combined.set(src, value);
+              }
+              if (!awaitingFilling) {
+                return proJ(own.wsps.map((wsp) => combined.get(wsp)), updates);
+              }
+              return EMPTY;
+            };
+          },
+          {
+            after5fullUpdateHn(wsp) {
+              if (!init) {
+                init = true;
+                onrdy(wsp);
+              }
+            },
+          },
+          conf,
+        );
+      }, { ctrMode });
     });
   }
 
@@ -533,32 +567,127 @@ export class Stream2 {
     });
   }
 
-  static extendedCombine(streams, proJ, { tuner = null, async = false } = {}, conf = {}) {
-    return new Stream2((onrdy, ctr) => {
-      new WSPSchemaTuner(this, onrdy, ctr, proJ, tuner, async, conf)
-        .add(streams);
-    });
-  }
-
   static $instance(wsp) {
     return wsp instanceof RedWSP ? RedWSPSlave : WSP;
   }
 
-  combineAll(proJ = STATIC_PROJECTS.STRAIGHT) {
+  /**
+   * Комбинирует все данные из списка потоков потока верхнего уровня
+   * Если список пустой то создается специальное событие пустого списка
+   */
+  combineAll(proJ = STATIC_PROJECTS.STRAIGHT, conf) {
     return new Stream2((onrdy, ctr) => {
-      this.connect((headWsp, headHook) => {
-        ctr.todisconnect(headHook);
-        ctr.todisconnect(() => headWsp.kill());
-        const tuner = new WSPSchemaTuner(this, onrdy, ctr, proJ);
-        headWsp.on({
-          binding: true,
-          handleR(rec) {
-            tuner.accurate(rec.value);
+      ctr.co5s([this], ([headWsp], localCTR) => {
+        let init = false; /// TODO: ???
+        RedWSPSlave.merge(
+          [headWsp],
+          (own) => {
+            const wsps = own.wsps.slice(1);
+            const combined = new Map(wsps.slice(1).map((wsp) => [wsp, EMPTY]) || []);
+            // To keep the order of output
+            // Исчтоники могут повторяться
+            let awaitingFilling = combined.size;
+            return (updates) => {
+              for (let i = 0; i < updates.length; i += 1) {
+                const { src, value } = updates[i];
+                if (src === headWsp) {
+                  // TODO: hack Пытаюсь здесь обновлять список только по последнему значению
+                  if (!headWsp.getLastStateValue().length) {
+                    return proJ([], updates);
+                  }
+                } else {
+                  if (awaitingFilling) {
+                    if (combined.get(src) === EMPTY) {
+                      awaitingFilling -= 1;
+                    }
+                  }
+                  combined.set(src, value);
+                }
+              }
+              if (!awaitingFilling && updates.some(({ src }) => src !== headWsp)) {
+                return proJ(wsps.map((wsp) => combined.get(wsp)), updates);
+              }
+              return EMPTY;
+            };
           },
-          handleReT4(rwsp, reT4data) {
-            tuner.accurate(reT4data.slice(-1)[0].value);
+          {
+            after5UpdateHn: (own) => {
+              const newStreams = [this, ...own.wsps[0].getLastStateValue()];
+              if (!arrayShallowEqual(localCTR.streams, newStreams)) {
+                const locked = own.getLockedState();
+                localCTR.renew(newStreams, (newWSPS) => {
+                  own.reConfigurate(newWSPS, locked);
+                });
+                return true;
+              }
+              return false;
+            },
+            after5fullUpdateHn: (own) => {
+              if (!init) {
+                init = true;
+                onrdy(own);
+              }
+            },
           },
-        });
+          conf,
+        );
+      });
+    });
+  }
+
+  static eCombine(streams, proJ, setup = null, controller, conf = {}) {
+    return new Stream2((onrdy, ctr) => {
+      ctr.co5s(streams, (wsps, localCTR) => {
+        let init = false; /// TODO: ???
+        RedWSPSlave.merge(
+          wsps,
+          (own) => {
+            const combined = new Map(own.wsps.slice(1).map((wsp) => [wsp, EMPTY]) || []);
+            // To keep the order of output
+            // Исчтоники могут повторяться
+            let awaitingFilling = combined.size;
+            return (updates) => {
+              for (let i = 0; i < updates.length; i += 1) {
+                const { src, value } = updates[i];
+                if (awaitingFilling) {
+                  if (combined.get(src) === EMPTY) {
+                    awaitingFilling -= 1;
+                  }
+                }
+                combined.set(src, value);
+              }
+              if (!awaitingFilling) {
+                return proJ(own.wsps.map((wsp) => combined.get(wsp)), updates);
+              }
+              return EMPTY;
+            };
+          },
+          {
+            after5UpdateHn(own) {
+              if (setup) {
+                const newStreams = setup(own.getLastStateValue());
+                if (!arrayShallowEqual(localCTR.streams, newStreams)) {
+                  const locked = own.getLockedState();
+                  localCTR.renew(newStreams, (newWSPS) => {
+                    own.reConfigurate(newWSPS, locked);
+                  });
+                  return true;
+                }
+              }
+              return false;
+            },
+            after5fullUpdateHn(own) {
+              if (!init) {
+                init = true;
+                onrdy(own);
+              }
+              if (controller) {
+                controller(own.getLastStateValue(), localCTR.connections);
+              }
+            },
+          },
+          conf,
+        );
       });
     });
   }
@@ -576,7 +705,10 @@ export class Stream2 {
               con5tion.streams.map(({ wsp }) => wsp),
               () => (combiner) => combiner,
               null,
-              conf,
+              {
+                arrayOrObjectMode: true,
+                ...conf,
+              },
             ));
           });
         }, conf);
@@ -750,6 +882,59 @@ export class Stream2 {
     return this.mapF(({ value }) => proJ(value), conf);
   }
 
+  /**
+   * Gen Map like list of streams from single stream of Mapped list records
+   *  cache here must be a separate stream mb? + has default value
+   */
+  kit(_, conf) {
+    return new Stream2((onrdy, ctr) => {
+      this.connect((wsp, hook) => {
+        const cache = new Map();
+        ctr.to(hook);
+        onrdy(wsp.map(({ value: list }) => {
+          /* <debug> */
+          if (!(list instanceof Map)) {
+            throw new TypeError('Only Map like list of records is supported');
+          }
+          /* </debug> */
+          const res = new Map();
+          // eslint-disable-next-line no-restricted-syntax
+          for (const key of list.keys()) {
+            let exist = cache.get(key);
+            if (!exist) {
+              exist = this.accumulate((acc, value) => {
+                const item = value.get(key);
+                if (acc === EMPTY) {
+                  return item;
+                }
+                if (item === acc) {
+                  return EMPTY;
+                }
+                return item;
+              }, conf);
+              cache.set(key, exist);
+            }
+            res.set(key, exist);
+          }
+          return res;
+        }));
+      });
+    });
+  }
+
+  accumulate(proJ, conf) {
+    return new Stream2((onrdy, ctr) => {
+      this.connect((wsp, hook) => {
+        ctr.to(hook);
+        onrdy(RedWSPSlave.create(
+          [wsp],
+          (own) => ([{ value }]) => proJ(own.getLastStateValue(), value),
+          conf,
+        ));
+      });
+    });
+  }
+
   mapF(proJ, conf = {}) {
     return new Stream2((onrdy, ctr) => {
       this.connect((wsp, hook) => {
@@ -838,7 +1023,14 @@ export class Stream2 {
   $activate(ctr) {
     this.project.call(
       this.ctx,
-      (wsp) => this.startConnectionToSlave(wsp),
+      (wsp) => {
+        /* <debug> */
+        if ((wsp instanceof RedWSP) && wsp.getLastStateValue() === EMPTY) {
+          throw new Error('Unsupported internal WSP state. Stream not opened yet.');
+        }
+        /* </debug> */
+        return this.startConnectionToSlave(wsp);
+      },
       ctr,
     );
   }

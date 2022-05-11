@@ -1,7 +1,8 @@
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
 import { EMPTY_FUNCTION } from '../defs';
-import RedWSP, { RedWSPSlave } from '../wsp/rwsp';
+import RedWSP from '../wsp/rwsp';
+import RedWSPSlave from '../wsp/rwsp-slave';
 
 // eslint-disable-next-line
 const { describe, test, expect } = globalThis;
@@ -12,7 +13,7 @@ describe('constructor', () => {
     const proJ = jest.fn();
     const _ = async();
     const s1 = stream
-      .fromCbFunc((cb) => {
+      .fromCbFn((cb) => {
         cb(1);
         _(() => cb(2));
       });
