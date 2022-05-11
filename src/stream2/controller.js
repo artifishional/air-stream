@@ -63,6 +63,10 @@ class CTR {
     return this.lastConnection?.streams;
   }
 
+  get connections() {
+    return this.lastConnection?.connections;
+  }
+
   get wsps() {
     return this.lastConnection?.wsps;
   }
