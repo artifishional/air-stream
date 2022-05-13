@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import EventEmitter from 'event-emitter';
 import { stream2 as stream } from '../stream';
-import { async } from '../../utils';
+import { async } from '../../utils.mjs';
 
 const {
   describe, test, expect,

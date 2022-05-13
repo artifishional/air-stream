@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { stream2 as stream } from '../stream';
-import { async } from '../../utils';
+import { async } from '../../utils.mjs';
 import { DomEvent } from './helpers';
 
 const {

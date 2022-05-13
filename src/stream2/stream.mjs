@@ -14,8 +14,8 @@ import ReduceRemoteTuner from './reduce-remote-tuner.mjs';
 import ReplicateRemoteTuner from './replicate-remote-tuner.mjs';
 import RedCon5ionHn from './red-connection-handler.mjs';
 import { RED_REC_STATUS } from './record/red-record.mjs';
-import * as utils from '../utils';
-import { arrayShallowEqual } from '../utils';
+import * as utils from '../utils.mjs';
+import { arrayShallowEqual } from '../utils.mjs';
 import RedWSPSlave from './wsp/rwsp-slave.mjs';
 
 const STATIC_LOCAL_RED_WSP = RedWSP.create(

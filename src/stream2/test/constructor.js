@@ -1,5 +1,5 @@
 import { stream2 as stream } from '../stream';
-import { async } from '../../utils';
+import { async } from '../../utils.mjs';
 import { EMPTY_FUNCTION } from '../defs.mjs';
 import RedWSP from '../wsp/rwsp.mjs';
 import RedWSPSlave from '../wsp/rwsp-slave.mjs';

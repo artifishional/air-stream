@@ -1,5 +1,5 @@
 import { stream2 as stream } from '../stream';
-import { async } from '../../utils';
+import { async } from '../../utils.mjs';
 import Propagate from '../propagate.mjs';
 
 // eslint-disable-next-line no-undef

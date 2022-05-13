@@ -1,4 +1,4 @@
-import { async } from '../../utils';
+import { async } from '../../utils.mjs';
 import { stream2 as stream } from '../stream';
 import RedWSP from '../wsp/rwsp.mjs';
 

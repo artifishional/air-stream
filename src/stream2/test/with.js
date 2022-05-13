@@ -1,5 +1,5 @@
 import EventEmitter from 'event-emitter';
-import { async } from '../../utils';
+import { async } from '../../utils.mjs';
 import { stream2 as stream } from '../stream';
 
 // eslint-disable-next-line no-undef

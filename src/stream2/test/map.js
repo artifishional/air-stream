@@ -1,5 +1,5 @@
 import {WSP} from "../wsp/wsp.mjs";
-import {async} from "../../utils";
+import {async} from "../../utils.mjs";
 
 describe('map', function () {
     

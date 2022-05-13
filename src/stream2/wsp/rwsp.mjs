@@ -6,7 +6,7 @@ import HeadRecord from '../record/head-record.mjs';
 import Token from '../token';
 import STTMP from '../sync-ttmp-ctr';
 import { STATIC_GETTERS } from '../defs.mjs';
-import * as utils from '../../utils';
+import * as utils from '../../utils.mjs';
 
 export const DEFAULT_MSG_ALIVE_TIME_MS = 3000;
 export const DEFAULT_UPDATE_T4_STATUS_CTD_VALUE = 10;

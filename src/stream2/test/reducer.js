@@ -1,6 +1,6 @@
 import now from 'performance-now';
 import { stream2 as stream } from '../stream';
-import { async } from '../../utils';
+import { async } from '../../utils.mjs';
 import { RED_REC_STATUS } from '../record/red-record.mjs';
 import { PUSH, STATUS_UPDATE } from '../signals.mjs';
 
