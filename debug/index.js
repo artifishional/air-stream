@@ -1,4 +1,4 @@
-import { stream } from "../src"
+import { stream } from "../src/index.mjs"
 
 const src = stream(
 	//streams
