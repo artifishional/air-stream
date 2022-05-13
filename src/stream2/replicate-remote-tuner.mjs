@@ -3,8 +3,8 @@ import RedWSP from './wsp/rwsp.mjs';
 import { PUSH, STATUS_UPDATE, EMPTY } from './signals.mjs';
 import { RET4_TYPES } from './retouch/retouch-types.mjs';
 import Propagate from './propagate.mjs';
-import STTMP from './sync-ttmp-ctr';
-import Token from './token';
+import STTMP from './sync-ttmp-ctr.mjs';
+import Token from './token.mjs';
 
 /**
  * @readonly

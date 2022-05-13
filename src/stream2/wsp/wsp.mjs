@@ -1,5 +1,5 @@
 import { EMPTY } from '../signals.mjs';
-import STTMP from '../sync-ttmp-ctr';
+import STTMP from '../sync-ttmp-ctr.mjs';
 import Propagate from '../propagate.mjs';
 import { EMPTY_WSPS_LIST_4_COMBINED, STATIC_CREATOR_KEY } from '../defs.mjs';
 import SyncEventManager from '../sync-man/sync-event-manager.mjs';

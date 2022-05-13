@@ -3,8 +3,8 @@ import ReT4 from '../retouch/retouch.mjs';
 import { RET4_TYPES } from '../retouch/retouch-types.mjs';
 import { EMPTY } from '../signals.mjs';
 import HeadRecord from '../record/head-record.mjs';
-import Token from '../token';
-import STTMP from '../sync-ttmp-ctr';
+import Token from '../token.mjs';
+import STTMP from '../sync-ttmp-ctr.mjs';
 import { STATIC_GETTERS } from '../defs.mjs';
 import * as utils from '../../utils.mjs';
 
