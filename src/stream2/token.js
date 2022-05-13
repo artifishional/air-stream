@@ -1,5 +1,5 @@
-import { DEFAULT_START_TTMP } from './defs';
-/* <debug> */ import Debug from './debug'; /* </debug> */
+import { DEFAULT_START_TTMP } from './defs.mjs';
+/* <debug> */ import Debug from './debug.mjs'; /* </debug> */
 
 export default class Token
   /* <debug> */extends Debug/* </debug> */ {

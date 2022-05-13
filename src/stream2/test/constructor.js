@@ -1,8 +1,8 @@
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
-import { EMPTY_FUNCTION } from '../defs';
-import RedWSP from '../wsp/rwsp';
-import RedWSPSlave from '../wsp/rwsp-slave';
+import { EMPTY_FUNCTION } from '../defs.mjs';
+import RedWSP from '../wsp/rwsp.mjs';
+import RedWSPSlave from '../wsp/rwsp-slave.mjs';
 
 // eslint-disable-next-line
 const { describe, test, expect } = globalThis;

@@ -1,5 +1,5 @@
-import { STD_DISCONNECT_REQ } from './defs';
-/* <debug> */import Debug from './debug';/* </debug> */
+import { STD_DISCONNECT_REQ } from './defs.mjs';
+/* <debug> */import Debug from './debug.mjs';/* </debug> */
 
 class Connection {
   constructor(own) {

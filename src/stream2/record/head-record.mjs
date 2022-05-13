@@ -1,4 +1,4 @@
-import Record from './record';
+import Record from './record.mjs';
 
 export default class HeadRecord extends Record {
   static ORIGIN_RECORD_ID_COUNTER = 0;

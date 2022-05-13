@@ -1,4 +1,4 @@
-import SyncEventGroup from './sync-event-group';
+import SyncEventGroup from './sync-event-group.mjs';
 import Token from '../token';
 
 export default class SyncEventManager {

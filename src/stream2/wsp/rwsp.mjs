@@ -1,11 +1,11 @@
-import WSP from './wsp';
-import ReT4 from '../retouch/retouch';
-import { RET4_TYPES } from '../retouch/retouch-types';
-import { EMPTY } from '../signals';
-import HeadRecord from '../record/head-record';
+import WSP from './wsp.mjs';
+import ReT4 from '../retouch/retouch.mjs';
+import { RET4_TYPES } from '../retouch/retouch-types.mjs';
+import { EMPTY } from '../signals.mjs';
+import HeadRecord from '../record/head-record.mjs';
 import Token from '../token';
 import STTMP from '../sync-ttmp-ctr';
-import { STATIC_GETTERS } from '../defs';
+import { STATIC_GETTERS } from '../defs.mjs';
 import * as utils from '../../utils';
 
 export const DEFAULT_MSG_ALIVE_TIME_MS = 3000;

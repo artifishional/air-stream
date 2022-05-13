@@ -1,5 +1,5 @@
 import { stream2 as stream } from "../../index";
-import {WSP} from "../wsp/wsp";
+import {WSP} from "../wsp/wsp.mjs";
 
 describe('filter', function () {
     

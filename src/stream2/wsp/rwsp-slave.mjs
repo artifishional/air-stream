@@ -1,4 +1,4 @@
-import RedWSP from './rwsp';
+import RedWSP from './rwsp.mjs';
 
 export default class RedWSPSlave extends RedWSP {
   /**

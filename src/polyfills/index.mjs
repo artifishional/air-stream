@@ -1,5 +1,5 @@
-import './globalthis';
-import './queue-microtask';
+import './globalthis.mjs';
+import './queue-microtask.mjs';
 
 if (!Array.prototype.findLast) {
   // eslint-disable-next-line no-extend-native,func-names

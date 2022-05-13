@@ -1,6 +1,6 @@
-/* <debug> */import AsyncTask from '../async-task';/* </debug> */
+/* <debug> */import AsyncTask from '../async-task.mjs';/* </debug> */
 import Token from '../token';
-import HeadRecord from '../record/head-record';
+import HeadRecord from '../record/head-record.mjs';
 
 export default class ReT4Base {
   /**

@@ -1,8 +1,8 @@
 import now from 'performance-now';
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
-import { RED_REC_STATUS } from '../record/red-record';
-import { PUSH, STATUS_UPDATE } from '../signals';
+import { RED_REC_STATUS } from '../record/red-record.mjs';
+import { PUSH, STATUS_UPDATE } from '../signals.mjs';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;

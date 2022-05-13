@@ -1,7 +1,7 @@
-import RedWSP from './wsp/rwsp';
+import RedWSP from './wsp/rwsp.mjs';
 import RedCon5ionHn from './red-connection-handler';
-import ExtendedResult from './wrapper/extended-result';
-import RedWSPSlave from './wsp/rwsp-slave';
+import ExtendedResult from './wrapper/extended-result.mjs';
+import RedWSPSlave from './wsp/rwsp-slave.mjs';
 
 function arrEquals(arr1, arr2) {
   if (arr1.length !== arr2.length) {

@@ -1,3 +1,3 @@
-import '../../../polyfills';
+import '../../../polyfills/index.mjs';
 
 import './wsp';

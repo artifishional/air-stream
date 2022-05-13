@@ -1,4 +1,4 @@
-import '../../polyfills';
+import '../../polyfills/index.mjs';
 
 import './combine';
 import './combine-all';

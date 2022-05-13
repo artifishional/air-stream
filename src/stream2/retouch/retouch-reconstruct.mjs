@@ -1,4 +1,4 @@
-import ReT4 from './retouch-base';
+import ReT4 from './retouch-base.mjs';
 
 export default class ReT4ReConstruct extends ReT4 {
   // TODO: important: wsps & origin do not proxy

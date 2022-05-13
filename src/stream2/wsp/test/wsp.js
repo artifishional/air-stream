@@ -1,5 +1,5 @@
-import WSP from '../wsp';
-import RedWSP from '../rwsp';
+import WSP from '../wsp.mjs';
+import RedWSP from '../rwsp.mjs';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;

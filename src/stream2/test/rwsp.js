@@ -1,6 +1,6 @@
 import { async } from '../../utils';
 import { stream2 as stream } from '../stream';
-import RedWSP from '../wsp/rwsp';
+import RedWSP from '../wsp/rwsp.mjs';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;

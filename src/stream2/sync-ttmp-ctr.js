@@ -1,6 +1,6 @@
 import now from 'performance-now';
 import Token from './token';
-import AsyncTask from './async-task';
+import AsyncTask from './async-task.mjs';
 
 const boiler = new Map();
 

@@ -1,11 +1,11 @@
-import { EMPTY } from '../signals';
+import { EMPTY } from '../signals.mjs';
 import STTMP from '../sync-ttmp-ctr';
 import Propagate from '../propagate';
-import { EMPTY_WSPS_LIST_4_COMBINED, STATIC_CREATOR_KEY } from '../defs';
-import SyncEventManager from '../sync-man/sync-event-manager';
-import SyncEventManagerSingle from '../sync-man/sync-event-manager-single';
-/* <debug> */ import Debug from '../debug';/* </debug> */
-import WSPSSetupResult from '../wrapper/wsps-setup-result';
+import { EMPTY_WSPS_LIST_4_COMBINED, STATIC_CREATOR_KEY } from '../defs.mjs';
+import SyncEventManager from '../sync-man/sync-event-manager.mjs';
+import SyncEventManagerSingle from '../sync-man/sync-event-manager-single.mjs';
+/* <debug> */ import Debug from '../debug.mjs';/* </debug> */
+import WSPSSetupResult from '../wrapper/wsps-setup-result.mjs';
 
 let staticOriginWSPIDCounter = 0;
 

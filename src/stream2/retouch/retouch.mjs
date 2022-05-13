@@ -1,7 +1,7 @@
-import ReT4Init from './retouch-init';
-import ReT4Abort from './retouch-abort';
-import { RET4_TYPES } from './retouch-types';
-import ReT4ReConstruct from './retouch-reconstruct';
+import ReT4Init from './retouch-init.mjs';
+import ReT4Abort from './retouch-abort.mjs';
+import { RET4_TYPES } from './retouch-types.mjs';
+import ReT4ReConstruct from './retouch-reconstruct.mjs';
 
 export default class ReT4 {
   static create(src, type, prms) {

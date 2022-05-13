@@ -1,5 +1,5 @@
-import { EMPTY } from '../signals';
-/* <debug> */import Debug from '../debug';/* </debug> */
+import { EMPTY } from '../signals.mjs';
+/* <debug> */import Debug from '../debug.mjs';/* </debug> */
 
 export default class Record
   /* <debug> */extends Debug/* </debug> */ {

@@ -1,22 +1,22 @@
 import now from 'performance-now';
-import WSP from './wsp/wsp';
-import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp';
-import { EMPTY, STATUS_UPDATE } from './signals';
+import WSP from './wsp/wsp.mjs';
+import RedWSP, { RED_WSP_SUBORDINATION } from './wsp/rwsp.mjs';
+import { EMPTY, STATUS_UPDATE } from './signals.mjs';
 import {
   FROM_OWNER_STREAM,
   STD_DISCONNECT_REQ,
   EMPTY_FUNCTION,
   STATIC_PROJECTS,
   STATIC_GETTERS,
-} from './defs';
-import Controller from './controller';
+} from './defs.mjs';
+import Controller from './controller.mjs';
 import ReduceRemoteTuner from './reduce-remote-tuner';
 import ReplicateRemoteTuner from './replicate-remote-tuner';
 import RedCon5ionHn from './red-connection-handler';
-import { RED_REC_STATUS } from './record/red-record';
+import { RED_REC_STATUS } from './record/red-record.mjs';
 import * as utils from '../utils';
 import { arrayShallowEqual } from '../utils';
-import RedWSPSlave from './wsp/rwsp-slave';
+import RedWSPSlave from './wsp/rwsp-slave.mjs';
 
 const STATIC_LOCAL_RED_WSP = RedWSP.create(
   null, STATIC_PROJECTS.EMPTY_REDUCER, { initialValue: null },
