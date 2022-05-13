@@ -2,7 +2,7 @@ import { RED_REC_STATUS } from './record/red-record.mjs';
 import RedWSP from './wsp/rwsp.mjs';
 import { PUSH, STATUS_UPDATE, EMPTY } from './signals.mjs';
 import { RET4_TYPES } from './retouch/retouch-types.mjs';
-import Propagate from './propagate';
+import Propagate from './propagate.mjs';
 import STTMP from './sync-ttmp-ctr';
 import Token from './token';
 /* <debug> */ import Debug from './debug.mjs'; /* </debug> */

@@ -1,5 +1,5 @@
 import RedWSP from './wsp/rwsp.mjs';
-import RedCon5ionHn from './red-connection-handler';
+import RedCon5ionHn from './red-connection-handler.mjs';
 import ExtendedResult from './wrapper/extended-result.mjs';
 import RedWSPSlave from './wsp/rwsp-slave.mjs';
 

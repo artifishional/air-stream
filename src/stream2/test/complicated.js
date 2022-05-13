@@ -1,6 +1,6 @@
 import { stream2 as stream } from '../stream';
 import { async } from '../../utils';
-import Propagate from '../propagate';
+import Propagate from '../propagate.mjs';
 
 // eslint-disable-next-line no-undef
 const { describe, test, expect } = globalThis;

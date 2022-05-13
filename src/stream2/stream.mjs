@@ -10,9 +10,9 @@ import {
   STATIC_GETTERS,
 } from './defs.mjs';
 import Controller from './controller.mjs';
-import ReduceRemoteTuner from './reduce-remote-tuner';
-import ReplicateRemoteTuner from './replicate-remote-tuner';
-import RedCon5ionHn from './red-connection-handler';
+import ReduceRemoteTuner from './reduce-remote-tuner.mjs';
+import ReplicateRemoteTuner from './replicate-remote-tuner.mjs';
+import RedCon5ionHn from './red-connection-handler.mjs';
 import { RED_REC_STATUS } from './record/red-record.mjs';
 import * as utils from '../utils';
 import { arrayShallowEqual } from '../utils';
